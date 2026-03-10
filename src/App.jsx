@@ -117,16 +117,22 @@ const products = [
   {
     name: "Clearview Retractable Screen Doors",
     pricingModel: "matrix",
+    dimensionUnit: "in",
     prices: {
-      48: {98:695}, 68: {98:895}, 96: {98:1390}, 60: {98:545},
-      "Depends on size": {"Fixed Frame":100,"Arched Fixed Frame Screens Single":450,"Arched Fixed Frame Screens Double":800}
+      48: {98:695},
+      60: {98:545},
+      68: {98:895},
+      96: {98:1390}
     }
   },
   {
     name: "Clearview Oversized Doors",
     pricingModel: "matrix",
+    dimensionUnit: "in",
     prices: {
-      55: {120:895}, 68: {120:1295}, 136: {98:1695,120:2095}
+      55: {120:895},
+      68: {120:1295},
+      136: {98:1695, 120:2095}
     }
   },
   {
@@ -456,8 +462,8 @@ function ProductLine({ line, lineNumber, onUpdate, onRemove, showRemove }) {
     else { badgeClass = 'invalid'; badgeText = 'Invalid Size'; }
   }
 
-  const widthLabel = p?.pricingModel === 'matrix_axes' ? 'Width (ft)' : 'Width';
-  const heightLabel = p?.pricingModel === 'matrix_axes' ? "Projection (4' 11\" or inches)" : 'Projection or Height';
+  const widthLabel = p?.pricingModel === 'matrix_axes' ? 'Width (ft)' : p?.dimensionUnit === 'in' ? 'Width (inches)' : 'Width';
+  const heightLabel = p?.pricingModel === 'matrix_axes' ? "Projection (4' 11\" or inches)" : p?.dimensionUnit === 'in' ? 'Height (inches)' : 'Projection or Height';
 
   const handleAddon = (idx, checked) => {
     const newAddons = [...line.addons];
@@ -512,7 +518,7 @@ function ProductLine({ line, lineNumber, onUpdate, onRemove, showRemove }) {
             min="0"
             value={line.width}
             onChange={e => onUpdate({...line, width:e.target.value})}
-            placeholder="e.g. 10 (or 120 inches)"
+            placeholder={p?.dimensionUnit === 'in' ? "e.g. 48 (inches)" : "e.g. 10 (or 120 inches)"}
           />
         </div>
         <div className="form-group">
@@ -521,7 +527,7 @@ function ProductLine({ line, lineNumber, onUpdate, onRemove, showRemove }) {
             type="text"
             value={line.height}
             onChange={e => onUpdate({...line, height:e.target.value})}
-            placeholder={`e.g. 4' 11" or 59`}
+            placeholder={p?.pricingModel === 'matrix_axes' ? `e.g. 4' 11" or 59` : p?.dimensionUnit === 'in' ? "e.g. 98 (inches)" : "e.g. 8"}
           />
         </div>
         <div className="form-group">
@@ -535,74 +541,9 @@ function ProductLine({ line, lineNumber, onUpdate, onRemove, showRemove }) {
         </div>
       </div>
 
-      <div className="grid-2">
-        <div className="form-group">
-          <label>Mount Type</label>
-          <select value={line.mount} onChange={e => onUpdate({...line, mount:e.target.value})}>
-            <option value="">Select Mount Type</option>
-            {mountTypes.map(m => <option key={m} value={m}>{m}</option>)}
-          </select>
-        </div>
-        <div className="form-group">
-          <label>Fabric / Material</label>
-          <select value={line.fabric} onChange={e => onUpdate({...line, fabric:e.target.value})}>
-            <option value="">Select Fabric</option>
-            {fabrics.map(f => <option key={f} value={f}>{f}</option>)}
-          </select>
-        </div>
-        <div className="form-group">
-          <label>Color / Finish</label>
-          <select value={line.color} onChange={e => onUpdate({...line, color:e.target.value})}>
-            <option value="">Select Color</option>
-            {colorOptions.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
-        <div className="form-group">
-          <label>Operation Type</label>
-          <select value={line.operation} onChange={e => onUpdate({...line, operation:e.target.value})}>
-            <option value="manual">Manual</option>
-            <option value="motorized">Motorized (+$250)</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="form-group">
-        <label>Add-on Options</label>
-        <div className="checkbox-group">
-          {addOns.map((addon, idx) => (
-            <div className="checkbox-item" key={idx}>
-              <input
-                type="checkbox"
-                id={`addon_${line.id}_${idx}`}
-                checked={line.addons[idx] || false}
-                onChange={e => handleAddon(idx, e.target.checked)}
-              />
-              <label htmlFor={`addon_${line.id}_${idx}`}>{addon.name} (+${addon.price})</label>
-            </div>
-          ))}
-        </div>
-      </div>
+     
 
       <div className="grid-2">
-        <div className="form-group">
-          <label>Product Photos</label>
-          <div className="photo-upload">
-            <input
-              type="file"
-              id={`photos_${line.id}`}
-              accept="image/*"
-              multiple
-              style={{display:'none'}}
-              onChange={e => onUpdate({...line, photoCount: e.target.files?.length || 0})}
-            />
-            <label htmlFor={`photos_${line.id}`} className="photo-upload-label">
-              📸 Click to upload photos (optional)
-            </label>
-            {line.photoCount > 0 && (
-              <span className="photo-success">✓ {line.photoCount} photo(s) uploaded</span>
-            )}
-          </div>
-        </div>
         <div className="form-group">
           <label>Product Notes</label>
           <textarea
@@ -632,7 +573,6 @@ function ProductLine({ line, lineNumber, onUpdate, onRemove, showRemove }) {
 // ============================================================
 let idCounter = 1;
 
-// ── Single shape for one product line ──────────────────────
 function createEmptyLine() {
   return {
     id: idCounter++,
@@ -646,203 +586,93 @@ function createEmptyLine() {
     fabric:     '',
     color:      '',
     operation:  'manual',
-    addons:     addOns.map(() => false),   // boolean[] mirrors addOns[]
+    addons:     addOns.map(() => false),
     notes:      '',
     photoCount: 0,
   };
 }
 
-// ── Single shape for the entire order ──────────────────────
 function createInitialOrderData() {
   return {
-    // Section 1 – customer
-    customer: {
-      name:    '',
-      email:   '',
-      phone:   '',
-      address: '',
-    },
-
-    // Section 2 – product lines (array of line objects)
+    customer: { name:'', email:'', phone:'', address:'' },
     productLines: [createEmptyLine()],
-
-    // Section 3 – discount / manager approval
-    discount: {
-      percent:      0,
-      managerName:  '',
-      managerEmail: '',
-      approvalCode: '',
-    },
-
-    // Section 4 – free-text notes
+    discount: { percent:0, managerName:'', managerEmail:'', approvalCode:'' },
     orderNotes: '',
-
-    // Section 5 – signature (base64 stored on submit)
     signature: '',
-
-    // Meta
     createdAt:   new Date().toISOString(),
     lastUpdated: new Date().toISOString(),
   };
 }
 
 export default function App() {
-  // ── Router ───────────────────────────────────────────────
   const navigate = useNavigate();
-
-  // ── ONE source of truth ────────────────────────────────────
   const [orderData, setOrderData] = useState(createInitialOrderData());
-
-  // Convenience destructure (read-only aliases – do NOT mutate directly)
   const { customer, productLines, discount, orderNotes } = orderData;
-
-  // Signature canvas ref (canvas pixel data can't live in plain state)
   const canvasRef = useRef(null);
 
-  // ── Generic updater helpers ────────────────────────────────
-
-  // Update any top-level key: updateOrder('customer', { name: 'Alice' })
   const updateOrder = (key, value) =>
     setOrderData(prev => ({
       ...prev,
       [key]: typeof value === 'object' && !Array.isArray(value)
-        ? { ...prev[key], ...value }   // merge objects
-        : value,                        // replace primitives / arrays
+        ? { ...prev[key], ...value }
+        : value,
       lastUpdated: new Date().toISOString(),
     }));
 
-  // ── Customer helpers ───────────────────────────────────────
-  const updateCustomer = (field, value) =>
-    updateOrder('customer', { [field]: value });
+  const updateCustomer = (field, value) => updateOrder('customer', { [field]: value });
+  const addLine = () => updateOrder('productLines', [...productLines, createEmptyLine()]);
+  const removeLine = (id) => updateOrder('productLines', productLines.filter(l => l.id !== id));
+  const updateLine = (updatedLine) => updateOrder('productLines', productLines.map(l => l.id === updatedLine.id ? updatedLine : l));
+  const updateDiscount = (field, value) => updateOrder('discount', { [field]: value });
 
-  // ── Product line helpers ───────────────────────────────────
-  const addLine = () =>
-    updateOrder('productLines', [...productLines, createEmptyLine()]);
+  const subtotal     = productLines.reduce((sum, line) => sum + calcLineTotal(line), 0);
+  const discountAmt  = subtotal * (discount.percent / 100);
+  const total        = subtotal - discountAmt;
+  const needsManager = discount.percent > 20;
 
-  const removeLine = (id) =>
-    updateOrder('productLines', productLines.filter(l => l.id !== id));
-
-  const updateLine = (updatedLine) =>
-    updateOrder(
-      'productLines',
-      productLines.map(l => l.id === updatedLine.id ? updatedLine : l)
-    );
-
-  // ── Discount helpers ───────────────────────────────────────
-  const updateDiscount = (field, value) =>
-    updateOrder('discount', { [field]: value });
-
-  // ── Derived / computed values ──────────────────────────────
-  const subtotal      = productLines.reduce((sum, line) => sum + calcLineTotal(line), 0);
-  const discountAmt   = subtotal * (discount.percent / 100);
-  const total         = subtotal - discountAmt;
-  const needsManager  = discount.percent > 20;
-
-  // ── Signature ─────────────────────────────────────────────
   const clearSignature = () => {
     const canvas = canvasRef.current;
     if (canvas) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
     updateOrder('signature', '');
   };
 
-  // ── Build the final snapshot (pricing computed at call-time) ──
   const buildSnapshot = () => {
     const signatureData = canvasRef.current?.toDataURL() || '';
-
     return {
-      // ── Raw editable state ──────────────────────────────
       ...orderData,
-
-      // ── Enriched product lines ──────────────────────────
       productLines: productLines.map(line => {
         const p = findProduct(line.product);
-        const priceResult = (line.category && line.product)
-          ? getBasePriceUnified(line) : null;
+        const priceResult = (line.category && line.product) ? getBasePriceUnified(line) : null;
         return {
           ...line,
-          productMeta: {
-            pricingModel:  p?.pricingModel  || null,
-            dimensionUnit: p?.dimensionUnit || 'ft',
-          },
-          pricing: {
-            basePrice:   priceResult?.ok ? priceResult.price : 0,
-            priceNote:   priceResult?.message || '',
-            lineSubtotal: calcLineTotal(line),
-          },
+          productMeta: { pricingModel: p?.pricingModel || null, dimensionUnit: p?.dimensionUnit || 'ft' },
+          pricing: { basePrice: priceResult?.ok ? priceResult.price : 0, priceNote: priceResult?.message || '', lineSubtotal: calcLineTotal(line) },
         };
       }),
-
-      // ── Computed pricing summary ────────────────────────
-      pricingSummary: {
-        subtotal:        subtotal,
-        discountPercent: discount.percent,
-        discountAmount:  discountAmt,
-        total:           total,
-      },
-
-      // ── Signature captured at snapshot time ────────────
+      pricingSummary: { subtotal, discountPercent: discount.percent, discountAmount: discountAmt, total },
       signature: signatureData,
-
-      // ── Timestamp ──────────────────────────────────────
       submittedAt: new Date().toISOString(),
     };
   };
 
-  // ── Validation ────────────────────────────────────────────
   const validateForm = () => {
-    if (!customer.name || !customer.email || !customer.phone) {
-      alert('Please fill in all required customer information.'); return false;
-    }
-    if (productLines.length === 0) {
-      alert('Please add at least one product.'); return false;
-    }
-    const hasValid = productLines.some(line => {
-      if (!line.category || !line.product) return false;
-      return getBasePriceUnified(line).ok;
-    });
-    if (!hasValid) {
-      alert('Please configure at least one product with a valid size.'); return false;
-    }
+    if (!customer.name || !customer.email || !customer.phone) { alert('Please fill in all required customer information.'); return false; }
+    if (productLines.length === 0) { alert('Please add at least one product.'); return false; }
+    const hasValid = productLines.some(line => { if (!line.category || !line.product) return false; return getBasePriceUnified(line).ok; });
+    if (!hasValid) { alert('Please configure at least one product with a valid size.'); return false; }
     const canvas = canvasRef.current;
     if (canvas) {
       const imageData = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
-      if (!imageData.data.some(c => c !== 0)) {
-        alert('Please provide your signature.'); return false;
-      }
+      if (!imageData.data.some(c => c !== 0)) { alert('Please provide your signature.'); return false; }
     }
-    if (needsManager && (!discount.managerName || !discount.managerEmail || !discount.approvalCode)) {
-      alert('Manager approval required for discounts above 20%.'); return false;
-    }
+    if (needsManager && (!discount.managerName || !discount.managerEmail || !discount.approvalCode)) { alert('Manager approval required for discounts above 20%.'); return false; }
     return true;
   };
 
-  // ── Action handlers ───────────────────────────────────────
-  const generateProposal = () => {
-    if (!validateForm()) return;
-    const snapshot = buildSnapshot();
-    console.log('📄 Proposal snapshot:', snapshot);
-    alert('✓ Proposal generated successfully!\n\nIn production, this would:\n- Generate a PDF proposal\n- Send to customer email\n- Store in database\n- Integration with GHL/QuickBooks');
-  };
-
-  const collectPayment = () => {
-    if (!validateForm()) return;
-    const snapshot = buildSnapshot();
-    console.log('💳 Payment snapshot:', snapshot);
-    alert(`💳 Collect Payment: $${total.toFixed(2)}\n\nIn production, this would:\n- Integrate with Stripe/Square\n- Process payment\n- Generate receipt\n- Update order status`);
-  };
-
-  const saveAsDraft = () => {
-    const snapshot = buildSnapshot();
-    console.log('💾 Draft snapshot:', snapshot);
-    alert('✓ Draft saved successfully!\n\nYou can continue editing later.');
-  };
-
-  const exportToGHL = () => {
-    if (!validateForm()) return;
-    const snapshot = buildSnapshot();
-    console.log('📤 GHL export snapshot:', snapshot);
-    alert('✓ Data exported to GHL successfully!\n\nIn production, this would:\n- Send to GoHighLevel API\n- Create contact/opportunity\n- Sync with QuickBooks\n- Update CRM pipeline');
-  };
+  const generateProposal = () => { if (!validateForm()) return; const snapshot = buildSnapshot(); console.log('📄 Proposal snapshot:', snapshot); alert('✓ Proposal generated successfully!'); };
+  const collectPayment  = () => { if (!validateForm()) return; const snapshot = buildSnapshot(); console.log('💳 Payment snapshot:', snapshot); alert(`💳 Collect Payment: $${total.toFixed(2)}`); };
+  const saveAsDraft     = () => { const snapshot = buildSnapshot(); console.log('💾 Draft snapshot:', snapshot); alert('✓ Draft saved successfully!'); };
+  const exportToGHL     = () => { if (!validateForm()) return; const snapshot = buildSnapshot(); console.log('📤 GHL export snapshot:', snapshot); alert('✓ Data exported to GHL successfully!'); };
 
   return (
     <div className="container">
@@ -852,62 +682,26 @@ export default function App() {
       </header>
 
       <div className="form-wrapper">
-        {/* ---- SECTION 1: Customer Info ---- */}
         <div className="section">
-          <div className="section-header">
-            <div className="section-number">1</div>
-            <h2>Customer Information</h2>
-          </div>
+          <div className="section-header"><div className="section-number">1</div><h2>Customer Information</h2></div>
           <div className="grid-2">
-            <div className="form-group">
-              <label className="required">Customer Name</label>
-              <input type="text" value={customer.name}    onChange={e => updateCustomer('name',    e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label className="required">Email</label>
-              <input type="text" value={customer.email}   onChange={e => updateCustomer('email',   e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label className="required">Phone</label>
-              <input type="text" value={customer.phone}   onChange={e => updateCustomer('phone',   e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label>Installation Address</label>
-              <input type="text" value={customer.address} onChange={e => updateCustomer('address', e.target.value)} />
-            </div>
+            <div className="form-group"><label className="required">Customer Name</label><input type="text" value={customer.name} onChange={e => updateCustomer('name', e.target.value)} /></div>
+            <div className="form-group"><label className="required">Email</label><input type="text" value={customer.email} onChange={e => updateCustomer('email', e.target.value)} /></div>
+            <div className="form-group"><label className="required">Phone</label><input type="text" value={customer.phone} onChange={e => updateCustomer('phone', e.target.value)} /></div>
+            <div className="form-group"><label>Installation Address</label><input type="text" value={customer.address} onChange={e => updateCustomer('address', e.target.value)} /></div>
           </div>
         </div>
 
-        {/* ---- SECTION 2: Product Selection ---- */}
         <div className="section">
-          <div className="section-header">
-            <div className="section-number">2</div>
-            <h2>Product Selection</h2>
-          </div>
-
+          <div className="section-header"><div className="section-number">2</div><h2>Product Selection</h2></div>
           {productLines.map((line, idx) => (
-            <ProductLine
-              key={line.id}
-              line={line}
-              lineNumber={idx + 1}
-              onUpdate={updateLine}
-              onRemove={() => removeLine(line.id)}
-              showRemove={productLines.length > 1}
-            />
+            <ProductLine key={line.id} line={line} lineNumber={idx + 1} onUpdate={updateLine} onRemove={() => removeLine(line.id)} showRemove={productLines.length > 1} />
           ))}
-
-          <button type="button" className="btn btn-primary" onClick={addLine}>
-            <span>+</span> Add Product Line
-          </button>
+          <button type="button" className="btn btn-primary" onClick={addLine}><span>+</span> Add Product Line</button>
         </div>
 
-        {/* ---- SECTION 3: Pricing & Discount ---- */}
         <div className="section">
-          <div className="section-header">
-            <div className="section-number">3</div>
-            <h2>Pricing &amp; Discount</h2>
-          </div>
-
+          <div className="section-header"><div className="section-number">3</div><h2>Pricing &amp; Discount</h2></div>
           <div className="form-group">
             <label>Discount Percentage</label>
             <select value={discount.percent} onChange={e => updateDiscount('percent', parseFloat(e.target.value))}>
@@ -920,96 +714,39 @@ export default function App() {
               <option value="30">30% - Requires Manager Approval</option>
             </select>
           </div>
-
           {needsManager && (
             <div className="manager-approval">
               <h3>⚠ Manager Approval Required</h3>
-              <div className="form-group">
-                <label className="required">Manager Name</label>
-                <input type="text" value={discount.managerName}  onChange={e => updateDiscount('managerName',  e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="required">Manager Email</label>
-                <input type="text" value={discount.managerEmail} onChange={e => updateDiscount('managerEmail', e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="required">Approval Code</label>
-                <input type="text" value={discount.approvalCode} onChange={e => updateDiscount('approvalCode', e.target.value)} placeholder="Enter manager approval code" />
-              </div>
+              <div className="form-group"><label className="required">Manager Name</label><input type="text" value={discount.managerName} onChange={e => updateDiscount('managerName', e.target.value)} /></div>
+              <div className="form-group"><label className="required">Manager Email</label><input type="text" value={discount.managerEmail} onChange={e => updateDiscount('managerEmail', e.target.value)} /></div>
+              <div className="form-group"><label className="required">Approval Code</label><input type="text" value={discount.approvalCode} onChange={e => updateDiscount('approvalCode', e.target.value)} placeholder="Enter manager approval code" /></div>
             </div>
           )}
-
           <div className="pricing-summary">
-            <div className="pricing-row">
-              <span className="pricing-label">Subtotal (Before Discount)</span>
-              <span className="pricing-value">${subtotal.toFixed(2)}</span>
-            </div>
-            <div className="pricing-row">
-              <span className="pricing-label">Discount ({discount.percent}%)</span>
-              <span className="pricing-value">-${discountAmt.toFixed(2)}</span>
-            </div>
-            <div className="pricing-row total-row">
-              <span className="pricing-label">Total</span>
-              <span className="pricing-value">${total.toFixed(2)}</span>
-            </div>
+            <div className="pricing-row"><span className="pricing-label">Subtotal (Before Discount)</span><span className="pricing-value">${subtotal.toFixed(2)}</span></div>
+            <div className="pricing-row"><span className="pricing-label">Discount ({discount.percent}%)</span><span className="pricing-value">-${discountAmt.toFixed(2)}</span></div>
+            <div className="pricing-row total-row"><span className="pricing-label">Total</span><span className="pricing-value">${total.toFixed(2)}</span></div>
           </div>
         </div>
 
-        {/* ---- SECTION 4: Additional Notes ---- */}
         <div className="section">
-          <div className="section-header">
-            <div className="section-number">4</div>
-            <h2>Additional Notes</h2>
-          </div>
-          <div className="form-group">
-            <label>Special Instructions or Notes</label>
-            <textarea
-              value={orderNotes}
-              onChange={e => updateOrder('orderNotes', e.target.value)}
-              placeholder="Enter any special instructions, site conditions, or important notes..."
-            />
-          </div>
+          <div className="section-header"><div className="section-number">4</div><h2>Additional Notes</h2></div>
+          <div className="form-group"><label>Special Instructions or Notes</label><textarea value={orderNotes} onChange={e => updateOrder('orderNotes', e.target.value)} placeholder="Enter any special instructions, site conditions, or important notes..." /></div>
         </div>
 
-        {/* ---- SECTION 5: Signature ---- */}
         <div className="section">
-          <div className="section-header">
-            <div className="section-number">5</div>
-            <h2>Customer Signature</h2>
-          </div>
-
-          <div className="alert alert-info">
-            <span>ℹ️</span>
-            <div>
-              <strong>Electronic Signature Required</strong><br />
-              Please draw your signature in the box below to approve this order.
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="required">Sign Here</label>
-            <SignaturePad canvasRef={canvasRef} />
-          </div>
-
+          <div className="section-header"><div className="section-number">5</div><h2>Customer Signature</h2></div>
+          <div className="alert alert-info"><span>ℹ️</span><div><strong>Electronic Signature Required</strong><br />Please draw your signature in the box below to approve this order.</div></div>
+          <div className="form-group"><label className="required">Sign Here</label><SignaturePad canvasRef={canvasRef} /></div>
           <button type="button" className="btn btn-outline" onClick={clearSignature}>Clear Signature</button>
         </div>
 
-        {/* ---- ACTION BUTTONS ---- */}
         <div className="action-buttons">
           <button type="button" className="btn btn-primary" onClick={generateProposal}>📄 Generate Proposal</button>
           <button type="button" className="btn btn-secondary" onClick={collectPayment}>💳 Collect Payment</button>
           <button type="button" className="btn btn-outline" onClick={saveAsDraft}>💾 Save as Draft</button>
           <button type="button" className="btn btn-outline" onClick={exportToGHL}>📤 Export to GHL</button>
-          <button
-            type="button"
-            className="btn btn-next"
-            onClick={() => {
-              const snapshot = buildSnapshot();
-              navigate('/summary', { state: { snapshot } });
-            }}
-          >
-            Next → Order Summary
-          </button>
+          <button type="button" className="btn btn-next" onClick={() => { const snapshot = buildSnapshot(); navigate('/summary', { state: { snapshot } }); }}>Next → Order Summary</button>
         </div>
       </div>
     </div>
