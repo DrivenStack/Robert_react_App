@@ -37,6 +37,126 @@ const fmt = (n) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(n || 0));
 
 // ─────────────────────────────────────────────────────────────
+// MPS PRODUCT PRICE DATA  (mirrors App.js)
+// ─────────────────────────────────────────────────────────────
+const MPS_PRICE_DATA = {
+  "Motorized Power Screen 5in Cassette": {
+    pricingModel: "matrix",
+    prices: {
+      4:  {4:3000,5:3120,6:3240,7:3360,8:3480,9:3600,10:3720,11:3840,12:3960,13:4080,14:4200,15:4320,16:4440,17:4560,18:4680,19:4800,20:4920},
+      5:  {4:3120,5:3240,6:3360,7:3480,8:3600,9:3720,10:3840,11:3960,12:4080,13:4200,14:4320,15:4440,16:4560,17:4680,18:4800,19:4920,20:5040},
+      6:  {4:3240,5:3360,6:3480,7:3600,8:3720,9:3840,10:3960,11:4080,12:4200,13:4320,14:4440,15:4560,16:4680,17:4800,18:4920,19:5040,20:5160},
+      7:  {4:3360,5:3480,6:3600,7:3720,8:3840,9:3960,10:4080,11:4200,12:4320,13:4440,14:4560,15:4680,16:4800,17:4920,18:5040,19:5160,20:5280},
+      8:  {4:3480,5:3600,6:3720,7:3840,8:3960,9:4080,10:4200,11:4320,12:4440,13:4560,14:4680,15:4800,16:4920,17:5040,18:5160,19:5280,20:5400},
+      9:  {4:3600,5:3720,6:3840,7:3960,8:4080,9:4200,10:4320,11:4440,12:4560,13:4680,14:4800,15:4920,16:5040,17:5160,18:5280,19:5400,20:5520},
+      10: {4:3720,5:3840,6:3960,7:4080,8:4200,9:4320,10:4440,11:4560,12:4680,13:4800,14:4920,15:5040,16:5160,17:5280,18:5400,19:5520,20:5640}
+    }
+  },
+  "Motorized Power Screen 6in Cassette": {
+    pricingModel: "matrix",
+    prices: {
+      4:  {3:3143,4:3375,5:3607,6:3839,7:4071,8:4303,9:4535,10:4767,11:4999,12:5231,13:5463,14:5695,15:5927,16:6159,17:6391,18:6623,19:6855,20:7088,21:7320,22:7552,23:7784,24:8016,25:8248,26:8480},
+      5:  {3:3375,4:3607,5:3839,6:4071,7:4303,8:4535,9:4767,10:4999,11:5231,12:5463,13:5695,14:5927,15:6159,16:6391,17:6623,18:6855,19:7088,20:7320,21:7552,22:7784,23:8016,24:8248,25:8480,26:8712},
+      6:  {3:3607,4:3839,5:4071,6:4303,7:4535,8:4767,9:4999,10:5231,11:5463,12:5695,13:5927,14:6159,15:6391,16:6623,17:6855,18:7088,19:7320,20:7552,21:7784,22:8016,23:8248,24:8480,25:8712,26:8944},
+      7:  {3:3839,4:4071,5:4303,6:4535,7:4767,8:4999,9:5231,10:5463,11:5695,12:5927,13:6159,14:6391,15:6623,16:6855,17:7088,18:7320,19:7552,20:7784,21:8016,22:8248,23:8480,24:8712,25:8944,26:9176},
+      8:  {3:4071,4:4303,5:4535,6:4767,7:4999,8:5231,9:5463,10:5695,11:5927,12:6159,13:6391,14:6623,15:6855,16:7088,17:7320,18:7552,19:7784,20:8016,21:8248,22:8480,23:8712,24:8944,25:9176,26:9408},
+      9:  {3:4303,4:4535,5:4767,6:4999,7:5231,8:5463,9:5695,10:5927,11:6159,12:6391,13:6623,14:6855,15:7088,16:7320,17:7552,18:7784,19:8016,20:8248,21:8480,22:8712,23:8944,24:9176,25:9408,26:9640},
+      10: {3:4535,4:4767,5:4999,6:5231,7:5463,8:5695,9:5927,10:6159,11:6391,12:6623,13:6855,14:7088,15:7320,16:7552,17:7784,18:8016,19:8248,20:8480,21:8712,22:8944,23:9176,24:9408,25:9640,26:9872},
+      11: {3:4767,4:4999,5:5231,6:5463,7:5695,8:5927,9:6159,10:6391,11:6623,12:6855,13:7088,14:7320,15:7552,16:7784,17:8016,18:8248,19:8480,20:8712,21:8944,22:9176,23:9408,24:9640,25:9872,26:10104},
+      12: {3:4999,4:5231,5:5463,6:5695,7:5927,8:6159,9:6391,10:6623,11:6855,12:7088,13:7320,14:7552,15:7784,16:8016,17:8248,18:8480,19:8712,20:8944,21:9176,22:9408,23:9640,24:9872,25:10104,26:10336},
+      13: {3:5231,4:5463,5:5695,6:5927,7:6159,8:6391,9:6623,10:6855,11:7088,12:7320,13:7552,14:7784,15:8016,16:8248,17:8480,18:8712,19:8944,20:9176,21:9408,22:9640,23:9872,24:10104,25:10336,26:10568},
+      14: {3:5463,4:5695,5:5927,6:6159,7:6391,8:6623,9:6855,10:7088,11:7320,12:7552,13:7784,14:8016,15:8248,16:8480,17:8712,18:8944,19:9176,20:9408,21:9640,22:9872,23:10104,24:10336,25:10568,26:10800},
+      15: {3:5695,4:5927,5:6159,6:6391,7:6623,8:6855,9:7088,10:7320,11:7552,12:7784,13:8016,14:8248,15:8480,16:8712,17:8944,18:9176,19:9408,20:9640,21:9872,22:10104,23:10336,24:10568,25:10800,26:11032},
+      16: {3:5927,4:6159,5:6391,6:6623,7:6855,8:7088,9:7320,10:7552,11:7784,12:8016,13:8248,14:8480,15:8712,16:8944,17:9176,18:9408,19:9640,20:9872,21:10104,22:10336,23:10568,24:10800,25:11032,26:11264},
+      17: {3:6159,4:6391,5:6623,6:6855,7:7088,8:7320,9:7552,10:7784,11:8016,12:8248,13:8480,14:8712,15:8944,16:9176,17:9408,18:9640,19:9872,20:10104,21:10336,22:10568,23:10800,24:11032,25:11264,26:11496},
+      18: {3:6391,4:6623,5:6855,6:7088,7:7320,8:7552,9:7784,10:8016,11:8248,12:8480,13:8712,14:8944,15:9176,16:9408,17:9640,18:9872,19:10104,20:10336,21:10568,22:10800,23:11032,24:11264,25:11496,26:11729}
+    }
+  },
+  "Motorized Power Screen open roll": {
+    pricingModel: "matrix",
+    prices: {
+      4:  {3:1935,4:2040,5:2145,6:2250,7:2355,8:2460,9:2565,10:2670,11:2775,12:2880,13:2985,14:3090,15:3195,16:3300,17:3405,18:3510,19:3615,20:3720,21:3825,22:3930,23:4035,24:4140,25:4245,26:4350},
+      5:  {3:2040,4:2145,5:2250,6:2355,7:2460,8:2565,9:2670,10:2775,11:2880,12:2985,13:3090,14:3195,15:3300,16:3405,17:3510,18:3615,19:3720,20:3825,21:3930,22:4035,23:4140,24:4245,25:4350,26:4455},
+      6:  {3:2145,4:2250,5:2355,6:2460,7:2565,8:2670,9:2775,10:2880,11:2985,12:3090,13:3195,14:3300,15:3405,16:3510,17:3615,18:3720,19:3825,20:3930,21:4035,22:4140,23:4245,24:4350,25:4455,26:4560},
+      7:  {3:2250,4:2355,5:2460,6:2565,7:2670,8:2775,9:2880,10:2985,11:3090,12:3195,13:3300,14:3405,15:3510,16:3615,17:3720,18:3825,19:3930,20:4035,21:4140,22:4245,23:4350,24:4455,25:4560,26:4665},
+      8:  {3:2355,4:2460,5:2565,6:2670,7:2775,8:2880,9:2985,10:3090,11:3195,12:3300,13:3405,14:3510,15:3615,16:3720,17:3825,18:3930,19:4035,20:4140,21:4245,22:4350,23:4455,24:4560,25:4665,26:4770},
+      9:  {3:2460,4:2565,5:2670,6:2775,7:2880,8:2985,9:3090,10:3195,11:3300,12:3405,13:3510,14:3615,15:3720,16:3825,17:3930,18:4035,19:4140,20:4245,21:4350,22:4455,23:4560,24:4665,25:4770,26:4875},
+      10: {3:2565,4:2670,5:2775,6:2880,7:2985,8:3090,9:3195,10:3300,11:3405,12:3510,13:3615,14:3720,15:3825,16:3930,17:4035,18:4140,19:4245,20:4350,21:4455,22:4560,23:4665,24:4770,25:4875,26:4980},
+      11: {3:2670,4:2775,5:2880,6:2985,7:3090,8:3195,9:3300,10:3405,11:3510,12:3615,13:3720,14:3825,15:3930,16:4035,17:4140,18:4245,19:4350,20:4455,21:4560,22:4665,23:4770,24:4875,25:4980,26:5085},
+      12: {3:2775,4:2880,5:2985,6:3090,7:3195,8:3300,9:3405,10:3510,11:3615,12:3720,13:3825,14:3930,15:4035,16:4140,17:4245,18:4350,19:4455,20:4560,21:4665,22:4770,23:4875,24:4980,25:5085,26:5190},
+      13: {3:2880,4:2985,5:3090,6:3195,7:3300,8:3405,9:3510,10:3615,11:3720,12:3825,13:3930,14:4035,15:4140,16:4245,17:4350,18:4455,19:4560,20:4665,21:4770,22:4875,23:4980,24:5085,25:5190,26:5295},
+      14: {3:2985,4:3090,5:3195,6:3300,7:3405,8:3510,9:3615,10:3720,11:3825,12:3930,13:4035,14:4140,15:4245,16:4350,17:4455,18:4560,19:4665,20:4770,21:4875,22:4980,23:5085,24:5190,25:5295,26:5400},
+      15: {3:3090,4:3195,5:3300,6:3405,7:3510,8:3615,9:3720,10:3825,11:3930,12:4035,13:4140,14:4245,15:4350,16:4455,17:4560,18:4665,19:4770,20:4875,21:4980,22:5085,23:5190,24:5295,25:5400,26:5505},
+      16: {3:3195,4:3300,5:3405,6:3510,7:3615,8:3720,9:3825,10:3930,11:4035,12:4140,13:4245,14:4350,15:4455,16:4560,17:4665,18:4770,19:4875,20:4980,21:5085,22:5190,23:5295,24:5400,25:5505,26:5610},
+      17: {3:3300,4:3405,5:3510,6:3615,7:3720,8:3825,9:3930,10:4035,11:4140,12:4245,13:4350,14:4455,15:4560,16:4665,17:4770,18:4875,19:4980,20:5085,21:5190,22:5295,23:5400,24:5505,25:5610,26:5715},
+      18: {3:3405,4:3510,5:3615,6:3720,7:3825,8:3930,9:4035,10:4140,11:4245,12:4350,13:4455,14:4560,15:4665,16:4770,17:4875,18:4980,19:5085,20:5190,21:5295,22:5400,23:5505,24:5610,25:5715,26:5820}
+    }
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+// MPS PRICING LOGIC
+// All three MPS products use dimensionUnit="ft" (width in ft, height in ft)
+// The matrix keys are integers (feet), so we ceil() the decimal ft value.
+// Width  → column key (ft)
+// Height → row key    (ft)
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Convert a raw input value to a ceiling-rounded foot key.
+ * Accepts: plain feet number (e.g. "10"), or inches (e.g. "120").
+ * Values > 30 are treated as inches and divided by 12.
+ */
+function toFeetKey(value) {
+  const n = parseFloat(value);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  const feet = n > 30 ? n / 12 : n;
+  return Math.ceil(feet);
+}
+
+/**
+ * Look up the matrix price for an MPS opening.
+ * Returns { ok, price, message }
+ *
+ * Matrix layout for MPS (same as App.js "matrix" model, no dimensionUnit="in"):
+ *   rows    = height/projection key (ft)
+ *   columns = width key             (ft)
+ */
+function getMPSOpeningPrice(productName, widthRaw, heightRaw) {
+  const productData = MPS_PRICE_DATA[productName];
+  if (!productData) return { ok: false, price: 0, message: "Unknown MPS product." };
+
+  const widthKey  = toFeetKey(widthRaw);
+  const heightKey = toFeetKey(heightRaw);
+
+  if (!widthKey || !heightKey) {
+    return { ok: false, price: 0, message: "Enter valid width and height (feet or inches)." };
+  }
+
+  const price = productData.prices?.[heightKey]?.[widthKey] ?? null;
+  if (price == null) {
+    // Build helpful range hint
+    const rowKeys = Object.keys(productData.prices).map(Number).sort((a,b)=>a-b);
+    const colKeys = rowKeys.length > 0
+      ? Object.keys(productData.prices[rowKeys[0]]).map(Number).sort((a,b)=>a-b)
+      : [];
+    return {
+      ok: false,
+      price: 0,
+      message: `No price found for Width=${widthKey}ft × Height=${heightKey}ft. ` +
+               `Valid height range: ${rowKeys[0]}–${rowKeys[rowKeys.length-1]}ft, ` +
+               `Width range: ${colKeys[0]}–${colKeys[colKeys.length-1]}ft.`
+    };
+  }
+
+  return {
+    ok: true,
+    price: Number(price),
+    message: `Matrix price: ${fmt(price)} (Width=${widthKey}ft × Height=${heightKey}ft)`
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
 // STANDARD (non-MPS) PRODUCT ADD-ONS
 // ─────────────────────────────────────────────────────────────
 const PRODUCT_ADDONS = {
@@ -135,8 +255,6 @@ function getAddonsForProduct(productName) {
   return PRODUCT_ADDONS[productName] || PRODUCT_ADDONS["default"];
 }
 
-// Field-based add-ons: price is calculated from a user-entered quantity
-// pricingType: "per_lf" (linear feet) or "per_unit" (count)
 const PRODUCT_FIELD_ADDONS = {
   "Motorized Louvered Roof Pergolas": [
     { id:"led_strip",       name:"Built-in LED Strip Lights (dimmable)", pricingType:"per_lf",   rate:60,   unit:"linear feet", unitShort:"LF", placeholder:"e.g. 20" },
@@ -145,10 +263,7 @@ const PRODUCT_FIELD_ADDONS = {
     { id:"utility_beam",    name:"Utility Beam",                         pricingType:"per_unit", rate:1000, unit:"units",        unitShort:"ea", placeholder:"e.g. 1"  },
     { id:"cement_footings", name:'24" x 24" Cement Footings',            pricingType:"per_unit", rate:1000, unit:"units",        unitShort:"ea", placeholder:"e.g. 4"  },
   ],
-
-  // ── Clearview Screen Doors & Oversized Doors shared addons ──
   "Clearview Retractable Screen Doors": [
-    // UPGRADES (per door unless noted)
     { id:"pet_solar_mesh",       name:"Pet or Solar Mesh (per door, 42\" max)",          pricingType:"per_unit", rate:95,   unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
     { id:"ext_pin_lock_short",   name:"External Pin Lock Short",                         pricingType:"per_unit", rate:45,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
     { id:"ext_pin_lock_long",    name:"External Pin Lock Long",                          pricingType:"per_unit", rate:65,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
@@ -164,21 +279,18 @@ const PRODUCT_FIELD_ADDONS = {
     { id:"custom_wood_double",   name:"Custom Wood Grain Double",                        pricingType:"per_unit", rate:1800, unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
     { id:"custom_threshold",     name:"Custom Threshold Cuts ($150–$300)",               pricingType:"custom",   rate:0,    unit:"units",  unitShort:"ea",  placeholder:"Enter price", group:"Upgrades" },
     { id:"buildout_stationary",  name:"Build Out on Stationary Door ($100–$200)",        pricingType:"custom",   rate:0,    unit:"units",  unitShort:"ea",  placeholder:"Enter price", group:"Upgrades" },
-    // RESCREENS (per door)
     { id:"rescreen_std",         name:"Standard Mesh (48\" max)",                       pricingType:"per_unit", rate:225,  unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Rescreens" },
     { id:"rescreen_solar_pet",   name:"Solar/Pet Mesh (42\" max)",                      pricingType:"per_unit", rate:275,  unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Rescreens" },
     { id:"rescreen_single_dbl",  name:"Single Over Double (68\" max)",                  pricingType:"per_unit", rate:250,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Rescreens" },
     { id:"rescreen_phantom",     name:"Phantom / Eclipse / Mirage / Wizard / Aira",     pricingType:"per_unit", rate:275,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Rescreens" },
     { id:"rescreen_stowaway",    name:"Stowaway (Stowaway Mesh)",                        pricingType:"per_unit", rate:275,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Rescreens" },
     { id:"rescreen_casper",      name:"Casper / Genius / Brisa / ODL",                  pricingType:"custom",   rate:0,    unit:"units",  unitShort:"ea",  placeholder:"Cannot rescreen", group:"Rescreens" },
-    // SERVICE CALLS (after 90-day)
     { id:"service_call",         name:"Service Call",                                    pricingType:"per_unit", rate:99,   unit:"calls",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
     { id:"service_extra_door",   name:"Service Extra Doors (per door)",                  pricingType:"per_unit", rate:45,   unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
     { id:"uninstall_single",     name:"Uninstall Single Door",                           pricingType:"per_unit", rate:175,  unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
     { id:"uninstall_double",     name:"Uninstall Double Door",                           pricingType:"per_unit", rate:300,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
     { id:"reinstall_single",     name:"Reinstall Single Door",                           pricingType:"per_unit", rate:175,  unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
     { id:"reinstall_double",     name:"Reinstall Double Door",                           pricingType:"per_unit", rate:300,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
-    // PARTS (additional charges to service fee)
     { id:"part_housing",         name:"Housing",                                         pricingType:"per_unit", rate:125,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
     { id:"part_pull_bar",        name:"Pull Bar",                                        pricingType:"per_unit", rate:105,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
     { id:"part_roller_tube",     name:"Roller Tube",                                     pricingType:"per_unit", rate:50,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
@@ -198,7 +310,6 @@ const PRODUCT_FIELD_ADDONS = {
     { id:"part_gold_deco_d",     name:"Gold Extra Parts Deco / Sq Sill etc (double)",    pricingType:"per_unit", rate:140,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
   ],
   "Clearview Oversized Doors": [
-    // UPGRADES
     { id:"pet_solar_mesh",       name:"Pet or Solar Mesh (per door, 42\" max)",          pricingType:"per_unit", rate:95,   unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
     { id:"ext_pin_lock_short",   name:"External Pin Lock Short",                         pricingType:"per_unit", rate:45,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
     { id:"ext_pin_lock_long",    name:"External Pin Lock Long",                          pricingType:"per_unit", rate:65,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
@@ -214,21 +325,18 @@ const PRODUCT_FIELD_ADDONS = {
     { id:"custom_wood_double",   name:"Custom Wood Grain Double",                        pricingType:"per_unit", rate:1800, unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
     { id:"custom_threshold",     name:"Custom Threshold Cuts ($150–$300)",               pricingType:"custom",   rate:0,    unit:"units",  unitShort:"ea",  placeholder:"Enter price", group:"Upgrades" },
     { id:"buildout_stationary",  name:"Build Out on Stationary Door ($100–$200)",        pricingType:"custom",   rate:0,    unit:"units",  unitShort:"ea",  placeholder:"Enter price", group:"Upgrades" },
-    // RESCREENS
     { id:"rescreen_std",         name:"Standard Mesh (48\" max)",                       pricingType:"per_unit", rate:225,  unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Rescreens" },
     { id:"rescreen_solar_pet",   name:"Solar/Pet Mesh (42\" max)",                      pricingType:"per_unit", rate:275,  unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Rescreens" },
     { id:"rescreen_single_dbl",  name:"Single Over Double (68\" max)",                  pricingType:"per_unit", rate:250,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Rescreens" },
     { id:"rescreen_phantom",     name:"Phantom / Eclipse / Mirage / Wizard / Aira",     pricingType:"per_unit", rate:275,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Rescreens" },
     { id:"rescreen_stowaway",    name:"Stowaway (Stowaway Mesh)",                        pricingType:"per_unit", rate:275,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Rescreens" },
     { id:"rescreen_casper",      name:"Casper / Genius / Brisa / ODL",                  pricingType:"custom",   rate:0,    unit:"units",  unitShort:"ea",  placeholder:"Cannot rescreen", group:"Rescreens" },
-    // SERVICE CALLS
     { id:"service_call",         name:"Service Call",                                    pricingType:"per_unit", rate:99,   unit:"calls",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
     { id:"service_extra_door",   name:"Service Extra Doors (per door)",                  pricingType:"per_unit", rate:45,   unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
     { id:"uninstall_single",     name:"Uninstall Single Door",                           pricingType:"per_unit", rate:175,  unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
     { id:"uninstall_double",     name:"Uninstall Double Door",                           pricingType:"per_unit", rate:300,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
     { id:"reinstall_single",     name:"Reinstall Single Door",                           pricingType:"per_unit", rate:175,  unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
     { id:"reinstall_double",     name:"Reinstall Double Door",                           pricingType:"per_unit", rate:300,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
-    // PARTS
     { id:"part_housing",         name:"Housing",                                         pricingType:"per_unit", rate:125,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
     { id:"part_pull_bar",        name:"Pull Bar",                                        pricingType:"per_unit", rate:105,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
     { id:"part_roller_tube",     name:"Roller Tube",                                     pricingType:"per_unit", rate:50,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
@@ -247,10 +355,7 @@ const PRODUCT_FIELD_ADDONS = {
     { id:"part_gold_deco_s",     name:"Gold Extra Parts Deco / Sq Sill etc (single)",    pricingType:"per_unit", rate:70,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
     { id:"part_gold_deco_d",     name:"Gold Extra Parts Deco / Sq Sill etc (double)",    pricingType:"per_unit", rate:140,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
   ],
-
-  // ── Motor B Retractable Awning ──────────────────────────
   "Motor B Retractable Awning": [
-    // SOMFY RTS
     { id:"somfy_1ch_tx",        name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_5ch_tx",        name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_1ch_patio",     name:"1 Channel Patio Transmitter",         pricingType:"per_unit", rate:200, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
@@ -260,16 +365,12 @@ const PRODUCT_FIELD_ADDONS = {
     { id:"somfy_wind_sensor",   name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_sun_wind",      name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_16ch_telis",    name:"16 Channel Telis RTS",                pricingType:"per_unit", rate:500, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    // POWER CABLE OPTIONS
     { id:"power_cord_24ft",     name:"24\u2019 Motor Power Cord (upgrade)", pricingType:"per_unit", rate:80,  unit:"units", unitShort:"ea", placeholder:"1", group:"Power Cable Options" },
-    // ROOF MOUNT BRACKETS (Brown Only)
     { id:"bracket_12in",        name:"Roof Mount Bracket 12\u2033 Tall",   pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
     { id:"bracket_16in",        name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
     { id:"bracket_24in",        name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
   ],
-
   "Motor A Open Roll Retractable Awning": [
-    // SOMFY RTS
     { id:"somfy_1ch_tx",        name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_5ch_tx",        name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_1ch_patio",     name:"1 Channel Patio Transmitter",         pricingType:"per_unit", rate:200, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
@@ -279,16 +380,12 @@ const PRODUCT_FIELD_ADDONS = {
     { id:"somfy_wind_sensor",   name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_sun_wind",      name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_16ch_telis",    name:"16 Channel Telis RTS",                pricingType:"per_unit", rate:500, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    // POWER CABLE OPTIONS
     { id:"power_cord_24ft",     name:"24\u2019 Motor Power Cord (upgrade)", pricingType:"per_unit", rate:80,  unit:"units", unitShort:"ea", placeholder:"1", group:"Power Cable Options" },
-    // ROOF MOUNT BRACKETS (Brown Only)
     { id:"bracket_12in",        name:"Roof Mount Bracket 12\u2033 Tall",   pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
     { id:"bracket_16in",        name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
     { id:"bracket_24in",        name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
   ],
-
   "Motor B Open Roll Retractable Awning": [
-    // SOMFY RTS
     { id:"somfy_1ch_tx",        name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_5ch_tx",        name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_1ch_patio",     name:"1 Channel Patio Transmitter",         pricingType:"per_unit", rate:200, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
@@ -298,16 +395,12 @@ const PRODUCT_FIELD_ADDONS = {
     { id:"somfy_wind_sensor",   name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_sun_wind",      name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_16ch_telis",    name:"16 Channel Telis RTS",                pricingType:"per_unit", rate:500, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    // POWER CABLE OPTIONS
     { id:"power_cord_24ft",     name:"24\u2019 Motor Power Cord (upgrade)", pricingType:"per_unit", rate:80,  unit:"units", unitShort:"ea", placeholder:"1", group:"Power Cable Options" },
-    // ROOF MOUNT BRACKETS (Brown Only)
     { id:"bracket_12in",        name:"Roof Mount Bracket 12\u2033 Tall",   pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
     { id:"bracket_16in",        name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
     { id:"bracket_24in",        name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
   ],
-
   "Motor A QIP-Square box Retractable Awning": [
-    // SOMFY RTS
     { id:"somfy_1ch_tx",        name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_5ch_tx",        name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_1ch_patio",     name:"1 Channel Patio Transmitter",         pricingType:"per_unit", rate:200, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
@@ -317,16 +410,12 @@ const PRODUCT_FIELD_ADDONS = {
     { id:"somfy_wind_sensor",   name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_sun_wind",      name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_16ch_telis",    name:"16 Channel Telis RTS",                pricingType:"per_unit", rate:500, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    // POWER CABLE OPTIONS
     { id:"power_cord_24ft",     name:"24\u2019 Motor Power Cord (upgrade)", pricingType:"per_unit", rate:80,  unit:"units", unitShort:"ea", placeholder:"1", group:"Power Cable Options" },
-    // ROOF MOUNT BRACKETS (Brown Only)
     { id:"bracket_12in",        name:"Roof Mount Bracket 12\u2033 Tall",   pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
     { id:"bracket_16in",        name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
     { id:"bracket_24in",        name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
   ],
-
   "Motor B QIP-Square box Retractable Awning": [
-    // SOMFY RTS
     { id:"somfy_1ch_tx",        name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_5ch_tx",        name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_1ch_patio",     name:"1 Channel Patio Transmitter",         pricingType:"per_unit", rate:200, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
@@ -336,9 +425,7 @@ const PRODUCT_FIELD_ADDONS = {
     { id:"somfy_wind_sensor",   name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_sun_wind",      name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_16ch_telis",    name:"16 Channel Telis RTS",                pricingType:"per_unit", rate:500, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    // POWER CABLE OPTIONS
     { id:"power_cord_24ft",     name:"24\u2019 Motor Power Cord (upgrade)", pricingType:"per_unit", rate:80,  unit:"units", unitShort:"ea", placeholder:"1", group:"Power Cable Options" },
-    // ROOF MOUNT BRACKETS (Brown Only)
     { id:"bracket_12in",        name:"Roof Mount Bracket 12\u2033 Tall",   pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
     { id:"bracket_16in",        name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
     { id:"bracket_24in",        name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
@@ -355,7 +442,6 @@ function calcFieldAddonTotal(lineFieldValues, productName) {
     const val = lineFieldValues?.[def.id];
     if (!val?.enabled) return sum;
     if (def.pricingType === "custom") {
-      // user enters a custom dollar amount directly
       return sum + (parseFloat(val.customPrice) || 0);
     }
     const q = parseFloat(val.qty) || 0;
@@ -376,7 +462,6 @@ function createOpening(areaDefaults = {}) {
     width:        "",
     height:       "",
     motorSide:    areaDefaults.motorSide    || "Left",
-    // structural
     lChannelRequired: false,
     lChannelLoc:  "Left",
     lChannelSize: "1×1",
@@ -387,13 +472,11 @@ function createOpening(areaDefaults = {}) {
     buildoutDims: "",
     buildoutLF:   "",
     buildoutPrice:"",
-    // overrides (if user wants to differ from area)
     mountOverride:  "",
     trackOverride:  "",
     fabricOverride: "",
     colorOverride:  "",
     motorOverride:  "",
-    // photos (stored as object URL for display)
     openingPhoto:    null,
     lChannelPhoto:   null,
     buildoutPhoto:   null,
@@ -433,7 +516,33 @@ function calcOpeningStructural(opening) {
   return total;
 }
 
-function calcAreaTotal(area) {
+/**
+ * Returns the matrix price for a single opening (or 0 if dims not set).
+ */
+function calcOpeningBasePrice(opening, productName) {
+  if (!opening.width || !opening.height) return 0;
+  const result = getMPSOpeningPrice(productName, opening.width, opening.height);
+  return result.ok ? result.price : 0;
+}
+
+/**
+ * Returns the sum of all opening base prices across all areas for an MPS line.
+ */
+function calcMPSOpeningsTotal(areas, productName) {
+  return areas.reduce((areaSum, area) =>
+    areaSum + area.openings.reduce((opSum, opening) =>
+      opSum + calcOpeningBasePrice(opening, productName), 0
+    ), 0
+  );
+}
+
+function calcAreaTotal(area, productName) {
+  return area.openings.reduce((sum, o) => {
+    return sum + calcOpeningStructural(o) + (productName ? calcOpeningBasePrice(o, productName) : 0);
+  }, 0);
+}
+
+function calcAreaStructuralOnly(area) {
   return area.openings.reduce((sum, o) => sum + calcOpeningStructural(o), 0);
 }
 
@@ -455,15 +564,13 @@ function PhotoUpload({ label, value, onChange }) {
         {value ? "📷 Change Photo" : `📷 ${label}`}
       </button>
       {value && <span className="photo-uploaded">✓ Uploaded</span>}
-      {value && (
-        <img src={value} alt="preview" className="photo-thumb" />
-      )}
+      {value && <img src={value} alt="preview" className="photo-thumb" />}
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────
-// SELECT HELPER
+// SELECT / FIELD / TOGGLE HELPERS
 // ─────────────────────────────────────────────────────────────
 function Sel({ label, value, options, onChange, placeholder, required }) {
   return (
@@ -511,10 +618,40 @@ function Toggle({ label, checked, onChange }) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// OPENING PRICE BADGE  – shows live matrix lookup result
+// ─────────────────────────────────────────────────────────────
+function OpeningPriceBadge({ opening, productName }) {
+  const { width, height } = opening;
+  if (!width && !height) return null;
+
+  const result = getMPSOpeningPrice(productName, width, height);
+
+  if (!result.ok) {
+    return (
+      <div className="opening-price-badge opening-price-badge--error" title={result.message}>
+        ⚠ {result.message}
+      </div>
+    );
+  }
+
+  return (
+    <div className="opening-price-badge opening-price-badge--ok">
+      <span className="opening-price-badge__label">Opening price:</span>
+      <span className="opening-price-badge__value">{fmt(result.price)}</span>
+      <span className="opening-price-badge__hint">
+        (W={toFeetKey(width)}ft × H={toFeetKey(height)}ft)
+      </span>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
 // OPENING EDITOR
 // ─────────────────────────────────────────────────────────────
-function OpeningEditor({ opening, index, areaDefaults, onChange, onRemove, showRemove }) {
-  const structural = calcOpeningStructural(opening);
+function OpeningEditor({ opening, index, areaDefaults, productName, onChange, onRemove, showRemove }) {
+  const structural   = calcOpeningStructural(opening);
+  const openingPrice = calcOpeningBasePrice(opening, productName);
+  const openingTotal = openingPrice + structural;
 
   const set = (field, val) => onChange({ ...opening, [field]: val });
 
@@ -546,20 +683,20 @@ function OpeningEditor({ opening, index, areaDefaults, onChange, onRemove, showR
       {/* ── Dimensions + Motor Side ── */}
       <div className="opening-grid-3">
         <Field
-          label="Width"
+          label="Width (ft or inches)"
           type="number"
           value={opening.width}
           onChange={v => set("width", v)}
-          placeholder='e.g. 120"'
+          placeholder='e.g. 10 (ft) or 120 (in)'
           min="0"
           required
         />
         <Field
-          label="Height"
+          label="Height (ft or inches)"
           type="number"
           value={opening.height}
           onChange={v => set("height", v)}
-          placeholder='e.g. 84"'
+          placeholder='e.g. 8 (ft) or 96 (in)'
           min="0"
           required
         />
@@ -571,6 +708,9 @@ function OpeningEditor({ opening, index, areaDefaults, onChange, onRemove, showR
           required
         />
       </div>
+
+      {/* ── Live price lookup ── */}
+      <OpeningPriceBadge opening={opening} productName={productName} />
 
       {/* ── Per-opening overrides ── */}
       <details className="override-details">
@@ -684,10 +824,16 @@ function OpeningEditor({ opening, index, areaDefaults, onChange, onRemove, showR
         />
       </div>
 
-      {/* ── Per-opening total ── */}
-      {structural > 0 && (
+      {/* ── Per-opening total (price + structural) ── */}
+      {openingTotal > 0 && (
         <div className="opening-total">
-          Structural Adjustments Total: <strong>{fmt(structural)}</strong>
+          {openingPrice > 0 && structural > 0 ? (
+            <>Opening Total: <strong>{fmt(openingTotal)}</strong> ({fmt(openingPrice)} product + {fmt(structural)} structural)</>
+          ) : openingPrice > 0 ? (
+            <>Opening Total: <strong>{fmt(openingPrice)}</strong></>
+          ) : (
+            <>Structural Adjustments: <strong>{fmt(structural)}</strong></>
+          )}
         </div>
       )}
     </div>
@@ -695,10 +841,12 @@ function OpeningEditor({ opening, index, areaDefaults, onChange, onRemove, showR
 }
 
 // ─────────────────────────────────────────────────────────────
-// AREA EDITOR  (one MPS product line = one or more areas)
+// AREA EDITOR
 // ─────────────────────────────────────────────────────────────
-function AreaEditor({ area, areaIndex, onChange, onRemove, showRemove }) {
-  const areaTotal = calcAreaTotal(area);
+function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemove }) {
+  const areaBaseTotal       = area.openings.reduce((s,o) => s + calcOpeningBasePrice(o, productName), 0);
+  const areaStructuralTotal = calcAreaStructuralOnly(area);
+  const areaGrandTotal      = areaBaseTotal + areaStructuralTotal;
 
   const setArea = (field, val) => onChange({ ...area, [field]: val });
 
@@ -712,9 +860,7 @@ function AreaEditor({ area, areaIndex, onChange, onRemove, showRemove }) {
   const addOpening = () => {
     onChange({
       ...area,
-      openings: [...area.openings, createOpening({
-        motorSide: "Left",
-      })],
+      openings: [...area.openings, createOpening({ motorSide: "Left" })],
     });
   };
 
@@ -724,7 +870,6 @@ function AreaEditor({ area, areaIndex, onChange, onRemove, showRemove }) {
 
   return (
     <div className="area-card">
-      {/* ── Area header ── */}
       <div className="area-header">
         <div className="area-header-left">
           <div className="area-badge">Area {areaIndex + 1}</div>
@@ -736,7 +881,16 @@ function AreaEditor({ area, areaIndex, onChange, onRemove, showRemove }) {
           />
         </div>
         <div className="area-header-right">
-          {areaTotal > 0 && <div className="area-structural-total">+{fmt(areaTotal)} structural</div>}
+          {areaGrandTotal > 0 && (
+            <div className="area-structural-total">
+              {areaBaseTotal > 0 && areaStructuralTotal > 0
+                ? `${fmt(areaGrandTotal)} total (${fmt(areaBaseTotal)} product + ${fmt(areaStructuralTotal)} structural)`
+                : areaBaseTotal > 0
+                  ? `${fmt(areaBaseTotal)} product`
+                  : `+${fmt(areaStructuralTotal)} structural`
+              }
+            </div>
+          )}
           {showRemove && (
             <button type="button" className="area-remove" onClick={onRemove}>Remove Area</button>
           )}
@@ -767,6 +921,9 @@ function AreaEditor({ area, areaIndex, onChange, onRemove, showRemove }) {
         <div className="openings-heading">
           <span>Openings</span>
           <span className="openings-count">{area.openings.length}</span>
+          {areaBaseTotal > 0 && (
+            <span className="openings-price-total">= {fmt(areaBaseTotal)} product price</span>
+          )}
         </div>
 
         {area.openings.map((opening, idx) => (
@@ -775,6 +932,7 @@ function AreaEditor({ area, areaIndex, onChange, onRemove, showRemove }) {
             opening={opening}
             index={idx}
             areaDefaults={area}
+            productName={productName}
             onChange={updated => setOpening(opening.id, updated)}
             onRemove={() => removeOpening(opening.id)}
             showRemove={area.openings.length > 1}
@@ -790,32 +948,35 @@ function AreaEditor({ area, areaIndex, onChange, onRemove, showRemove }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// MPS PRODUCT CARD  (wraps area editor + per-area totals)
+// MPS PRODUCT CARD
 // ─────────────────────────────────────────────────────────────
 function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSelections, onAddonToggle }) {
-  const enriched  = snapshot.productLines.find(l => l.id === line.id);
-  const baseTotal = enriched?.pricing?.lineSubtotal || 0;
-  const qty       = parseInt(line.quantity, 10) || 1;
-
+  const qty  = parseInt(line.quantity, 10) || 1;
   const areas = mpsData[line.id] || [];
 
   const setAreas = (newAreas) => onMPSChange(line.id, newAreas);
+  const addArea  = () => setAreas([...areas, createArea()]);
+  const updateArea   = (areaId, updated) => setAreas(areas.map(a => a.id === areaId ? updated : a));
+  const removeArea   = (areaId)          => setAreas(areas.filter(a => a.id !== areaId));
 
-  const addArea = () => setAreas([...areas, createArea()]);
-
-  const updateArea = (areaId, updated) =>
-    setAreas(areas.map(a => a.id === areaId ? updated : a));
-
-  const removeArea = (areaId) =>
-    setAreas(areas.filter(a => a.id !== areaId));
-
-  const structuralTotal = areas.reduce((sum, a) => sum + calcAreaTotal(a), 0);
+  // ── Opening-based product price (replaces the App.js base price for MPS) ──
+  const openingsProductTotal = calcMPSOpeningsTotal(areas, line.product);
+  const structuralTotal      = areas.reduce((s,a) => s + calcAreaStructuralOnly(a), 0);
 
   const selected = addonSelections[line.id] || {};
   const simpleAddonTotal = MPS_SIMPLE_ADDONS.reduce((sum, addon) =>
     selected[addon.id] ? sum + addon.price * qty : sum, 0);
 
-  const grandLineTotal  = baseTotal + structuralTotal + simpleAddonTotal;
+  // If no openings have been priced yet, fall back to the App.js line subtotal
+  const enriched     = snapshot.productLines.find(l => l.id === line.id);
+  const appBaseTotal = enriched?.pricing?.lineSubtotal || 0;
+  const effectiveProductTotal = openingsProductTotal > 0 ? openingsProductTotal : appBaseTotal;
+
+  const grandLineTotal = effectiveProductTotal + structuralTotal + simpleAddonTotal;
+
+  const hasUnpricedOpenings = areas.some(a =>
+    a.openings.some(o => (o.width || o.height) && !getMPSOpeningPrice(line.product, o.width, o.height).ok)
+  );
 
   return (
     <div className="ps-product-card mps-product-card">
@@ -829,10 +990,10 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
       {/* ── Base details ── */}
       <div className="ps-detail-grid">
         {[
-          { label:"Category",      value: line.category },
-          { label:"Base Size",     value: `${line.width||"—"} × ${line.height||"—"}` },
-          { label:"Quantity",      value: line.quantity },
-          { label:"Operation",     value: line.operation, capitalize: true },
+          { label:"Category",    value: line.category },
+          { label:"Base Size",   value: `${line.width||"—"} × ${line.height||"—"}` },
+          { label:"Quantity",    value: line.quantity },
+          { label:"Operation",   value: line.operation, capitalize: true },
         ].map(({ label, value, capitalize }) => (
           <div className="ps-detail-item" key={label}>
             <span className="ps-detail-label">{label}</span>
@@ -841,8 +1002,17 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
         ))}
       </div>
 
+      {/* Show the App.js price note as a reference */}
       {enriched?.pricing?.priceNote && (
-        <div className="ps-price-note">💡 {enriched.pricing.priceNote}</div>
+        <div className="ps-price-note">
+          💡 Reference (from intake form): {enriched.pricing.priceNote}
+        </div>
+      )}
+
+      {hasUnpricedOpenings && (
+        <div className="ps-price-note ps-price-note--warn">
+          ⚠ Some openings have dimensions that don't match the price matrix. Check width/height values.
+        </div>
       )}
 
       {/* ── MPS Area/Opening builder ── */}
@@ -850,18 +1020,28 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
         <div className="mps-builder-header">
           <div className="mps-builder-title">
             <span className="mps-builder-icon">🗂</span>
-            Area & Opening Configuration
+            Area &amp; Opening Configuration
+            <span className="mps-builder-hint">
+              — Enter width &amp; height per opening to auto-price from matrix
+            </span>
           </div>
-          {structuralTotal > 0 && (
-            <div className="mps-structural-total">
-              Structural Add-ons: <strong>{fmt(structuralTotal)}</strong>
-            </div>
-          )}
+          <div className="mps-totals-row">
+            {openingsProductTotal > 0 && (
+              <div className="mps-structural-total mps-product-from-openings">
+                Openings product total: <strong>{fmt(openingsProductTotal)}</strong>
+              </div>
+            )}
+            {structuralTotal > 0 && (
+              <div className="mps-structural-total">
+                Structural: <strong>{fmt(structuralTotal)}</strong>
+              </div>
+            )}
+          </div>
         </div>
 
         {areas.length === 0 ? (
           <div className="mps-empty-state">
-            <p>No areas configured yet. Add an area to specify openings, structural adjustments, and product details.</p>
+            <p>No areas configured yet. Add an area to specify openings with dimensions — pricing will be calculated automatically from the product matrix.</p>
           </div>
         ) : (
           areas.map((area, idx) => (
@@ -869,6 +1049,7 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
               key={area.id}
               area={area}
               areaIndex={idx}
+              productName={line.product}
               onChange={updated => updateArea(area.id, updated)}
               onRemove={() => removeArea(area.id)}
               showRemove={areas.length > 1}
@@ -915,19 +1096,22 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
         </div>
       </div>
 
-      {/* ── Line total ── */}
+      {/* ── Line total breakdown ── */}
       <div className="mps-line-total">
-        <span>Base Price: {fmt(baseTotal)}</span>
+        {openingsProductTotal > 0
+          ? <span>Openings Price: {fmt(openingsProductTotal)}</span>
+          : <span>Base Price (from form): {fmt(appBaseTotal)}</span>
+        }
         {simpleAddonTotal > 0 && <span>+ Add-ons: {fmt(simpleAddonTotal)}</span>}
-        {structuralTotal > 0 && <span>+ Structural: {fmt(structuralTotal)}</span>}
+        {structuralTotal  > 0 && <span>+ Structural: {fmt(structuralTotal)}</span>}
         <span className="mps-line-grand">Line Total: {fmt(grandLineTotal)}</span>
       </div>
     </div>
   );
 }
 
-
-// STANDARD PRODUCT CARD  (unchanged logic, existing style)
+// ─────────────────────────────────────────────────────────────
+// STANDARD PRODUCT CARD  (unchanged)
 // ─────────────────────────────────────────────────────────────
 function StandardProductCard({ line, index, snapshot, addonSelections, onAddonToggle, fieldAddonValues, onFieldAddonChange }) {
   const enriched  = snapshot.productLines.find(l => l.id === line.id);
@@ -976,41 +1160,40 @@ function StandardProductCard({ line, index, snapshot, addonSelections, onAddonTo
       {priceNote && <div className="ps-price-note">💡 {priceNote}</div>}
 
       {availableAddons.length > 0 && (
-      <div className="ps-addons-section">
-        <div className="ps-addons-title">
-          <span className="ps-addons-icon">✦</span>
-          Available Add-ons
-          {summaryAddonTotal > 0 && (
-            <span className="ps-addons-running-total">+{fmt(summaryAddonTotal)} selected</span>
-          )}
+        <div className="ps-addons-section">
+          <div className="ps-addons-title">
+            <span className="ps-addons-icon">✦</span>
+            Available Add-ons
+            {summaryAddonTotal > 0 && (
+              <span className="ps-addons-running-total">+{fmt(summaryAddonTotal)} selected</span>
+            )}
+          </div>
+          <div className="ps-addons-grid">
+            {availableAddons.map(addon => {
+              const isChecked = !!selected[addon.id];
+              return (
+                <label key={addon.id} className={`ps-addon-item ${isChecked?"ps-addon-checked":""}`}>
+                  <input
+                    type="checkbox"
+                    className="ps-addon-checkbox"
+                    checked={isChecked}
+                    onChange={() => onAddonToggle(line.id, addon.id)}
+                  />
+                  <div className="ps-addon-content">
+                    <span className="ps-addon-name">{addon.name}</span>
+                    <span className="ps-addon-price">
+                      +{fmt(addon.price)}
+                      {qty > 1 && <span className="ps-addon-per-unit"> × {qty} = {fmt(addon.price*qty)}</span>}
+                    </span>
+                  </div>
+                  {isChecked && <span className="ps-addon-check-mark">✓</span>}
+                </label>
+              );
+            })}
+          </div>
         </div>
-        <div className="ps-addons-grid">
-          {availableAddons.map(addon => {
-            const isChecked = !!selected[addon.id];
-            return (
-              <label key={addon.id} className={`ps-addon-item ${isChecked?"ps-addon-checked":""}`}>
-                <input
-                  type="checkbox"
-                  className="ps-addon-checkbox"
-                  checked={isChecked}
-                  onChange={() => onAddonToggle(line.id, addon.id)}
-                />
-                <div className="ps-addon-content">
-                  <span className="ps-addon-name">{addon.name}</span>
-                  <span className="ps-addon-price">
-                    +{fmt(addon.price)}
-                    {qty > 1 && <span className="ps-addon-per-unit"> × {qty} = {fmt(addon.price*qty)}</span>}
-                  </span>
-                </div>
-                {isChecked && <span className="ps-addon-check-mark">✓</span>}
-              </label>
-            );
-          })}
-        </div>
-      </div>
       )}
 
-      {/* Field-based add-ons (e.g. per LF or per unit) */}
       {fieldAddonDefs.length > 0 && (
         <div className="ps-addons-section field-addons-section">
           <div className="ps-addons-title">
@@ -1022,15 +1205,6 @@ function StandardProductCard({ line, index, snapshot, addonSelections, onAddonTo
           </div>
           <div className="field-addons-grid">
             {(() => {
-              // Group addons by their group label
-              const groups = [];
-              const seen = {};
-              fieldAddonDefs.forEach(def => {
-                const g = def.group || "Add-ons";
-                if (!seen[g]) { seen[g] = true; groups.push({ label: g, items: [] }); }
-                groups[groups.length - 1].items.push(def);
-              });
-              // Fix: group items correctly
               const groupMap = {};
               fieldAddonDefs.forEach(def => {
                 const g = def.group || "Add-ons";
@@ -1126,13 +1300,8 @@ export default function ProductSummary() {
   const navigate = useNavigate();
   const snapshot = location.state?.snapshot;
 
-  // Standard add-on selections: { [lineId]: { [addonId]: boolean } }
   const [addonSelections, setAddonSelections] = useState({});
-
-  // MPS area data: { [lineId]: Area[] }
   const [mpsData, setMpsData] = useState({});
-
-  // Field addon values: { [lineId]: { [addonId]: { enabled: bool, qty: string } } }
   const [fieldAddonValues, setFieldAddonValues] = useState({});
 
   const handleFieldAddonChange = (lineId, addonId, val) => {
@@ -1153,37 +1322,71 @@ export default function ProductSummary() {
     setMpsData(prev => ({ ...prev, [lineId]: areas }));
   };
 
-  // ── Grand total calculation ──────────────────────────────
-  const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand } = useMemo(() => {
-    if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0 };
+  // ── Grand total ─────────────────────────────────────────
+  const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand } = useMemo(() => {
+    if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0, mpsOpeningsProductGrand:0 };
 
     const configuredLines = snapshot.productLines.filter(l => l.category && l.product);
-    let addonGrand     = 0;
-    let structuralGrand= 0;
+    let addonGrand       = 0;
+    let structuralGrand  = 0;
+    let openingsGrand    = 0;  // total from per-opening pricing for MPS lines
+    let appBaseMPSGrand  = 0;  // App.js base price for MPS lines (used when no openings priced)
 
     configuredLines.forEach(line => {
       if (MPS_PRODUCTS.includes(line.product)) {
-        const areas = mpsData[line.id] || [];
-        structuralGrand += areas.reduce((s,a)=>s+calcAreaTotal(a),0);
-        // also count simple addons for MPS
-        const qty  = parseInt(line.quantity,10)||1;
-        const sel  = addonSelections[line.id]||{};
+        const areas         = mpsData[line.id] || [];
+        const openingsTotal = calcMPSOpeningsTotal(areas, line.product);
+        structuralGrand    += areas.reduce((s,a) => s + calcAreaStructuralOnly(a), 0);
+        const qty           = parseInt(line.quantity,10)||1;
+        const sel           = addonSelections[line.id]||{};
         MPS_SIMPLE_ADDONS.forEach(a => { if(sel[a.id]) addonGrand += a.price*qty; });
+
+        if (openingsTotal > 0) {
+          openingsGrand += openingsTotal;
+        } else {
+          // No openings priced yet — use the App.js base price
+          const enriched = snapshot.productLines.find(l2 => l2.id === line.id);
+          appBaseMPSGrand += enriched?.pricing?.lineSubtotal || 0;
+        }
       } else {
         const qty    = parseInt(line.quantity,10)||1;
         const addons = getAddonsForProduct(line.product);
         const sel    = addonSelections[line.id]||{};
         addons.forEach(a => { if(sel[a.id]) addonGrand += a.price*qty; });
-        // field-based addons (per LF / per unit)
         addonGrand += calcFieldAddonTotal(fieldAddonValues[line.id], line.product);
       }
     });
 
+    // Non-MPS base (from App.js)
+    const nonMPSBase = snapshot.productLines
+      .filter(l => l.category && l.product && !MPS_PRODUCTS.includes(l.product))
+      .reduce((s, l) => {
+        const enriched = snapshot.productLines.find(l2 => l2.id === l.id);
+        return s + (enriched?.pricing?.lineSubtotal || 0);
+      }, 0);
+
+    // Use pricingSummary.subtotal from snapshot as base for non-MPS,
+    // but replace MPS portions with opening-based pricing when available.
+    const mpsBase = openingsGrand + appBaseMPSGrand;
     const base = snapshot.pricingSummary?.subtotal || 0;
+
+    // Recalculate: non-MPS base + MPS opening-based prices + addons + structural
+    // We need the non-MPS part from the original subtotal
+    const nonMPSOriginal = (snapshot.pricingSummary?.subtotal || 0) -
+      snapshot.productLines
+        .filter(l => l.category && l.product && MPS_PRODUCTS.includes(l.product))
+        .reduce((s,l) => {
+          const e = snapshot.productLines.find(l2=>l2.id===l.id);
+          return s + (e?.pricing?.lineSubtotal||0);
+        }, 0);
+
+    const finalBase = nonMPSOriginal + mpsBase;
+
     return {
       summaryAddonGrandTotal: addonGrand,
       mpsStructuralGrand:     structuralGrand,
-      subtotalWithAddons:     base + addonGrand + structuralGrand,
+      mpsOpeningsProductGrand: openingsGrand,
+      subtotalWithAddons:     finalBase + addonGrand + structuralGrand,
     };
   }, [snapshot, addonSelections, mpsData, fieldAddonValues]);
 
@@ -1196,7 +1399,7 @@ export default function ProductSummary() {
       <div className="ps-page">
         <header className="ps-header">
           <div className="ps-header-glow" />
-          <div className="ps-header-content"><h1>Order Summary</h1><p>No order data found.</p></div>
+          <div className="ps-header-content"><h1>Product Add on's</h1><p>No order data found.</p></div>
         </header>
         <div className="ps-body">
           <button className="ps-btn ps-btn-back" onClick={()=>navigate("/")}>← Back to Form</button>
@@ -1213,8 +1416,8 @@ export default function ProductSummary() {
       <header className="ps-header">
         <div className="ps-header-glow" />
         <div className="ps-header-content">
-          <h1>Order Summary</h1>
-          <p>Review your order, configure areas & openings, and select add-ons</p>
+          <h1>Product Add on's</h1>
+          <p>Review your order, configure areas &amp; openings, and select add-ons</p>
         </div>
       </header>
 
@@ -1295,6 +1498,12 @@ export default function ProductSummary() {
               <span>Product Subtotal</span>
               <span>{fmt(snapshot.pricingSummary?.subtotal)}</span>
             </div>
+            {mpsOpeningsProductGrand > 0 && (
+              <div className="ps-pricing-row ps-addon-total-row">
+                <span>MPS Opening-Based Pricing (replaces base)</span>
+                <span className="ps-addon-highlight">{fmt(mpsOpeningsProductGrand)}</span>
+              </div>
+            )}
             {summaryAddonGrandTotal > 0 && (
               <div className="ps-pricing-row ps-addon-total-row">
                 <span>Selected Add-ons</span>
@@ -1341,13 +1550,7 @@ export default function ProductSummary() {
         {/* Actions */}
         <div className="ps-actions">
           <button className="ps-btn ps-btn-back" onClick={()=>navigate("/")}>← Back to Form</button>
-          <button className="ps-btn ps-btn-primary" onClick={()=>alert("📄 Generating proposal...")}>📄 Generate Proposal</button>
-          <button className="ps-btn ps-btn-secondary" onClick={()=>alert(`💳 Processing payment of ${fmt(grandTotal)}...`)}>💳 Collect Payment</button>
-          <button className="ps-btn ps-btn-outline" onClick={()=>{
-            const finalSnapshot={...snapshot, mpsAreas:mpsData, summaryAddons:addonSelections, finalTotal:grandTotal};
-            console.log("📤 GHL Export:",finalSnapshot);
-            alert("📤 Exported to GHL!");
-          }}>📤 Export to GHL</button>
+          <button className="ps-btn ps-btn-primary" onClick={()=>alert("submitting order...")}>Submit Order</button>
         </div>
       </div>
     </div>

@@ -268,6 +268,13 @@ const productCatalog = {
   ]
 };
 
+// ── MPS products that use per-opening pricing in ProductSummary ──
+const MPS_PRODUCTS = [
+  "Motorized Power Screen 5in Cassette",
+  "Motorized Power Screen 6in Cassette",
+  "Motorized Power Screen open roll",
+];
+
 const mountTypes = ['Inside Mount','Outside Mount','Ceiling Mount','Wall Mount'];
 const fabrics = ['Light Filtering','Room Darkening','Blackout','Sheer','Solar Screen','Canvas','Wood','Faux Wood'];
 const colorOptions = ['White','Ivory','Beige','Gray','Black','Brown','Custom'];
@@ -377,6 +384,8 @@ function getBasePriceUnified(line) {
 
 function calcLineTotal(line) {
   if (!line.category || !line.product) return 0;
+  // MPS products are priced per-opening in ProductSummary — no base price here
+  if (MPS_PRODUCTS.includes(line.product)) return 0;
   const base = getBasePriceUnified(line);
   if (!base.ok) return 0;
   let total = base.price * (parseInt(line.quantity, 10) || 1);
@@ -452,24 +461,28 @@ function SignaturePad({ canvasRef }) {
 // ============================================================
 function ProductLine({ line, lineNumber, onUpdate, onRemove, showRemove }) {
   const p = findProduct(line.product);
-  const baseResult = (line.category && line.product) ? getBasePriceUnified(line) : null;
-  const lineTotal = line.category && line.product ? calcLineTotal(line) : 0;
+  const isMPS = MPS_PRODUCTS.includes(line.product);
+
+  const baseResult = (line.category && line.product && !isMPS) ? getBasePriceUnified(line) : null;
+  const lineTotal  = line.category && line.product ? calcLineTotal(line) : 0;
 
   let badgeClass = '';
-  let badgeText = 'Not Configured';
+  let badgeText  = 'Not Configured';
   if (line.category && line.product) {
-    if (baseResult && baseResult.ok) { badgeClass = 'configured'; badgeText = 'Configured'; }
-    else { badgeClass = 'invalid'; badgeText = 'Invalid Size'; }
+    if (isMPS) {
+      badgeClass = 'configured';
+      badgeText  = 'Configured (priced per opening)';
+    } else if (baseResult && baseResult.ok) {
+      badgeClass = 'configured';
+      badgeText  = 'Configured';
+    } else {
+      badgeClass = 'invalid';
+      badgeText  = 'Invalid Size';
+    }
   }
 
-  const widthLabel = p?.pricingModel === 'matrix_axes' ? 'Width (ft)' : p?.dimensionUnit === 'in' ? 'Width (inches)' : 'Width';
+  const widthLabel  = p?.pricingModel === 'matrix_axes' ? 'Width (ft)' : p?.dimensionUnit === 'in' ? 'Width (inches)' : 'Width';
   const heightLabel = p?.pricingModel === 'matrix_axes' ? "Projection (4' 11\" or inches)" : p?.dimensionUnit === 'in' ? 'Height (inches)' : 'Projection or Height';
-
-  const handleAddon = (idx, checked) => {
-    const newAddons = [...line.addons];
-    newAddons[idx] = checked;
-    onUpdate({...line, addons: newAddons});
-  };
 
   return (
     <div className="product-line">
@@ -483,6 +496,7 @@ function ProductLine({ line, lineNumber, onUpdate, onRemove, showRemove }) {
         )}
       </div>
 
+      {/* Category + Product selectors — always visible */}
       <div className="grid-2">
         <div className="form-group">
           <label className="required">Product Category</label>
@@ -509,61 +523,86 @@ function ProductLine({ line, lineNumber, onUpdate, onRemove, showRemove }) {
         </div>
       </div>
 
-      <div className="dim-row">
-        <div className="form-group">
-          <label className="required">{widthLabel}</label>
-          <input
-            type="number"
-            step="0.25"
-            min="0"
-            value={line.width}
-            onChange={e => onUpdate({...line, width:e.target.value})}
-            placeholder={p?.dimensionUnit === 'in' ? "e.g. 48 (inches)" : "e.g. 10 (or 120 inches)"}
-          />
+      {/* MPS notice — shown instead of dimension/qty/notes fields */}
+      {isMPS && (
+        <div className="alert alert-info mps-intake-notice">
+          <span>ℹ️</span>
+          <div>
+            <strong>Dimensions &amp; pricing are configured per opening</strong><br />
+            Width, height, quantity, and notes for this product are entered on the
+            next screen where you can add multiple areas and openings.
+          </div>
         </div>
-        <div className="form-group">
-          <label className="required">{heightLabel}</label>
-          <input
-            type="text"
-            value={line.height}
-            onChange={e => onUpdate({...line, height:e.target.value})}
-            placeholder={p?.pricingModel === 'matrix_axes' ? `e.g. 4' 11" or 59` : p?.dimensionUnit === 'in' ? "e.g. 98 (inches)" : "e.g. 8"}
-          />
-        </div>
-        <div className="form-group">
-          <label>Quantity</label>
-          <input
-            type="number"
-            value={line.quantity}
-            min="1"
-            onChange={e => onUpdate({...line, quantity:e.target.value})}
-          />
-        </div>
-      </div>
+      )}
 
-     
+      {/* Dimension / qty / notes fields — hidden for MPS products */}
+      {!isMPS && (
+        <>
+          <div className="dim-row">
+            <div className="form-group">
+              <label className="required">{widthLabel}</label>
+              <input
+                type="number"
+                step="0.25"
+                min="0"
+                value={line.width}
+                onChange={e => onUpdate({...line, width:e.target.value})}
+                placeholder={p?.dimensionUnit === 'in' ? "e.g. 48 (inches)" : "e.g. 10 (or 120 inches)"}
+              />
+            </div>
+            <div className="form-group">
+              <label className="required">{heightLabel}</label>
+              <input
+                type="text"
+                value={line.height}
+                onChange={e => onUpdate({...line, height:e.target.value})}
+                placeholder={p?.pricingModel === 'matrix_axes' ? `e.g. 4' 11" or 59` : p?.dimensionUnit === 'in' ? "e.g. 98 (inches)" : "e.g. 8"}
+              />
+            </div>
+            <div className="form-group">
+              <label>Quantity</label>
+              <input
+                type="number"
+                value={line.quantity}
+                min="1"
+                onChange={e => onUpdate({...line, quantity:e.target.value})}
+              />
+            </div>
+          </div>
 
-      <div className="grid-2">
-        <div className="form-group">
-          <label>Product Notes</label>
-          <textarea
-            rows="3"
-            value={line.notes}
-            onChange={e => onUpdate({...line, notes:e.target.value})}
-            placeholder="Special instructions, site conditions, etc."
-          />
-        </div>
-      </div>
+          <div className="grid-2">
+            <div className="form-group">
+              <label>Product Notes</label>
+              <textarea
+                rows="3"
+                value={line.notes}
+                onChange={e => onUpdate({...line, notes:e.target.value})}
+                placeholder="Special instructions, site conditions, etc."
+              />
+            </div>
+          </div>
 
-      <div className="product-subtotal">
-        <div className="product-subtotal-row">
-          <span>Product Subtotal:</span>
-          <span>${lineTotal.toFixed(2)}</span>
+          <div className="product-subtotal">
+            <div className="product-subtotal-row">
+              <span>Product Subtotal:</span>
+              <span>${lineTotal.toFixed(2)}</span>
+            </div>
+            {baseResult && (
+              <div className="price-hint">{baseResult.message}</div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* For MPS: show a $0.00 placeholder subtotal so the layout stays consistent */}
+      {isMPS && (
+        <div className="product-subtotal">
+          <div className="product-subtotal-row">
+            <span>Product Subtotal:</span>
+            <span>Priced on next screen</span>
+          </div>
         </div>
-        {baseResult && (
-          <div className="price-hint">{baseResult.message}</div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
@@ -619,11 +658,11 @@ export default function App() {
       lastUpdated: new Date().toISOString(),
     }));
 
-  const updateCustomer = (field, value) => updateOrder('customer', { [field]: value });
-  const addLine = () => updateOrder('productLines', [...productLines, createEmptyLine()]);
-  const removeLine = (id) => updateOrder('productLines', productLines.filter(l => l.id !== id));
-  const updateLine = (updatedLine) => updateOrder('productLines', productLines.map(l => l.id === updatedLine.id ? updatedLine : l));
-  const updateDiscount = (field, value) => updateOrder('discount', { [field]: value });
+  const updateCustomer  = (field, value) => updateOrder('customer', { [field]: value });
+  const addLine         = () => updateOrder('productLines', [...productLines, createEmptyLine()]);
+  const removeLine      = (id) => updateOrder('productLines', productLines.filter(l => l.id !== id));
+  const updateLine      = (updatedLine) => updateOrder('productLines', productLines.map(l => l.id === updatedLine.id ? updatedLine : l));
+  const updateDiscount  = (field, value) => updateOrder('discount', { [field]: value });
 
   const subtotal     = productLines.reduce((sum, line) => sum + calcLineTotal(line), 0);
   const discountAmt  = subtotal * (discount.percent / 100);
@@ -642,11 +681,16 @@ export default function App() {
       ...orderData,
       productLines: productLines.map(line => {
         const p = findProduct(line.product);
-        const priceResult = (line.category && line.product) ? getBasePriceUnified(line) : null;
+        const isMPS = MPS_PRODUCTS.includes(line.product);
+        const priceResult = (line.category && line.product && !isMPS) ? getBasePriceUnified(line) : null;
         return {
           ...line,
           productMeta: { pricingModel: p?.pricingModel || null, dimensionUnit: p?.dimensionUnit || 'ft' },
-          pricing: { basePrice: priceResult?.ok ? priceResult.price : 0, priceNote: priceResult?.message || '', lineSubtotal: calcLineTotal(line) },
+          pricing: {
+            basePrice:    priceResult?.ok ? priceResult.price : 0,
+            priceNote:    priceResult?.message || (isMPS ? 'Priced per opening on Order Summary' : ''),
+            lineSubtotal: calcLineTotal(line),
+          },
         };
       }),
       pricingSummary: { subtotal, discountPercent: discount.percent, discountAmount: discountAmt, total },
@@ -656,23 +700,33 @@ export default function App() {
   };
 
   const validateForm = () => {
-    if (!customer.name || !customer.email || !customer.phone) { alert('Please fill in all required customer information.'); return false; }
-    if (productLines.length === 0) { alert('Please add at least one product.'); return false; }
-    const hasValid = productLines.some(line => { if (!line.category || !line.product) return false; return getBasePriceUnified(line).ok; });
-    if (!hasValid) { alert('Please configure at least one product with a valid size.'); return false; }
+    if (!customer.name || !customer.email || !customer.phone) {
+      alert('Please fill in all required customer information.'); return false;
+    }
+    if (productLines.length === 0) {
+      alert('Please add at least one product.'); return false;
+    }
+    // A line is valid if it's a configured MPS product OR has a valid base price
+    const hasValid = productLines.some(line => {
+      if (!line.category || !line.product) return false;
+      if (MPS_PRODUCTS.includes(line.product)) return true;
+      return getBasePriceUnified(line).ok;
+    });
+    if (!hasValid) {
+      alert('Please configure at least one product with a valid size.'); return false;
+    }
     const canvas = canvasRef.current;
     if (canvas) {
       const imageData = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
       if (!imageData.data.some(c => c !== 0)) { alert('Please provide your signature.'); return false; }
     }
-    if (needsManager && (!discount.managerName || !discount.managerEmail || !discount.approvalCode)) { alert('Manager approval required for discounts above 20%.'); return false; }
+    if (needsManager && (!discount.managerName || !discount.managerEmail || !discount.approvalCode)) {
+      alert('Manager approval required for discounts above 20%.'); return false;
+    }
     return true;
   };
 
-  const generateProposal = () => { if (!validateForm()) return; const snapshot = buildSnapshot(); console.log('📄 Proposal snapshot:', snapshot); alert('✓ Proposal generated successfully!'); };
-  const collectPayment  = () => { if (!validateForm()) return; const snapshot = buildSnapshot(); console.log('💳 Payment snapshot:', snapshot); alert(`💳 Collect Payment: $${total.toFixed(2)}`); };
-  const saveAsDraft     = () => { const snapshot = buildSnapshot(); console.log('💾 Draft snapshot:', snapshot); alert('✓ Draft saved successfully!'); };
-  const exportToGHL     = () => { if (!validateForm()) return; const snapshot = buildSnapshot(); console.log('📤 GHL export snapshot:', snapshot); alert('✓ Data exported to GHL successfully!'); };
+ 
 
   return (
     <div className="container">
@@ -742,11 +796,7 @@ export default function App() {
         </div>
 
         <div className="action-buttons">
-          <button type="button" className="btn btn-primary" onClick={generateProposal}>📄 Generate Proposal</button>
-          <button type="button" className="btn btn-secondary" onClick={collectPayment}>💳 Collect Payment</button>
-          <button type="button" className="btn btn-outline" onClick={saveAsDraft}>💾 Save as Draft</button>
-          <button type="button" className="btn btn-outline" onClick={exportToGHL}>📤 Export to GHL</button>
-          <button type="button" className="btn btn-next" onClick={() => { const snapshot = buildSnapshot(); navigate('/summary', { state: { snapshot } }); }}>Next → Order Summary</button>
+          <button type="button" className="btn btn-next" onClick={() => { const snapshot = buildSnapshot(); navigate('/summary', { state: { snapshot } }); }}>Next →</button>
         </div>
       </div>
     </div>
