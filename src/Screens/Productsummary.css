@@ -384,3 +384,44 @@ details[open] .override-summary::before { content:"▼"; }
   .ps-btn { width:100%; justify-content:center; }
   .mps-line-total { justify-content:flex-start; }
 }
+
+/* ── Photo Picker Modal ── */
+.photo-picker-option:active {
+  transform: translateY(0);
+}
+ 
+.photo-picker-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+ 
+.photo-picker-option-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+ 
+.photo-picker-option-sub {
+  font-size: 0.72rem;
+  color: #64748b;
+  text-align: center;
+}
+ 
+/* Cancel button */
+.photo-picker-cancel {
+  align-self: center;
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 0.88rem;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 6px 16px;
+  border-radius: 6px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+ 
+.photo-picker-cancel:hover {
+  background: #f1f5f9;
+  color: #1a1a2e;
+}

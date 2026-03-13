@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './ProductSummary.css';
 
@@ -22,22 +22,21 @@ const MPS_DEFAULTS = {
   motorSides:   ["Left", "Right"],
 };
 
-const L_CHANNEL_RATE  = 12;  // $ per linear foot
-const BUILDOUT_RATE   = 18;  // $ per linear foot
+const L_CHANNEL_RATE  = 12;
+const BUILDOUT_RATE   = 18;
 
-// Simple checkbox add-ons shared by all 3 MPS products
 const MPS_SIMPLE_ADDONS = [
-  { id: "remote_1ch",   name: "1 Channel Somfy Remote",      price: 125 },
-  { id: "remote_5ch",   name: "5 Channel Somfy Remote",      price: 320 },
+  { id: "remote_1ch",   name: "1 Channel Somfy Remote",         price: 125 },
+  { id: "remote_5ch",   name: "5 Channel Somfy Remote",         price: 320 },
   { id: "wind_sensor",  name: "Wind Sensor (Shaker or Whirly)", price: 290 },
-  { id: "tahoma",       name: "Somfy Tahoma",                price: 420 },
+  { id: "tahoma",       name: "Somfy Tahoma",                   price: 420 },
 ];
 
 const fmt = (n) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(n || 0));
 
 // ─────────────────────────────────────────────────────────────
-// MPS PRODUCT PRICE DATA  (mirrors App.js)
+// MPS PRODUCT PRICE DATA
 // ─────────────────────────────────────────────────────────────
 const MPS_PRICE_DATA = {
   "Motorized Power Screen 5in Cassette": {
@@ -96,17 +95,7 @@ const MPS_PRICE_DATA = {
 
 // ─────────────────────────────────────────────────────────────
 // MPS PRICING LOGIC
-// All three MPS products use dimensionUnit="ft" (width in ft, height in ft)
-// The matrix keys are integers (feet), so we ceil() the decimal ft value.
-// Width  → column key (ft)
-// Height → row key    (ft)
 // ─────────────────────────────────────────────────────────────
-
-/**
- * Convert a raw input value to a ceiling-rounded foot key.
- * Accepts: plain feet number (e.g. "10"), or inches (e.g. "120").
- * Values > 30 are treated as inches and divided by 12.
- */
 function toFeetKey(value) {
   const n = parseFloat(value);
   if (!Number.isFinite(n) || n <= 0) return null;
@@ -114,50 +103,28 @@ function toFeetKey(value) {
   return Math.ceil(feet);
 }
 
-/**
- * Look up the matrix price for an MPS opening.
- * Returns { ok, price, message }
- *
- * Matrix layout for MPS (same as App.js "matrix" model, no dimensionUnit="in"):
- *   rows    = height/projection key (ft)
- *   columns = width key             (ft)
- */
 function getMPSOpeningPrice(productName, widthRaw, heightRaw) {
   const productData = MPS_PRICE_DATA[productName];
   if (!productData) return { ok: false, price: 0, message: "Unknown MPS product." };
-
   const widthKey  = toFeetKey(widthRaw);
   const heightKey = toFeetKey(heightRaw);
-
   if (!widthKey || !heightKey) {
     return { ok: false, price: 0, message: "Enter valid width and height (feet or inches)." };
   }
-
   const price = productData.prices?.[heightKey]?.[widthKey] ?? null;
   if (price == null) {
-    // Build helpful range hint
     const rowKeys = Object.keys(productData.prices).map(Number).sort((a,b)=>a-b);
-    const colKeys = rowKeys.length > 0
-      ? Object.keys(productData.prices[rowKeys[0]]).map(Number).sort((a,b)=>a-b)
-      : [];
+    const colKeys = rowKeys.length > 0 ? Object.keys(productData.prices[rowKeys[0]]).map(Number).sort((a,b)=>a-b) : [];
     return {
-      ok: false,
-      price: 0,
-      message: `No price found for Width=${widthKey}ft × Height=${heightKey}ft. ` +
-               `Valid height range: ${rowKeys[0]}–${rowKeys[rowKeys.length-1]}ft, ` +
-               `Width range: ${colKeys[0]}–${colKeys[colKeys.length-1]}ft.`
+      ok: false, price: 0,
+      message: `No price found for Width=${widthKey}ft × Height=${heightKey}ft. Valid height: ${rowKeys[0]}–${rowKeys[rowKeys.length-1]}ft, Width: ${colKeys[0]}–${colKeys[colKeys.length-1]}ft.`
     };
   }
-
-  return {
-    ok: true,
-    price: Number(price),
-    message: `Matrix price: ${fmt(price)} (Width=${widthKey}ft × Height=${heightKey}ft)`
-  };
+  return { ok: true, price: Number(price), message: `Matrix price: ${fmt(price)} (Width=${widthKey}ft × Height=${heightKey}ft)` };
 }
 
 // ─────────────────────────────────────────────────────────────
-// STANDARD (non-MPS) PRODUCT ADD-ONS
+// PRODUCT ADD-ONS
 // ─────────────────────────────────────────────────────────────
 const PRODUCT_ADDONS = {
   "Hydra Retractable Patio Cover": [
@@ -192,22 +159,22 @@ const PRODUCT_ADDONS = {
     { id:"wind_sensor",  name:"Wind Sensor",    price:195 },
   ],
   "Vista View Single Housing Unit": [
-    { id:"remote",          name:"Remote Control",         price:75  },
-    { id:"smart_home",      name:"Smart Home Integration", price:150 },
-    { id:"fabric_upgrade",  name:"Premium Fabric Upgrade", price:125 },
-    { id:"valance",         name:"Decorative Valance",     price:100 },
+    { id:"remote",         name:"Remote Control",         price:75  },
+    { id:"smart_home",     name:"Smart Home Integration", price:150 },
+    { id:"fabric_upgrade", name:"Premium Fabric Upgrade", price:125 },
+    { id:"valance",        name:"Decorative Valance",     price:100 },
   ],
   "Vista View Double Housing Units": [
-    { id:"remote",          name:"Remote Control",         price:75  },
-    { id:"smart_home",      name:"Smart Home Integration", price:150 },
-    { id:"fabric_upgrade",  name:"Premium Fabric Upgrade", price:125 },
-    { id:"valance",         name:"Decorative Valance",     price:100 },
+    { id:"remote",         name:"Remote Control",         price:75  },
+    { id:"smart_home",     name:"Smart Home Integration", price:150 },
+    { id:"fabric_upgrade", name:"Premium Fabric Upgrade", price:125 },
+    { id:"valance",        name:"Decorative Valance",     price:100 },
   ],
   "Single Horizon View Retractable Screens": [
-    { id:"remote",          name:"Remote Control",         price:75  },
-    { id:"smart_home",      name:"Smart Home Integration", price:150 },
-    { id:"fabric_upgrade",  name:"Premium Fabric Upgrade", price:125 },
-    { id:"wind_sensor",     name:"Wind Sensor",            price:195 },
+    { id:"remote",         name:"Remote Control",         price:75  },
+    { id:"smart_home",     name:"Smart Home Integration", price:150 },
+    { id:"fabric_upgrade", name:"Premium Fabric Upgrade", price:125 },
+    { id:"wind_sensor",    name:"Wind Sensor",            price:195 },
   ],
   "Clearview Retractable Screen Doors": [],
   "Clearview Oversized Doors": [],
@@ -228,26 +195,26 @@ const PRODUCT_ADDONS = {
     { id:"valance",      name:"Decorative Valance",     price:100 },
   ],
   "Motor A Open Roll Retractable Awning": [
-    { id:"wind_sensor",     name:"Wind Sensor",            price:195 },
-    { id:"smart_home",      name:"Smart Home Integration", price:150 },
-    { id:"remote",          name:"Additional Remote",      price:75  },
-    { id:"fabric_upgrade",  name:"Premium Fabric Upgrade", price:125 },
+    { id:"wind_sensor",    name:"Wind Sensor",            price:195 },
+    { id:"smart_home",     name:"Smart Home Integration", price:150 },
+    { id:"remote",         name:"Additional Remote",      price:75  },
+    { id:"fabric_upgrade", name:"Premium Fabric Upgrade", price:125 },
   ],
   "Motor B Open Roll Retractable Awning": [
-    { id:"wind_sensor",     name:"Wind Sensor",            price:195 },
-    { id:"led_lighting",    name:"LED Lighting Kit",       price:350 },
-    { id:"smart_home",      name:"Smart Home Integration", price:150 },
-    { id:"remote",          name:"Additional Remote",      price:75  },
-    { id:"fabric_upgrade",  name:"Premium Fabric Upgrade", price:125 },
-    { id:"pitch_kit",       name:"Adjustable Pitch Kit",   price:110 },
+    { id:"wind_sensor",    name:"Wind Sensor",            price:195 },
+    { id:"led_lighting",   name:"LED Lighting Kit",       price:350 },
+    { id:"smart_home",     name:"Smart Home Integration", price:150 },
+    { id:"remote",         name:"Additional Remote",      price:75  },
+    { id:"fabric_upgrade", name:"Premium Fabric Upgrade", price:125 },
+    { id:"pitch_kit",      name:"Adjustable Pitch Kit",   price:110 },
   ],
   default: [
-    { id:"motorization",    name:"Motorization",           price:250 },
-    { id:"remote",          name:"Remote Control",         price:75  },
-    { id:"smart_home",      name:"Smart Home Integration", price:150 },
-    { id:"valance",         name:"Decorative Valance",     price:100 },
-    { id:"cordless",        name:"Cordless Lift",          price:50  },
-    { id:"fabric_upgrade",  name:"Premium Fabric Upgrade", price:125 },
+    { id:"motorization",   name:"Motorization",           price:250 },
+    { id:"remote",         name:"Remote Control",         price:75  },
+    { id:"smart_home",     name:"Smart Home Integration", price:150 },
+    { id:"valance",        name:"Decorative Valance",     price:100 },
+    { id:"cordless",       name:"Cordless Lift",          price:50  },
+    { id:"fabric_upgrade", name:"Premium Fabric Upgrade", price:125 },
   ],
 };
 
@@ -258,177 +225,177 @@ function getAddonsForProduct(productName) {
 const PRODUCT_FIELD_ADDONS = {
   "Motorized Louvered Roof Pergolas": [
     { id:"led_strip",       name:"Built-in LED Strip Lights (dimmable)", pricingType:"per_lf",   rate:60,   unit:"linear feet", unitShort:"LF", placeholder:"e.g. 20" },
-    { id:"bromic_heater",   name:"Bromic 220V Heaters",                  pricingType:"per_unit", rate:2500, unit:"units",        unitShort:"ea", placeholder:"e.g. 2"  },
-    { id:"ceiling_fan",     name:"Ceiling Fan",                          pricingType:"per_unit", rate:1000, unit:"units",        unitShort:"ea", placeholder:"e.g. 1"  },
-    { id:"utility_beam",    name:"Utility Beam",                         pricingType:"per_unit", rate:1000, unit:"units",        unitShort:"ea", placeholder:"e.g. 1"  },
-    { id:"cement_footings", name:'24" x 24" Cement Footings',            pricingType:"per_unit", rate:1000, unit:"units",        unitShort:"ea", placeholder:"e.g. 4"  },
+    { id:"bromic_heater",   name:"Bromic 220V Heaters",                  pricingType:"per_unit", rate:2500, unit:"units",       unitShort:"ea", placeholder:"e.g. 2"  },
+    { id:"ceiling_fan",     name:"Ceiling Fan",                          pricingType:"per_unit", rate:1000, unit:"units",       unitShort:"ea", placeholder:"e.g. 1"  },
+    { id:"utility_beam",    name:"Utility Beam",                         pricingType:"per_unit", rate:1000, unit:"units",       unitShort:"ea", placeholder:"e.g. 1"  },
+    { id:"cement_footings", name:'24" x 24" Cement Footings',            pricingType:"per_unit", rate:1000, unit:"units",       unitShort:"ea", placeholder:"e.g. 4"  },
   ],
   "Clearview Retractable Screen Doors": [
-    { id:"pet_solar_mesh",       name:"Pet or Solar Mesh (per door, 42\" max)",          pricingType:"per_unit", rate:95,   unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"ext_pin_lock_short",   name:"External Pin Lock Short",                         pricingType:"per_unit", rate:45,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"ext_pin_lock_long",    name:"External Pin Lock Long",                          pricingType:"per_unit", rate:65,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"int_pin_lock_measure", name:"Internal Pin Lock (@ measure)",                   pricingType:"per_unit", rate:125,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"int_pin_lock_after",   name:"Internal Pin Lock (after measure)",               pricingType:"per_unit", rate:250,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"diecast_handles",      name:"Diecast Handles (per door)",                      pricingType:"per_unit", rate:60,   unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"pet_guard",            name:"Pet Guard (per door)",                            pricingType:"per_unit", rate:125,  unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"cleaning_kit",         name:"Cleaning Kit",                                    pricingType:"per_unit", rate:25,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"silicone_spray",       name:"Silicone Spray Only",                             pricingType:"per_unit", rate:15,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"custom_powder_single", name:"Custom Powder Single",                            pricingType:"per_unit", rate:500,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"custom_powder_double", name:"Custom Powder Double",                            pricingType:"per_unit", rate:900,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"custom_wood_single",   name:"Custom Wood Grain Single",                        pricingType:"per_unit", rate:1000, unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"custom_wood_double",   name:"Custom Wood Grain Double",                        pricingType:"per_unit", rate:1800, unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"custom_threshold",     name:"Custom Threshold Cuts ($150–$300)",               pricingType:"custom",   rate:0,    unit:"units",  unitShort:"ea",  placeholder:"Enter price", group:"Upgrades" },
-    { id:"buildout_stationary",  name:"Build Out on Stationary Door ($100–$200)",        pricingType:"custom",   rate:0,    unit:"units",  unitShort:"ea",  placeholder:"Enter price", group:"Upgrades" },
-    { id:"rescreen_std",         name:"Standard Mesh (48\" max)",                       pricingType:"per_unit", rate:225,  unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Rescreens" },
-    { id:"rescreen_solar_pet",   name:"Solar/Pet Mesh (42\" max)",                      pricingType:"per_unit", rate:275,  unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Rescreens" },
-    { id:"rescreen_single_dbl",  name:"Single Over Double (68\" max)",                  pricingType:"per_unit", rate:250,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Rescreens" },
-    { id:"rescreen_phantom",     name:"Phantom / Eclipse / Mirage / Wizard / Aira",     pricingType:"per_unit", rate:275,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Rescreens" },
-    { id:"rescreen_stowaway",    name:"Stowaway (Stowaway Mesh)",                        pricingType:"per_unit", rate:275,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Rescreens" },
-    { id:"rescreen_casper",      name:"Casper / Genius / Brisa / ODL",                  pricingType:"custom",   rate:0,    unit:"units",  unitShort:"ea",  placeholder:"Cannot rescreen", group:"Rescreens" },
-    { id:"service_call",         name:"Service Call",                                    pricingType:"per_unit", rate:99,   unit:"calls",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
-    { id:"service_extra_door",   name:"Service Extra Doors (per door)",                  pricingType:"per_unit", rate:45,   unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
-    { id:"uninstall_single",     name:"Uninstall Single Door",                           pricingType:"per_unit", rate:175,  unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
-    { id:"uninstall_double",     name:"Uninstall Double Door",                           pricingType:"per_unit", rate:300,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
-    { id:"reinstall_single",     name:"Reinstall Single Door",                           pricingType:"per_unit", rate:175,  unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
-    { id:"reinstall_double",     name:"Reinstall Double Door",                           pricingType:"per_unit", rate:300,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
-    { id:"part_housing",         name:"Housing",                                         pricingType:"per_unit", rate:125,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_pull_bar",        name:"Pull Bar",                                        pricingType:"per_unit", rate:105,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_roller_tube",     name:"Roller Tube",                                     pricingType:"per_unit", rate:50,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_end_caps",        name:"End Caps / Housing Caps / Handles (per set)",     pricingType:"per_unit", rate:35,   unit:"sets",   unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_springs",         name:"Springs",                                         pricingType:"per_unit", rate:35,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_sill_5_single",   name:"5\" Sill Single",                                pricingType:"per_unit", rate:60,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_sill_5_gold_s",   name:"5\" Gold Sill Single",                           pricingType:"per_unit", rate:100,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_sill_5_double",   name:"5\" Sill Double",                                pricingType:"per_unit", rate:120,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_sill_5_gold_d",   name:"5\" Gold Sill Double",                           pricingType:"per_unit", rate:200,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_magnets",         name:"Magnets",                                         pricingType:"per_unit", rate:20,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_int_mag_single",  name:"Internal Magnet Single Door",                     pricingType:"per_unit", rate:80,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_int_mag_double",  name:"Internal Magnet Double Door",                     pricingType:"per_unit", rate:160,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_speed_reducer",   name:"Speed Reducer",                                   pricingType:"per_unit", rate:90,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_extra_deco_s",    name:"Extra Parts Deco / Sq Sill etc (single)",         pricingType:"per_unit", rate:40,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_extra_deco_d",    name:"Extra Parts Deco / Sq Sill etc (double)",         pricingType:"per_unit", rate:80,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_gold_deco_s",     name:"Gold Extra Parts Deco / Sq Sill etc (single)",    pricingType:"per_unit", rate:70,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_gold_deco_d",     name:"Gold Extra Parts Deco / Sq Sill etc (double)",    pricingType:"per_unit", rate:140,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
+    { id:"pet_solar_mesh",       name:"Pet or Solar Mesh (per door, 42\" max)",     pricingType:"per_unit", rate:95,   unit:"doors", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"ext_pin_lock_short",   name:"External Pin Lock Short",                    pricingType:"per_unit", rate:45,   unit:"units", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"ext_pin_lock_long",    name:"External Pin Lock Long",                     pricingType:"per_unit", rate:65,   unit:"units", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"int_pin_lock_measure", name:"Internal Pin Lock (@ measure)",              pricingType:"per_unit", rate:125,  unit:"units", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"int_pin_lock_after",   name:"Internal Pin Lock (after measure)",          pricingType:"per_unit", rate:250,  unit:"units", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"diecast_handles",      name:"Diecast Handles (per door)",                 pricingType:"per_unit", rate:60,   unit:"doors", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"pet_guard",            name:"Pet Guard (per door)",                       pricingType:"per_unit", rate:125,  unit:"doors", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"cleaning_kit",         name:"Cleaning Kit",                               pricingType:"per_unit", rate:25,   unit:"units", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"silicone_spray",       name:"Silicone Spray Only",                        pricingType:"per_unit", rate:15,   unit:"units", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"custom_powder_single", name:"Custom Powder Single",                       pricingType:"per_unit", rate:500,  unit:"units", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"custom_powder_double", name:"Custom Powder Double",                       pricingType:"per_unit", rate:900,  unit:"units", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"custom_wood_single",   name:"Custom Wood Grain Single",                   pricingType:"per_unit", rate:1000, unit:"units", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"custom_wood_double",   name:"Custom Wood Grain Double",                   pricingType:"per_unit", rate:1800, unit:"units", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"custom_threshold",     name:"Custom Threshold Cuts ($150–$300)",          pricingType:"custom",   rate:0,    unit:"units", unitShort:"ea", placeholder:"Enter price", group:"Upgrades" },
+    { id:"buildout_stationary",  name:"Build Out on Stationary Door ($100–$200)",   pricingType:"custom",   rate:0,    unit:"units", unitShort:"ea", placeholder:"Enter price", group:"Upgrades" },
+    { id:"rescreen_std",         name:"Standard Mesh (48\" max)",                   pricingType:"per_unit", rate:225,  unit:"doors", unitShort:"ea", placeholder:"1", group:"Rescreens" },
+    { id:"rescreen_solar_pet",   name:"Solar/Pet Mesh (42\" max)",                  pricingType:"per_unit", rate:275,  unit:"doors", unitShort:"ea", placeholder:"1", group:"Rescreens" },
+    { id:"rescreen_single_dbl",  name:"Single Over Double (68\" max)",              pricingType:"per_unit", rate:250,  unit:"units", unitShort:"ea", placeholder:"1", group:"Rescreens" },
+    { id:"rescreen_phantom",     name:"Phantom / Eclipse / Mirage / Wizard / Aira", pricingType:"per_unit", rate:275,  unit:"units", unitShort:"ea", placeholder:"1", group:"Rescreens" },
+    { id:"rescreen_stowaway",    name:"Stowaway (Stowaway Mesh)",                   pricingType:"per_unit", rate:275,  unit:"units", unitShort:"ea", placeholder:"1", group:"Rescreens" },
+    { id:"rescreen_casper",      name:"Casper / Genius / Brisa / ODL",              pricingType:"custom",   rate:0,    unit:"units", unitShort:"ea", placeholder:"Cannot rescreen", group:"Rescreens" },
+    { id:"service_call",         name:"Service Call",                               pricingType:"per_unit", rate:99,   unit:"calls", unitShort:"ea", placeholder:"1", group:"Service Calls" },
+    { id:"service_extra_door",   name:"Service Extra Doors (per door)",             pricingType:"per_unit", rate:45,   unit:"doors", unitShort:"ea", placeholder:"1", group:"Service Calls" },
+    { id:"uninstall_single",     name:"Uninstall Single Door",                      pricingType:"per_unit", rate:175,  unit:"doors", unitShort:"ea", placeholder:"1", group:"Service Calls" },
+    { id:"uninstall_double",     name:"Uninstall Double Door",                      pricingType:"per_unit", rate:300,  unit:"units", unitShort:"ea", placeholder:"1", group:"Service Calls" },
+    { id:"reinstall_single",     name:"Reinstall Single Door",                      pricingType:"per_unit", rate:175,  unit:"doors", unitShort:"ea", placeholder:"1", group:"Service Calls" },
+    { id:"reinstall_double",     name:"Reinstall Double Door",                      pricingType:"per_unit", rate:300,  unit:"units", unitShort:"ea", placeholder:"1", group:"Service Calls" },
+    { id:"part_housing",         name:"Housing",                                    pricingType:"per_unit", rate:125,  unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_pull_bar",        name:"Pull Bar",                                   pricingType:"per_unit", rate:105,  unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_roller_tube",     name:"Roller Tube",                                pricingType:"per_unit", rate:50,   unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_end_caps",        name:"End Caps / Housing Caps / Handles (per set)",pricingType:"per_unit", rate:35,   unit:"sets",  unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_springs",         name:"Springs",                                    pricingType:"per_unit", rate:35,   unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_sill_5_single",   name:"5\" Sill Single",                            pricingType:"per_unit", rate:60,   unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_sill_5_gold_s",   name:"5\" Gold Sill Single",                       pricingType:"per_unit", rate:100,  unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_sill_5_double",   name:"5\" Sill Double",                            pricingType:"per_unit", rate:120,  unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_sill_5_gold_d",   name:"5\" Gold Sill Double",                       pricingType:"per_unit", rate:200,  unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_magnets",         name:"Magnets",                                    pricingType:"per_unit", rate:20,   unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_int_mag_single",  name:"Internal Magnet Single Door",                pricingType:"per_unit", rate:80,   unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_int_mag_double",  name:"Internal Magnet Double Door",                pricingType:"per_unit", rate:160,  unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_speed_reducer",   name:"Speed Reducer",                              pricingType:"per_unit", rate:90,   unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_extra_deco_s",    name:"Extra Parts Deco / Sq Sill etc (single)",    pricingType:"per_unit", rate:40,   unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_extra_deco_d",    name:"Extra Parts Deco / Sq Sill etc (double)",    pricingType:"per_unit", rate:80,   unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_gold_deco_s",     name:"Gold Extra Parts Deco / Sq Sill etc (single)",pricingType:"per_unit",rate:70,   unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_gold_deco_d",     name:"Gold Extra Parts Deco / Sq Sill etc (double)",pricingType:"per_unit",rate:140,  unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
   ],
   "Clearview Oversized Doors": [
-    { id:"pet_solar_mesh",       name:"Pet or Solar Mesh (per door, 42\" max)",          pricingType:"per_unit", rate:95,   unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"ext_pin_lock_short",   name:"External Pin Lock Short",                         pricingType:"per_unit", rate:45,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"ext_pin_lock_long",    name:"External Pin Lock Long",                          pricingType:"per_unit", rate:65,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"int_pin_lock_measure", name:"Internal Pin Lock (@ measure)",                   pricingType:"per_unit", rate:125,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"int_pin_lock_after",   name:"Internal Pin Lock (after measure)",               pricingType:"per_unit", rate:250,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"diecast_handles",      name:"Diecast Handles (per door)",                      pricingType:"per_unit", rate:60,   unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"pet_guard",            name:"Pet Guard (per door)",                            pricingType:"per_unit", rate:125,  unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"cleaning_kit",         name:"Cleaning Kit",                                    pricingType:"per_unit", rate:25,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"silicone_spray",       name:"Silicone Spray Only",                             pricingType:"per_unit", rate:15,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"custom_powder_single", name:"Custom Powder Single",                            pricingType:"per_unit", rate:500,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"custom_powder_double", name:"Custom Powder Double",                            pricingType:"per_unit", rate:900,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"custom_wood_single",   name:"Custom Wood Grain Single",                        pricingType:"per_unit", rate:1000, unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"custom_wood_double",   name:"Custom Wood Grain Double",                        pricingType:"per_unit", rate:1800, unit:"units",  unitShort:"ea",  placeholder:"1", group:"Upgrades" },
-    { id:"custom_threshold",     name:"Custom Threshold Cuts ($150–$300)",               pricingType:"custom",   rate:0,    unit:"units",  unitShort:"ea",  placeholder:"Enter price", group:"Upgrades" },
-    { id:"buildout_stationary",  name:"Build Out on Stationary Door ($100–$200)",        pricingType:"custom",   rate:0,    unit:"units",  unitShort:"ea",  placeholder:"Enter price", group:"Upgrades" },
-    { id:"rescreen_std",         name:"Standard Mesh (48\" max)",                       pricingType:"per_unit", rate:225,  unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Rescreens" },
-    { id:"rescreen_solar_pet",   name:"Solar/Pet Mesh (42\" max)",                      pricingType:"per_unit", rate:275,  unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Rescreens" },
-    { id:"rescreen_single_dbl",  name:"Single Over Double (68\" max)",                  pricingType:"per_unit", rate:250,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Rescreens" },
-    { id:"rescreen_phantom",     name:"Phantom / Eclipse / Mirage / Wizard / Aira",     pricingType:"per_unit", rate:275,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Rescreens" },
-    { id:"rescreen_stowaway",    name:"Stowaway (Stowaway Mesh)",                        pricingType:"per_unit", rate:275,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Rescreens" },
-    { id:"rescreen_casper",      name:"Casper / Genius / Brisa / ODL",                  pricingType:"custom",   rate:0,    unit:"units",  unitShort:"ea",  placeholder:"Cannot rescreen", group:"Rescreens" },
-    { id:"service_call",         name:"Service Call",                                    pricingType:"per_unit", rate:99,   unit:"calls",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
-    { id:"service_extra_door",   name:"Service Extra Doors (per door)",                  pricingType:"per_unit", rate:45,   unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
-    { id:"uninstall_single",     name:"Uninstall Single Door",                           pricingType:"per_unit", rate:175,  unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
-    { id:"uninstall_double",     name:"Uninstall Double Door",                           pricingType:"per_unit", rate:300,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
-    { id:"reinstall_single",     name:"Reinstall Single Door",                           pricingType:"per_unit", rate:175,  unit:"doors",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
-    { id:"reinstall_double",     name:"Reinstall Double Door",                           pricingType:"per_unit", rate:300,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Service Calls" },
-    { id:"part_housing",         name:"Housing",                                         pricingType:"per_unit", rate:125,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_pull_bar",        name:"Pull Bar",                                        pricingType:"per_unit", rate:105,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_roller_tube",     name:"Roller Tube",                                     pricingType:"per_unit", rate:50,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_end_caps",        name:"End Caps / Housing Caps / Handles (per set)",     pricingType:"per_unit", rate:35,   unit:"sets",   unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_springs",         name:"Springs",                                         pricingType:"per_unit", rate:35,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_sill_5_single",   name:"5\" Sill Single",                                pricingType:"per_unit", rate:60,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_sill_5_gold_s",   name:"5\" Gold Sill Single",                           pricingType:"per_unit", rate:100,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_sill_5_double",   name:"5\" Sill Double",                                pricingType:"per_unit", rate:120,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_sill_5_gold_d",   name:"5\" Gold Sill Double",                           pricingType:"per_unit", rate:200,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_magnets",         name:"Magnets",                                         pricingType:"per_unit", rate:20,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_int_mag_single",  name:"Internal Magnet Single Door",                     pricingType:"per_unit", rate:80,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_int_mag_double",  name:"Internal Magnet Double Door",                     pricingType:"per_unit", rate:160,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_speed_reducer",   name:"Speed Reducer",                                   pricingType:"per_unit", rate:90,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_extra_deco_s",    name:"Extra Parts Deco / Sq Sill etc (single)",         pricingType:"per_unit", rate:40,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_extra_deco_d",    name:"Extra Parts Deco / Sq Sill etc (double)",         pricingType:"per_unit", rate:80,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_gold_deco_s",     name:"Gold Extra Parts Deco / Sq Sill etc (single)",    pricingType:"per_unit", rate:70,   unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
-    { id:"part_gold_deco_d",     name:"Gold Extra Parts Deco / Sq Sill etc (double)",    pricingType:"per_unit", rate:140,  unit:"units",  unitShort:"ea",  placeholder:"1", group:"Parts" },
+    { id:"pet_solar_mesh",       name:"Pet or Solar Mesh (per door, 42\" max)",     pricingType:"per_unit", rate:95,   unit:"doors", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"ext_pin_lock_short",   name:"External Pin Lock Short",                    pricingType:"per_unit", rate:45,   unit:"units", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"ext_pin_lock_long",    name:"External Pin Lock Long",                     pricingType:"per_unit", rate:65,   unit:"units", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"int_pin_lock_measure", name:"Internal Pin Lock (@ measure)",              pricingType:"per_unit", rate:125,  unit:"units", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"int_pin_lock_after",   name:"Internal Pin Lock (after measure)",          pricingType:"per_unit", rate:250,  unit:"units", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"diecast_handles",      name:"Diecast Handles (per door)",                 pricingType:"per_unit", rate:60,   unit:"doors", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"pet_guard",            name:"Pet Guard (per door)",                       pricingType:"per_unit", rate:125,  unit:"doors", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"cleaning_kit",         name:"Cleaning Kit",                               pricingType:"per_unit", rate:25,   unit:"units", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"silicone_spray",       name:"Silicone Spray Only",                        pricingType:"per_unit", rate:15,   unit:"units", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"custom_powder_single", name:"Custom Powder Single",                       pricingType:"per_unit", rate:500,  unit:"units", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"custom_powder_double", name:"Custom Powder Double",                       pricingType:"per_unit", rate:900,  unit:"units", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"custom_wood_single",   name:"Custom Wood Grain Single",                   pricingType:"per_unit", rate:1000, unit:"units", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"custom_wood_double",   name:"Custom Wood Grain Double",                   pricingType:"per_unit", rate:1800, unit:"units", unitShort:"ea", placeholder:"1", group:"Upgrades" },
+    { id:"custom_threshold",     name:"Custom Threshold Cuts ($150–$300)",          pricingType:"custom",   rate:0,    unit:"units", unitShort:"ea", placeholder:"Enter price", group:"Upgrades" },
+    { id:"buildout_stationary",  name:"Build Out on Stationary Door ($100–$200)",   pricingType:"custom",   rate:0,    unit:"units", unitShort:"ea", placeholder:"Enter price", group:"Upgrades" },
+    { id:"rescreen_std",         name:"Standard Mesh (48\" max)",                   pricingType:"per_unit", rate:225,  unit:"doors", unitShort:"ea", placeholder:"1", group:"Rescreens" },
+    { id:"rescreen_solar_pet",   name:"Solar/Pet Mesh (42\" max)",                  pricingType:"per_unit", rate:275,  unit:"doors", unitShort:"ea", placeholder:"1", group:"Rescreens" },
+    { id:"rescreen_single_dbl",  name:"Single Over Double (68\" max)",              pricingType:"per_unit", rate:250,  unit:"units", unitShort:"ea", placeholder:"1", group:"Rescreens" },
+    { id:"rescreen_phantom",     name:"Phantom / Eclipse / Mirage / Wizard / Aira", pricingType:"per_unit", rate:275,  unit:"units", unitShort:"ea", placeholder:"1", group:"Rescreens" },
+    { id:"rescreen_stowaway",    name:"Stowaway (Stowaway Mesh)",                   pricingType:"per_unit", rate:275,  unit:"units", unitShort:"ea", placeholder:"1", group:"Rescreens" },
+    { id:"rescreen_casper",      name:"Casper / Genius / Brisa / ODL",              pricingType:"custom",   rate:0,    unit:"units", unitShort:"ea", placeholder:"Cannot rescreen", group:"Rescreens" },
+    { id:"service_call",         name:"Service Call",                               pricingType:"per_unit", rate:99,   unit:"calls", unitShort:"ea", placeholder:"1", group:"Service Calls" },
+    { id:"service_extra_door",   name:"Service Extra Doors (per door)",             pricingType:"per_unit", rate:45,   unit:"doors", unitShort:"ea", placeholder:"1", group:"Service Calls" },
+    { id:"uninstall_single",     name:"Uninstall Single Door",                      pricingType:"per_unit", rate:175,  unit:"doors", unitShort:"ea", placeholder:"1", group:"Service Calls" },
+    { id:"uninstall_double",     name:"Uninstall Double Door",                      pricingType:"per_unit", rate:300,  unit:"units", unitShort:"ea", placeholder:"1", group:"Service Calls" },
+    { id:"reinstall_single",     name:"Reinstall Single Door",                      pricingType:"per_unit", rate:175,  unit:"doors", unitShort:"ea", placeholder:"1", group:"Service Calls" },
+    { id:"reinstall_double",     name:"Reinstall Double Door",                      pricingType:"per_unit", rate:300,  unit:"units", unitShort:"ea", placeholder:"1", group:"Service Calls" },
+    { id:"part_housing",         name:"Housing",                                    pricingType:"per_unit", rate:125,  unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_pull_bar",        name:"Pull Bar",                                   pricingType:"per_unit", rate:105,  unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_roller_tube",     name:"Roller Tube",                                pricingType:"per_unit", rate:50,   unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_end_caps",        name:"End Caps / Housing Caps / Handles (per set)",pricingType:"per_unit", rate:35,   unit:"sets",  unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_springs",         name:"Springs",                                    pricingType:"per_unit", rate:35,   unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_sill_5_single",   name:"5\" Sill Single",                            pricingType:"per_unit", rate:60,   unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_sill_5_gold_s",   name:"5\" Gold Sill Single",                       pricingType:"per_unit", rate:100,  unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_sill_5_double",   name:"5\" Sill Double",                            pricingType:"per_unit", rate:120,  unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_sill_5_gold_d",   name:"5\" Gold Sill Double",                       pricingType:"per_unit", rate:200,  unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_magnets",         name:"Magnets",                                    pricingType:"per_unit", rate:20,   unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_int_mag_single",  name:"Internal Magnet Single Door",                pricingType:"per_unit", rate:80,   unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_int_mag_double",  name:"Internal Magnet Double Door",                pricingType:"per_unit", rate:160,  unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_speed_reducer",   name:"Speed Reducer",                              pricingType:"per_unit", rate:90,   unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_extra_deco_s",    name:"Extra Parts Deco / Sq Sill etc (single)",    pricingType:"per_unit", rate:40,   unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_extra_deco_d",    name:"Extra Parts Deco / Sq Sill etc (double)",    pricingType:"per_unit", rate:80,   unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_gold_deco_s",     name:"Gold Extra Parts Deco / Sq Sill etc (single)",pricingType:"per_unit",rate:70,   unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
+    { id:"part_gold_deco_d",     name:"Gold Extra Parts Deco / Sq Sill etc (double)",pricingType:"per_unit",rate:140,  unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
   ],
   "Motor B Retractable Awning": [
-    { id:"somfy_1ch_tx",        name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_tx",        name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_1ch_patio",     name:"1 Channel Patio Transmitter",         pricingType:"per_unit", rate:200, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_patio",     name:"5 Channel Patio Transmitter",         pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_1ch_wall",      name:"1 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_wall",      name:"5 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:400, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_wind_sensor",   name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_sun_wind",      name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_16ch_telis",    name:"16 Channel Telis RTS",                pricingType:"per_unit", rate:500, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"power_cord_24ft",     name:"24\u2019 Motor Power Cord (upgrade)", pricingType:"per_unit", rate:80,  unit:"units", unitShort:"ea", placeholder:"1", group:"Power Cable Options" },
-    { id:"bracket_12in",        name:"Roof Mount Bracket 12\u2033 Tall",   pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-    { id:"bracket_16in",        name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-    { id:"bracket_24in",        name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+    { id:"somfy_1ch_tx",      name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_5ch_tx",      name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_1ch_patio",   name:"1 Channel Patio Transmitter",         pricingType:"per_unit", rate:200, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_5ch_patio",   name:"5 Channel Patio Transmitter",         pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_1ch_wall",    name:"1 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_5ch_wall",    name:"5 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:400, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_wind_sensor", name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_sun_wind",    name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_16ch_telis",  name:"16 Channel Telis RTS",                pricingType:"per_unit", rate:500, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"power_cord_24ft",   name:"24\u2019 Motor Power Cord (upgrade)", pricingType:"per_unit", rate:80,  unit:"units", unitShort:"ea", placeholder:"1", group:"Power Cable Options" },
+    { id:"bracket_12in",      name:"Roof Mount Bracket 12\u2033 Tall",   pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+    { id:"bracket_16in",      name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+    { id:"bracket_24in",      name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
   ],
   "Motor A Open Roll Retractable Awning": [
-    { id:"somfy_1ch_tx",        name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_tx",        name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_1ch_patio",     name:"1 Channel Patio Transmitter",         pricingType:"per_unit", rate:200, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_patio",     name:"5 Channel Patio Transmitter",         pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_1ch_wall",      name:"1 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_wall",      name:"5 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:400, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_wind_sensor",   name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_sun_wind",      name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_16ch_telis",    name:"16 Channel Telis RTS",                pricingType:"per_unit", rate:500, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"power_cord_24ft",     name:"24\u2019 Motor Power Cord (upgrade)", pricingType:"per_unit", rate:80,  unit:"units", unitShort:"ea", placeholder:"1", group:"Power Cable Options" },
-    { id:"bracket_12in",        name:"Roof Mount Bracket 12\u2033 Tall",   pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-    { id:"bracket_16in",        name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-    { id:"bracket_24in",        name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+    { id:"somfy_1ch_tx",      name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_5ch_tx",      name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_1ch_patio",   name:"1 Channel Patio Transmitter",         pricingType:"per_unit", rate:200, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_5ch_patio",   name:"5 Channel Patio Transmitter",         pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_1ch_wall",    name:"1 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_5ch_wall",    name:"5 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:400, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_wind_sensor", name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_sun_wind",    name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_16ch_telis",  name:"16 Channel Telis RTS",                pricingType:"per_unit", rate:500, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"power_cord_24ft",   name:"24\u2019 Motor Power Cord (upgrade)", pricingType:"per_unit", rate:80,  unit:"units", unitShort:"ea", placeholder:"1", group:"Power Cable Options" },
+    { id:"bracket_12in",      name:"Roof Mount Bracket 12\u2033 Tall",   pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+    { id:"bracket_16in",      name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+    { id:"bracket_24in",      name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
   ],
   "Motor B Open Roll Retractable Awning": [
-    { id:"somfy_1ch_tx",        name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_tx",        name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_1ch_patio",     name:"1 Channel Patio Transmitter",         pricingType:"per_unit", rate:200, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_patio",     name:"5 Channel Patio Transmitter",         pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_1ch_wall",      name:"1 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_wall",      name:"5 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:400, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_wind_sensor",   name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_sun_wind",      name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_16ch_telis",    name:"16 Channel Telis RTS",                pricingType:"per_unit", rate:500, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"power_cord_24ft",     name:"24\u2019 Motor Power Cord (upgrade)", pricingType:"per_unit", rate:80,  unit:"units", unitShort:"ea", placeholder:"1", group:"Power Cable Options" },
-    { id:"bracket_12in",        name:"Roof Mount Bracket 12\u2033 Tall",   pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-    { id:"bracket_16in",        name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-    { id:"bracket_24in",        name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+    { id:"somfy_1ch_tx",      name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_5ch_tx",      name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_1ch_patio",   name:"1 Channel Patio Transmitter",         pricingType:"per_unit", rate:200, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_5ch_patio",   name:"5 Channel Patio Transmitter",         pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_1ch_wall",    name:"1 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_5ch_wall",    name:"5 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:400, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_wind_sensor", name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_sun_wind",    name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_16ch_telis",  name:"16 Channel Telis RTS",                pricingType:"per_unit", rate:500, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"power_cord_24ft",   name:"24\u2019 Motor Power Cord (upgrade)", pricingType:"per_unit", rate:80,  unit:"units", unitShort:"ea", placeholder:"1", group:"Power Cable Options" },
+    { id:"bracket_12in",      name:"Roof Mount Bracket 12\u2033 Tall",   pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+    { id:"bracket_16in",      name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+    { id:"bracket_24in",      name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
   ],
   "Motor A QIP-Square box Retractable Awning": [
-    { id:"somfy_1ch_tx",        name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_tx",        name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_1ch_patio",     name:"1 Channel Patio Transmitter",         pricingType:"per_unit", rate:200, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_patio",     name:"5 Channel Patio Transmitter",         pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_1ch_wall",      name:"1 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_wall",      name:"5 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:400, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_wind_sensor",   name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_sun_wind",      name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_16ch_telis",    name:"16 Channel Telis RTS",                pricingType:"per_unit", rate:500, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"power_cord_24ft",     name:"24\u2019 Motor Power Cord (upgrade)", pricingType:"per_unit", rate:80,  unit:"units", unitShort:"ea", placeholder:"1", group:"Power Cable Options" },
-    { id:"bracket_12in",        name:"Roof Mount Bracket 12\u2033 Tall",   pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-    { id:"bracket_16in",        name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-    { id:"bracket_24in",        name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+    { id:"somfy_1ch_tx",      name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_5ch_tx",      name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_1ch_patio",   name:"1 Channel Patio Transmitter",         pricingType:"per_unit", rate:200, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_5ch_patio",   name:"5 Channel Patio Transmitter",         pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_1ch_wall",    name:"1 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_5ch_wall",    name:"5 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:400, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_wind_sensor", name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_sun_wind",    name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_16ch_telis",  name:"16 Channel Telis RTS",                pricingType:"per_unit", rate:500, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"power_cord_24ft",   name:"24\u2019 Motor Power Cord (upgrade)", pricingType:"per_unit", rate:80,  unit:"units", unitShort:"ea", placeholder:"1", group:"Power Cable Options" },
+    { id:"bracket_12in",      name:"Roof Mount Bracket 12\u2033 Tall",   pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+    { id:"bracket_16in",      name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+    { id:"bracket_24in",      name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
   ],
   "Motor B QIP-Square box Retractable Awning": [
-    { id:"somfy_1ch_tx",        name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_tx",        name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_1ch_patio",     name:"1 Channel Patio Transmitter",         pricingType:"per_unit", rate:200, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_patio",     name:"5 Channel Patio Transmitter",         pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_1ch_wall",      name:"1 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_wall",      name:"5 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:400, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_wind_sensor",   name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_sun_wind",      name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_16ch_telis",    name:"16 Channel Telis RTS",                pricingType:"per_unit", rate:500, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"power_cord_24ft",     name:"24\u2019 Motor Power Cord (upgrade)", pricingType:"per_unit", rate:80,  unit:"units", unitShort:"ea", placeholder:"1", group:"Power Cable Options" },
-    { id:"bracket_12in",        name:"Roof Mount Bracket 12\u2033 Tall",   pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-    { id:"bracket_16in",        name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-    { id:"bracket_24in",        name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+    { id:"somfy_1ch_tx",      name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_5ch_tx",      name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_1ch_patio",   name:"1 Channel Patio Transmitter",         pricingType:"per_unit", rate:200, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_5ch_patio",   name:"5 Channel Patio Transmitter",         pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_1ch_wall",    name:"1 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_5ch_wall",    name:"5 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:400, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_wind_sensor", name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_sun_wind",    name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_16ch_telis",  name:"16 Channel Telis RTS",                pricingType:"per_unit", rate:500, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"power_cord_24ft",   name:"24\u2019 Motor Power Cord (upgrade)", pricingType:"per_unit", rate:80,  unit:"units", unitShort:"ea", placeholder:"1", group:"Power Cable Options" },
+    { id:"bracket_12in",      name:"Roof Mount Bracket 12\u2033 Tall",   pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+    { id:"bracket_16in",      name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+    { id:"bracket_24in",      name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
   ],
 };
 
@@ -441,11 +408,8 @@ function calcFieldAddonTotal(lineFieldValues, productName) {
   return defs.reduce((sum, def) => {
     const val = lineFieldValues?.[def.id];
     if (!val?.enabled) return sum;
-    if (def.pricingType === "custom") {
-      return sum + (parseFloat(val.customPrice) || 0);
-    }
-    const q = parseFloat(val.qty) || 0;
-    return sum + def.rate * q;
+    if (def.pricingType === "custom") return sum + (parseFloat(val.customPrice) || 0);
+    return sum + def.rate * (parseFloat(val.qty) || 0);
   }, 0);
 }
 
@@ -457,89 +421,44 @@ const uid = () => `id_${_uid++}`;
 
 function createOpening(areaDefaults = {}) {
   return {
-    id:           uid(),
-    label:        "",
-    width:        "",
-    height:       "",
-    motorSide:    areaDefaults.motorSide    || "Left",
-    lChannelRequired: false,
-    lChannelLoc:  "Left",
-    lChannelSize: "1×1",
-    lChannelLF:   "",
-    lChannelCustomSize: "",
-    buildoutRequired: false,
-    buildoutType: "Wood",
-    buildoutDims: "",
-    buildoutLF:   "",
-    buildoutPrice:"",
-    mountOverride:  "",
-    trackOverride:  "",
-    fabricOverride: "",
-    colorOverride:  "",
-    motorOverride:  "",
-    openingPhoto:    null,
-    lChannelPhoto:   null,
-    buildoutPhoto:   null,
+    id: uid(), label: "", width: "", height: "",
+    motorSide: areaDefaults.motorSide || "Left",
+    lChannelRequired: false, lChannelLoc: "Left", lChannelSize: "1×1",
+    lChannelLF: "", lChannelCustomSize: "",
+    buildoutRequired: false, buildoutType: "Wood",
+    buildoutDims: "", buildoutLF: "", buildoutPrice: "",
+    mountOverride: "", trackOverride: "", fabricOverride: "",
+    colorOverride: "", motorOverride: "",
+    openingPhoto: null, lChannelPhoto: null, buildoutPhoto: null,
   };
 }
 
 function createArea() {
   return {
-    id:           uid(),
-    name:         "",
-    mountType:    "",
-    trackType:    "",
-    fabricType:   "",
-    cassetteColor:"",
-    trackColor:   "",
-    motorType:    "Somfy (default)",
-    areaPhoto:    null,
-    openings:     [createOpening()],
+    id: uid(), name: "", mountType: "", trackType: "", fabricType: "",
+    cassetteColor: "", trackColor: "", motorType: "Somfy (default)",
+    areaPhoto: null, openings: [createOpening()],
   };
 }
 
 function calcOpeningStructural(opening) {
   let total = 0;
-  if (opening.lChannelRequired) {
-    const lf = parseFloat(opening.lChannelLF) || 0;
-    total += lf * L_CHANNEL_RATE;
-  }
+  if (opening.lChannelRequired) total += (parseFloat(opening.lChannelLF) || 0) * L_CHANNEL_RATE;
   if (opening.buildoutRequired) {
-    const overridePrice = parseFloat(opening.buildoutPrice);
-    if (!isNaN(overridePrice) && overridePrice > 0) {
-      total += overridePrice;
-    } else {
-      const lf = parseFloat(opening.buildoutLF) || 0;
-      total += lf * BUILDOUT_RATE;
-    }
+    const op = parseFloat(opening.buildoutPrice);
+    total += (!isNaN(op) && op > 0) ? op : (parseFloat(opening.buildoutLF) || 0) * BUILDOUT_RATE;
   }
   return total;
 }
 
-/**
- * Returns the matrix price for a single opening (or 0 if dims not set).
- */
 function calcOpeningBasePrice(opening, productName) {
   if (!opening.width || !opening.height) return 0;
   const result = getMPSOpeningPrice(productName, opening.width, opening.height);
   return result.ok ? result.price : 0;
 }
 
-/**
- * Returns the sum of all opening base prices across all areas for an MPS line.
- */
 function calcMPSOpeningsTotal(areas, productName) {
-  return areas.reduce((areaSum, area) =>
-    areaSum + area.openings.reduce((opSum, opening) =>
-      opSum + calcOpeningBasePrice(opening, productName), 0
-    ), 0
-  );
-}
-
-function calcAreaTotal(area, productName) {
-  return area.openings.reduce((sum, o) => {
-    return sum + calcOpeningStructural(o) + (productName ? calcOpeningBasePrice(o, productName) : 0);
-  }, 0);
+  return areas.reduce((s, a) => s + a.openings.reduce((ss, o) => ss + calcOpeningBasePrice(o, productName), 0), 0);
 }
 
 function calcAreaStructuralOnly(area) {
@@ -547,24 +466,218 @@ function calcAreaStructuralOnly(area) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// PHOTO UPLOAD BUTTON
+// CAMERA MODAL
+// Uses navigator.mediaDevices.getUserMedia — works on laptop AND mobile
+// ─────────────────────────────────────────────────────────────
+function CameraModal({ onCapture, onClose }) {
+  const videoRef  = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
+  const [ready,      setReady]      = useState(false);
+  const [error,      setError]      = useState(null);
+  const [facingMode, setFacingMode] = useState("user"); // "user"=front/laptop, "environment"=rear mobile
+
+  const stopStream = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+  };
+
+  const startStream = useCallback(async (mode) => {
+    stopStream();
+    setReady(false);
+    setError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: mode }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play().then(() => setReady(true)).catch(() => setReady(true));
+        };
+      }
+    } catch (err) {
+      let msg = "Could not access camera.";
+      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError")
+        msg = "Camera permission was denied. Please click the camera icon in your browser's address bar and allow access, then try again.";
+      else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError")
+        msg = "No camera found on this device.";
+      else if (err.name === "NotReadableError" || err.name === "TrackStartError")
+        msg = "Camera is in use by another application. Please close it and try again.";
+      else if (err.name === "OverconstrainedError")
+        msg = "Camera constraints could not be satisfied. Trying again…";
+      setError(msg);
+    }
+  }, []);
+
+  useEffect(() => {
+    startStream(facingMode);
+    return stopStream;
+  }, []); // eslint-disable-line
+
+  const flipCamera = () => {
+    const next = facingMode === "user" ? "environment" : "user";
+    setFacingMode(next);
+    startStream(next);
+  };
+
+  const capture = () => {
+    const video  = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
+    canvas.width  = video.videoWidth  || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext("2d");
+    // Mirror if using front camera
+    if (facingMode === "user") {
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+    }
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+    stopStream();
+    onCapture(dataUrl);
+  };
+
+  return (
+    <div className="camera-modal-overlay" onClick={onClose}>
+      <div className="camera-modal" onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="camera-modal-header">
+          <span className="camera-modal-title">📸 Take Photo</span>
+          <button type="button" className="camera-modal-close" onClick={onClose}>✕</button>
+        </div>
+
+        {/* Viewfinder */}
+        <div className="camera-viewfinder">
+          {error ? (
+            <div className="camera-error">
+              <div className="camera-error-icon">⚠️</div>
+              <p className="camera-error-msg">{error}</p>
+              <button type="button" className="camera-retry-btn" onClick={() => startStream(facingMode)}>
+                Try Again
+              </button>
+            </div>
+          ) : (
+            <>
+              <video
+                ref={videoRef}
+                className={`camera-video ${facingMode === "user" ? "camera-video--mirror" : ""}`}
+                autoPlay
+                playsInline
+                muted
+                style={{ opacity: ready ? 1 : 0, transition: "opacity 0.3s" }}
+              />
+              {!ready && (
+                <div className="camera-loading">
+                  <div className="camera-spinner" />
+                  <p>Starting camera…</p>
+                </div>
+              )}
+            </>
+          )}
+          <canvas ref={canvasRef} style={{ display: "none" }} />
+        </div>
+
+        {/* Footer controls */}
+        <div className="camera-modal-footer">
+          <button type="button" className="camera-flip-btn" onClick={flipCamera} title="Switch camera">
+            🔄 Flip
+          </button>
+          <button
+            type="button"
+            className="camera-capture-btn"
+            onClick={capture}
+            disabled={!ready || !!error}
+            title="Take photo"
+          >
+            <span className="camera-shutter-ring" />
+            <span className="camera-shutter-dot" />
+          </button>
+          <button type="button" className="camera-cancel-btn" onClick={onClose}>
+            Cancel
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// PHOTO UPLOAD  — picker → camera live view OR file upload
 // ─────────────────────────────────────────────────────────────
 function PhotoUpload({ label, value, onChange }) {
-  const ref = useRef();
-  const handleChange = (e) => {
+  const fileRef = useRef();
+  const [showPicker, setShowPicker] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+
+  const handleFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    onChange(url);
+    onChange(URL.createObjectURL(file));
+    setShowPicker(false);
+    e.target.value = "";
   };
+
+  const handleCapture = (dataUrl) => {
+    onChange(dataUrl);
+    setShowCamera(false);
+  };
+
+  const openCamera = () => {
+    setShowPicker(false);
+    setShowCamera(true);
+  };
+
+  const openFilePicker = () => {
+    fileRef.current.click();
+  };
+
   return (
     <div className="photo-upload-field">
-      <input type="file" accept="image/*" ref={ref} style={{display:"none"}} onChange={handleChange} />
-      <button type="button" className="photo-btn" onClick={() => ref.current.click()}>
+      <input type="file" accept="image/*" ref={fileRef} style={{ display: "none" }} onChange={handleFile} />
+
+      <button type="button" className="photo-btn" onClick={() => setShowPicker(true)}>
         {value ? "📷 Change Photo" : `📷 ${label}`}
       </button>
       {value && <span className="photo-uploaded">✓ Uploaded</span>}
       {value && <img src={value} alt="preview" className="photo-thumb" />}
+
+      {/* Source picker */}
+      {showPicker && !showCamera && (
+        <div className="photo-picker-overlay" onClick={() => setShowPicker(false)}>
+          <div className="photo-picker-modal" onClick={e => e.stopPropagation()}>
+            <div className="photo-picker-title">Add Photo</div>
+            <div className="photo-picker-options">
+              <button type="button" className="photo-picker-option" onClick={openCamera}>
+                <span className="photo-picker-icon">📸</span>
+                <span className="photo-picker-option-label">Take Photo</span>
+                <span className="photo-picker-option-sub">Use camera live</span>
+              </button>
+              <button type="button" className="photo-picker-option" onClick={openFilePicker}>
+                <span className="photo-picker-icon">🖼️</span>
+                <span className="photo-picker-option-label">Upload File</span>
+                <span className="photo-picker-option-sub">Choose from device</span>
+              </button>
+            </div>
+            <button type="button" className="photo-picker-cancel" onClick={() => setShowPicker(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Live camera modal */}
+      {showCamera && (
+        <CameraModal
+          onCapture={handleCapture}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
     </div>
   );
 }
@@ -584,19 +697,12 @@ function Sel({ label, value, options, onChange, placeholder, required }) {
   );
 }
 
-function Field({ label, type="text", value, onChange, placeholder, min, step, required }) {
+function Field({ label, type = "text", value, onChange, placeholder, min, step, required }) {
   return (
     <div className="mps-field">
       <label className="mps-label">{label}{required && <span className="mps-req">*</span>}</label>
-      <input
-        className="mps-input"
-        type={type}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        min={min}
-        step={step}
-      />
+      <input className="mps-input" type={type} value={value} onChange={e => onChange(e.target.value)}
+        placeholder={placeholder} min={min} step={step} />
     </div>
   );
 }
@@ -605,11 +711,7 @@ function Toggle({ label, checked, onChange }) {
   return (
     <div className="mps-toggle-row">
       <span className="mps-label">{label}</span>
-      <button
-        type="button"
-        className={`mps-toggle ${checked ? "mps-toggle-on" : ""}`}
-        onClick={() => onChange(!checked)}
-      >
+      <button type="button" className={`mps-toggle ${checked ? "mps-toggle-on" : ""}`} onClick={() => onChange(!checked)}>
         <span className="mps-toggle-knob" />
         <span className="mps-toggle-text">{checked ? "Yes" : "No"}</span>
       </button>
@@ -618,29 +720,18 @@ function Toggle({ label, checked, onChange }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// OPENING PRICE BADGE  – shows live matrix lookup result
+// OPENING PRICE BADGE
 // ─────────────────────────────────────────────────────────────
 function OpeningPriceBadge({ opening, productName }) {
   const { width, height } = opening;
   if (!width && !height) return null;
-
   const result = getMPSOpeningPrice(productName, width, height);
-
-  if (!result.ok) {
-    return (
-      <div className="opening-price-badge opening-price-badge--error" title={result.message}>
-        ⚠ {result.message}
-      </div>
-    );
-  }
-
+  if (!result.ok) return <div className="opening-price-badge opening-price-badge--error" title={result.message}>⚠ {result.message}</div>;
   return (
     <div className="opening-price-badge opening-price-badge--ok">
       <span className="opening-price-badge__label">Opening price:</span>
       <span className="opening-price-badge__value">{fmt(result.price)}</span>
-      <span className="opening-price-badge__hint">
-        (W={toFeetKey(width)}ft × H={toFeetKey(height)}ft)
-      </span>
+      <span className="opening-price-badge__hint">(W={toFeetKey(width)}ft × H={toFeetKey(height)}ft)</span>
     </div>
   );
 }
@@ -652,72 +743,33 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
   const structural   = calcOpeningStructural(opening);
   const openingPrice = calcOpeningBasePrice(opening, productName);
   const openingTotal = openingPrice + structural;
-
   const set = (field, val) => onChange({ ...opening, [field]: val });
-
-  const effectiveMount  = opening.mountOverride  || areaDefaults.mountType;
-  const effectiveTrack  = opening.trackOverride  || areaDefaults.trackType;
-  const effectiveFabric = opening.fabricOverride || areaDefaults.fabricType;
-  const effectiveMotor  = opening.motorOverride  || areaDefaults.motorType;
 
   return (
     <div className="opening-card">
       <div className="opening-header">
         <div className="opening-num">Opening {index + 1}</div>
         <div className="opening-label-wrap">
-          <input
-            className="opening-label-input"
-            placeholder="Opening label (e.g. Left Bay)"
-            value={opening.label}
-            onChange={e => set("label", e.target.value)}
-          />
+          <input className="opening-label-input" placeholder="Opening label (e.g. Left Bay)"
+            value={opening.label} onChange={e => set("label", e.target.value)} />
         </div>
-        {structural > 0 && (
-          <div className="opening-structural-badge">{fmt(structural)} structural</div>
-        )}
-        {showRemove && (
-          <button type="button" className="opening-remove" onClick={onRemove}>✕</button>
-        )}
+        {structural > 0 && <div className="opening-structural-badge">{fmt(structural)} structural</div>}
+        {showRemove && <button type="button" className="opening-remove" onClick={onRemove}>✕</button>}
       </div>
 
-      {/* ── Dimensions + Motor Side ── */}
       <div className="opening-grid-3">
-        <Field
-          label="Width (ft or inches)"
-          type="number"
-          value={opening.width}
-          onChange={v => set("width", v)}
-          placeholder='e.g. 10 (ft) or 120 (in)'
-          min="0"
-          required
-        />
-        <Field
-          label="Height (ft or inches)"
-          type="number"
-          value={opening.height}
-          onChange={v => set("height", v)}
-          placeholder='e.g. 8 (ft) or 96 (in)'
-          min="0"
-          required
-        />
-        <Sel
-          label="Motor Side"
-          value={opening.motorSide}
-          options={MPS_DEFAULTS.motorSides}
-          onChange={v => set("motorSide", v)}
-          required
-        />
+        <Field label="Width (ft or inches)" type="number" value={opening.width} onChange={v => set("width", v)} placeholder='e.g. 10 (ft) or 120 (in)' min="0" required />
+        <Field label="Height (ft or inches)" type="number" value={opening.height} onChange={v => set("height", v)} placeholder='e.g. 8 (ft) or 96 (in)' min="0" required />
+        <Sel label="Motor Side" value={opening.motorSide} options={MPS_DEFAULTS.motorSides} onChange={v => set("motorSide", v)} required />
       </div>
 
-      {/* ── Live price lookup ── */}
       <OpeningPriceBadge opening={opening} productName={productName} />
 
-      {/* ── Per-opening overrides ── */}
       <details className="override-details">
         <summary className="override-summary">
           ⚙ Override area defaults for this opening
           <span className="override-hint">
-            (Mount: {effectiveMount || "—"} · Track: {effectiveTrack || "—"} · Fabric: {effectiveFabric || "—"} · Motor: {effectiveMotor || "—"})
+            (Mount: {opening.mountOverride || areaDefaults.mountType || "—"} · Track: {opening.trackOverride || areaDefaults.trackType || "—"} · Fabric: {opening.fabricOverride || areaDefaults.fabricType || "—"} · Motor: {opening.motorOverride || areaDefaults.motorType || "—"})
           </span>
         </summary>
         <div className="override-grid">
@@ -729,74 +781,31 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
         </div>
       </details>
 
-      {/* ── L-Channel ── */}
       <div className="structural-section">
-        <Toggle
-          label="L-Channel Required?"
-          checked={opening.lChannelRequired}
-          onChange={v => set("lChannelRequired", v)}
-        />
+        <Toggle label="L-Channel Required?" checked={opening.lChannelRequired} onChange={v => set("lChannelRequired", v)} />
         {opening.lChannelRequired && (
           <div className="structural-fields">
             <div className="structural-fields-grid">
               <Sel label="Location" value={opening.lChannelLoc}  options={MPS_DEFAULTS.lChannelLocs}  onChange={v=>set("lChannelLoc",v)} />
               <Sel label="Size"     value={opening.lChannelSize} options={MPS_DEFAULTS.lChannelSizes} onChange={v=>set("lChannelSize",v)} />
-              {opening.lChannelSize === "Custom" && (
-                <Field label="Custom Size" value={opening.lChannelCustomSize} onChange={v=>set("lChannelCustomSize",v)} placeholder='e.g. 2"×3"' />
-              )}
-              <Field
-                label={`Linear Feet (× $${L_CHANNEL_RATE}/LF)`}
-                type="number"
-                value={opening.lChannelLF}
-                onChange={v=>set("lChannelLF",v)}
-                placeholder="e.g. 8"
-                min="0"
-                step="0.5"
-              />
+              {opening.lChannelSize === "Custom" && <Field label="Custom Size" value={opening.lChannelCustomSize} onChange={v=>set("lChannelCustomSize",v)} placeholder='e.g. 2"×3"' />}
+              <Field label={`Linear Feet (× $${L_CHANNEL_RATE}/LF)`} type="number" value={opening.lChannelLF} onChange={v=>set("lChannelLF",v)} placeholder="e.g. 8" min="0" step="0.5" />
             </div>
-            {opening.lChannelLF && (
-              <div className="structural-calc">
-                L-Channel: {opening.lChannelLF} LF × ${L_CHANNEL_RATE} = <strong>{fmt(parseFloat(opening.lChannelLF)*L_CHANNEL_RATE)}</strong>
-              </div>
-            )}
-            <PhotoUpload
-              label="L-Channel Photo (optional)"
-              value={opening.lChannelPhoto}
-              onChange={v=>set("lChannelPhoto",v)}
-            />
+            {opening.lChannelLF && <div className="structural-calc">L-Channel: {opening.lChannelLF} LF × ${L_CHANNEL_RATE} = <strong>{fmt(parseFloat(opening.lChannelLF)*L_CHANNEL_RATE)}</strong></div>}
+            <PhotoUpload label="L-Channel Photo (optional)" value={opening.lChannelPhoto} onChange={v=>set("lChannelPhoto",v)} />
           </div>
         )}
       </div>
 
-      {/* ── Buildout ── */}
       <div className="structural-section">
-        <Toggle
-          label="Buildout Required?"
-          checked={opening.buildoutRequired}
-          onChange={v => set("buildoutRequired", v)}
-        />
+        <Toggle label="Buildout Required?" checked={opening.buildoutRequired} onChange={v => set("buildoutRequired", v)} />
         {opening.buildoutRequired && (
           <div className="structural-fields">
             <div className="structural-fields-grid">
               <Sel label="Type" value={opening.buildoutType} options={MPS_DEFAULTS.buildoutTypes} onChange={v=>set("buildoutType",v)} />
               <Field label="Dimensions" value={opening.buildoutDims} onChange={v=>set("buildoutDims",v)} placeholder='e.g. 2"×4"×96"' />
-              <Field
-                label={`Linear Feet (× $${BUILDOUT_RATE}/LF)`}
-                type="number"
-                value={opening.buildoutLF}
-                onChange={v=>set("buildoutLF",v)}
-                placeholder="e.g. 12"
-                min="0"
-                step="0.5"
-              />
-              <Field
-                label="Override Price ($)"
-                type="number"
-                value={opening.buildoutPrice}
-                onChange={v=>set("buildoutPrice",v)}
-                placeholder="Leave blank to use LF rate"
-                min="0"
-              />
+              <Field label={`Linear Feet (× $${BUILDOUT_RATE}/LF)`} type="number" value={opening.buildoutLF} onChange={v=>set("buildoutLF",v)} placeholder="e.g. 12" min="0" step="0.5" />
+              <Field label="Override Price ($)" type="number" value={opening.buildoutPrice} onChange={v=>set("buildoutPrice",v)} placeholder="Leave blank to use LF rate" min="0" />
             </div>
             {(opening.buildoutLF || opening.buildoutPrice) && (
               <div className="structural-calc">
@@ -806,34 +815,22 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
                 }
               </div>
             )}
-            <PhotoUpload
-              label="Buildout Photo (optional)"
-              value={opening.buildoutPhoto}
-              onChange={v=>set("buildoutPhoto",v)}
-            />
+            <PhotoUpload label="Buildout Photo (optional)" value={opening.buildoutPhoto} onChange={v=>set("buildoutPhoto",v)} />
           </div>
         )}
       </div>
 
-      {/* ── Opening photo ── */}
       <div className="opening-photo-row">
-        <PhotoUpload
-          label="Opening Photo"
-          value={opening.openingPhoto}
-          onChange={v=>set("openingPhoto",v)}
-        />
+        <PhotoUpload label="Opening Photo" value={opening.openingPhoto} onChange={v=>set("openingPhoto",v)} />
       </div>
 
-      {/* ── Per-opening total (price + structural) ── */}
       {openingTotal > 0 && (
         <div className="opening-total">
-          {openingPrice > 0 && structural > 0 ? (
-            <>Opening Total: <strong>{fmt(openingTotal)}</strong> ({fmt(openingPrice)} product + {fmt(structural)} structural)</>
-          ) : openingPrice > 0 ? (
-            <>Opening Total: <strong>{fmt(openingPrice)}</strong></>
-          ) : (
-            <>Structural Adjustments: <strong>{fmt(structural)}</strong></>
-          )}
+          {openingPrice > 0 && structural > 0
+            ? <>Opening Total: <strong>{fmt(openingTotal)}</strong> ({fmt(openingPrice)} product + {fmt(structural)} structural)</>
+            : openingPrice > 0 ? <>Opening Total: <strong>{fmt(openingPrice)}</strong></>
+            : <>Structural Adjustments: <strong>{fmt(structural)}</strong></>
+          }
         </div>
       )}
     </div>
@@ -847,61 +844,41 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
   const areaBaseTotal       = area.openings.reduce((s,o) => s + calcOpeningBasePrice(o, productName), 0);
   const areaStructuralTotal = calcAreaStructuralOnly(area);
   const areaGrandTotal      = areaBaseTotal + areaStructuralTotal;
-
   const setArea = (field, val) => onChange({ ...area, [field]: val });
 
-  const setOpening = useCallback((openingId, updatedOpening) => {
-    onChange({
-      ...area,
-      openings: area.openings.map(o => o.id === openingId ? updatedOpening : o),
-    });
+  const setOpening = useCallback((openingId, updated) => {
+    onChange({ ...area, openings: area.openings.map(o => o.id === openingId ? updated : o) });
   }, [area, onChange]);
 
-  const addOpening = () => {
-    onChange({
-      ...area,
-      openings: [...area.openings, createOpening({ motorSide: "Left" })],
-    });
-  };
-
-  const removeOpening = (id) => {
-    onChange({ ...area, openings: area.openings.filter(o => o.id !== id) });
-  };
+  const addOpening    = () => onChange({ ...area, openings: [...area.openings, createOpening({ motorSide: "Left" })] });
+  const removeOpening = (id) => onChange({ ...area, openings: area.openings.filter(o => o.id !== id) });
 
   return (
     <div className="area-card">
       <div className="area-header">
         <div className="area-header-left">
           <div className="area-badge">Area {areaIndex + 1}</div>
-          <input
-            className="area-name-input"
-            placeholder="Area Name (e.g. Patio North)"
-            value={area.name}
-            onChange={e => setArea("name", e.target.value)}
-          />
+          <input className="area-name-input" placeholder="Area Name (e.g. Patio North)"
+            value={area.name} onChange={e => setArea("name", e.target.value)} />
         </div>
         <div className="area-header-right">
           {areaGrandTotal > 0 && (
             <div className="area-structural-total">
               {areaBaseTotal > 0 && areaStructuralTotal > 0
                 ? `${fmt(areaGrandTotal)} total (${fmt(areaBaseTotal)} product + ${fmt(areaStructuralTotal)} structural)`
-                : areaBaseTotal > 0
-                  ? `${fmt(areaBaseTotal)} product`
-                  : `+${fmt(areaStructuralTotal)} structural`
+                : areaBaseTotal > 0 ? `${fmt(areaBaseTotal)} product`
+                : `+${fmt(areaStructuralTotal)} structural`
               }
             </div>
           )}
-          {showRemove && (
-            <button type="button" className="area-remove" onClick={onRemove}>Remove Area</button>
-          )}
+          {showRemove && <button type="button" className="area-remove" onClick={onRemove}>Remove Area</button>}
         </div>
       </div>
 
-      {/* ── Area-level defaults ── */}
       <div className="area-defaults">
         <div className="area-defaults-label">Area Defaults (auto-populated per opening)</div>
         <div className="area-defaults-grid">
-          <Sel label="Product"     value={area.product}    options={[]}         onChange={()=>{}}           placeholder="Inherited from line" />
+          <Sel label="Product"     value={area.product || ""} options={[]} onChange={()=>{}} placeholder="Inherited from line" />
           <Sel label="Mount Type"  value={area.mountType}  options={MPS_DEFAULTS.mountTypes}  onChange={v=>setArea("mountType",v)} />
           <Sel label="Track Type"  value={area.trackType}  options={MPS_DEFAULTS.trackTypes}  onChange={v=>setArea("trackType",v)} />
           <Sel label="Fabric Type" value={area.fabricType} options={MPS_DEFAULTS.fabricTypes} onChange={v=>setArea("fabricType",v)} />
@@ -909,39 +886,24 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
           <Field label="Track Color"    value={area.trackColor}    onChange={v=>setArea("trackColor",v)}    placeholder="e.g. Beige" />
           <Sel label="Motor Type"  value={area.motorType}  options={MPS_DEFAULTS.motorTypes}  onChange={v=>setArea("motorType",v)} />
         </div>
-        <PhotoUpload
-          label="Area Photo (wide shot)"
-          value={area.areaPhoto}
-          onChange={v=>setArea("areaPhoto",v)}
-        />
+        <PhotoUpload label="Area Photo (wide shot)" value={area.areaPhoto} onChange={v=>setArea("areaPhoto",v)} />
       </div>
 
-      {/* ── Openings ── */}
       <div className="openings-container">
         <div className="openings-heading">
           <span>Openings</span>
           <span className="openings-count">{area.openings.length}</span>
-          {areaBaseTotal > 0 && (
-            <span className="openings-price-total">= {fmt(areaBaseTotal)} product price</span>
-          )}
+          {areaBaseTotal > 0 && <span className="openings-price-total">= {fmt(areaBaseTotal)} product price</span>}
         </div>
-
         {area.openings.map((opening, idx) => (
-          <OpeningEditor
-            key={opening.id}
-            opening={opening}
-            index={idx}
-            areaDefaults={area}
+          <OpeningEditor key={opening.id} opening={opening} index={idx} areaDefaults={area}
             productName={productName}
             onChange={updated => setOpening(opening.id, updated)}
             onRemove={() => removeOpening(opening.id)}
             showRemove={area.openings.length > 1}
           />
         ))}
-
-        <button type="button" className="add-opening-btn" onClick={addOpening}>
-          + Add Opening
-        </button>
+        <button type="button" className="add-opening-btn" onClick={addOpening}>+ Add Opening</button>
       </div>
     </div>
   );
@@ -951,143 +913,77 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
 // MPS PRODUCT CARD
 // ─────────────────────────────────────────────────────────────
 function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSelections, onAddonToggle }) {
-  const qty  = parseInt(line.quantity, 10) || 1;
+  const qty   = parseInt(line.quantity, 10) || 1;
   const areas = mpsData[line.id] || [];
+  const setAreas   = (a) => onMPSChange(line.id, a);
+  const addArea    = () => setAreas([...areas, createArea()]);
+  const updateArea = (id, u) => setAreas(areas.map(a => a.id === id ? u : a));
+  const removeArea = (id) => setAreas(areas.filter(a => a.id !== id));
 
-  const setAreas = (newAreas) => onMPSChange(line.id, newAreas);
-  const addArea  = () => setAreas([...areas, createArea()]);
-  const updateArea   = (areaId, updated) => setAreas(areas.map(a => a.id === areaId ? updated : a));
-  const removeArea   = (areaId)          => setAreas(areas.filter(a => a.id !== areaId));
-
-  // ── Opening-based product price (replaces the App.js base price for MPS) ──
   const openingsProductTotal = calcMPSOpeningsTotal(areas, line.product);
   const structuralTotal      = areas.reduce((s,a) => s + calcAreaStructuralOnly(a), 0);
-
-  const selected = addonSelections[line.id] || {};
-  const simpleAddonTotal = MPS_SIMPLE_ADDONS.reduce((sum, addon) =>
-    selected[addon.id] ? sum + addon.price * qty : sum, 0);
-
-  // If no openings have been priced yet, fall back to the App.js line subtotal
-  const enriched     = snapshot.productLines.find(l => l.id === line.id);
-  const appBaseTotal = enriched?.pricing?.lineSubtotal || 0;
+  const selected             = addonSelections[line.id] || {};
+  const simpleAddonTotal     = MPS_SIMPLE_ADDONS.reduce((s, a) => selected[a.id] ? s + a.price * qty : s, 0);
+  const enriched             = snapshot.productLines.find(l => l.id === line.id);
+  const appBaseTotal         = enriched?.pricing?.lineSubtotal || 0;
   const effectiveProductTotal = openingsProductTotal > 0 ? openingsProductTotal : appBaseTotal;
-
-  const grandLineTotal = effectiveProductTotal + structuralTotal + simpleAddonTotal;
-
-  const hasUnpricedOpenings = areas.some(a =>
-    a.openings.some(o => (o.width || o.height) && !getMPSOpeningPrice(line.product, o.width, o.height).ok)
-  );
+  const grandLineTotal       = effectiveProductTotal + structuralTotal + simpleAddonTotal;
+  const hasUnpriced = areas.some(a => a.openings.some(o => (o.width || o.height) && !getMPSOpeningPrice(line.product, o.width, o.height).ok));
 
   return (
     <div className="ps-product-card mps-product-card">
-      {/* ── Header ── */}
       <div className="ps-product-header">
         <div className="ps-product-number">#{index + 1}</div>
         <div className="ps-product-name">{line.product}</div>
         <div className="ps-product-price">{fmt(grandLineTotal)}</div>
       </div>
-
-      {/* ── Base details ── */}
       <div className="ps-detail-grid">
-        {[
-          { label:"Category",    value: line.category },
-          { label:"Base Size",   value: `${line.width||"—"} × ${line.height||"—"}` },
-          { label:"Quantity",    value: line.quantity },
-          { label:"Operation",   value: line.operation, capitalize: true },
-        ].map(({ label, value, capitalize }) => (
-          <div className="ps-detail-item" key={label}>
-            <span className="ps-detail-label">{label}</span>
-            <span className="ps-detail-value" style={capitalize?{textTransform:"capitalize"}:{}}>{value}</span>
-          </div>
-        ))}
+        {[{label:"Product",value:line.category},{label:"Base Size",value:`${line.width||"—"} × ${line.height||"—"}`},{label:"Quantity",value:line.quantity},{label:"Operation",value:line.operation,capitalize:true}]
+          .map(({label,value,capitalize}) => (
+            <div className="ps-detail-item" key={label}>
+              <span className="ps-detail-label">{label}</span>
+              <span className="ps-detail-value" style={capitalize?{textTransform:"capitalize"}:{}}>{value}</span>
+            </div>
+          ))}
       </div>
+      {enriched?.pricing?.priceNote && <div className="ps-price-note">💡 Reference (from intake form): {enriched.pricing.priceNote}</div>}
+      {hasUnpriced && <div className="ps-price-note ps-price-note--warn">⚠ Some openings have dimensions that don't match the price matrix.</div>}
 
-      {/* Show the App.js price note as a reference */}
-      {enriched?.pricing?.priceNote && (
-        <div className="ps-price-note">
-          💡 Reference (from intake form): {enriched.pricing.priceNote}
-        </div>
-      )}
-
-      {hasUnpricedOpenings && (
-        <div className="ps-price-note ps-price-note--warn">
-          ⚠ Some openings have dimensions that don't match the price matrix. Check width/height values.
-        </div>
-      )}
-
-      {/* ── MPS Area/Opening builder ── */}
       <div className="mps-builder">
         <div className="mps-builder-header">
           <div className="mps-builder-title">
-            <span className="mps-builder-icon">🗂</span>
-            Area &amp; Opening Configuration
-            <span className="mps-builder-hint">
-              — Enter width &amp; height per opening to auto-price from matrix
-            </span>
+            <span className="mps-builder-icon">🗂</span> Area &amp; Opening Configuration
+            <span className="mps-builder-hint">— Enter width &amp; height per opening to auto-price from matrix</span>
           </div>
           <div className="mps-totals-row">
-            {openingsProductTotal > 0 && (
-              <div className="mps-structural-total mps-product-from-openings">
-                Openings product total: <strong>{fmt(openingsProductTotal)}</strong>
-              </div>
-            )}
-            {structuralTotal > 0 && (
-              <div className="mps-structural-total">
-                Structural: <strong>{fmt(structuralTotal)}</strong>
-              </div>
-            )}
+            {openingsProductTotal > 0 && <div className="mps-structural-total mps-product-from-openings">Openings product total: <strong>{fmt(openingsProductTotal)}</strong></div>}
+            {structuralTotal      > 0 && <div className="mps-structural-total">Structural: <strong>{fmt(structuralTotal)}</strong></div>}
           </div>
         </div>
-
-        {areas.length === 0 ? (
-          <div className="mps-empty-state">
-            <p>No areas configured yet. Add an area to specify openings with dimensions — pricing will be calculated automatically from the product matrix.</p>
-          </div>
-        ) : (
-          areas.map((area, idx) => (
-            <AreaEditor
-              key={area.id}
-              area={area}
-              areaIndex={idx}
-              productName={line.product}
-              onChange={updated => updateArea(area.id, updated)}
-              onRemove={() => removeArea(area.id)}
-              showRemove={areas.length > 1}
-            />
-          ))
-        )}
-
-        <button type="button" className="add-area-btn" onClick={addArea}>
-          + Add Area
-        </button>
+        {areas.length === 0
+          ? <div className="mps-empty-state"><p>No areas configured yet. Add an area to specify openings.</p></div>
+          : areas.map((area, idx) => (
+              <AreaEditor key={area.id} area={area} areaIndex={idx} productName={line.product}
+                onChange={u => updateArea(area.id, u)} onRemove={() => removeArea(area.id)} showRemove={areas.length > 1} />
+            ))
+        }
+        <button type="button" className="add-area-btn" onClick={addArea}>+ Add Area</button>
       </div>
 
-      {/* ── Simple checkbox add-ons ── */}
       <div className="mps-simple-addons">
         <div className="mps-simple-addons-title">
-          <span className="ps-addons-icon">✦</span>
-          Accessories &amp; Add-ons
-          {simpleAddonTotal > 0 && (
-            <span className="ps-addons-running-total">+{fmt(simpleAddonTotal)} selected</span>
-          )}
+          <span className="ps-addons-icon">✦</span> Accessories &amp; Add-ons
+          {simpleAddonTotal > 0 && <span className="ps-addons-running-total">+{fmt(simpleAddonTotal)} selected</span>}
         </div>
         <div className="ps-addons-grid">
           {MPS_SIMPLE_ADDONS.map(addon => {
             const isChecked = !!selected[addon.id];
             return (
               <label key={addon.id} className={`ps-addon-item ${isChecked ? "ps-addon-checked" : ""}`}>
-                <input
-                  type="checkbox"
-                  className="ps-addon-checkbox"
-                  checked={isChecked}
-                  onChange={() => onAddonToggle(line.id, addon.id)}
-                />
+                <input type="checkbox" className="ps-addon-checkbox" checked={isChecked} onChange={() => onAddonToggle(line.id, addon.id)} />
                 <div className="ps-addon-content">
                   <span className="ps-addon-name">{addon.name}</span>
-                  <span className="ps-addon-price">
-                    +{fmt(addon.price)}
-                    {qty > 1 && <span className="ps-addon-per-unit"> × {qty} = {fmt(addon.price * qty)}</span>}
-                  </span>
+                  <span className="ps-addon-price">+{fmt(addon.price)}{qty > 1 && <span className="ps-addon-per-unit"> × {qty} = {fmt(addon.price*qty)}</span>}</span>
                 </div>
                 {isChecked && <span className="ps-addon-check-mark">✓</span>}
               </label>
@@ -1096,12 +992,8 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
         </div>
       </div>
 
-      {/* ── Line total breakdown ── */}
       <div className="mps-line-total">
-        {openingsProductTotal > 0
-          ? <span>Openings Price: {fmt(openingsProductTotal)}</span>
-          : <span>Base Price (from form): {fmt(appBaseTotal)}</span>
-        }
+        {openingsProductTotal > 0 ? <span>Openings Price: {fmt(openingsProductTotal)}</span> : <span>Base Price (from form): {fmt(appBaseTotal)}</span>}
         {simpleAddonTotal > 0 && <span>+ Add-ons: {fmt(simpleAddonTotal)}</span>}
         {structuralTotal  > 0 && <span>+ Structural: {fmt(structuralTotal)}</span>}
         <span className="mps-line-grand">Line Total: {fmt(grandLineTotal)}</span>
@@ -1111,29 +1003,25 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
 }
 
 // ─────────────────────────────────────────────────────────────
-// STANDARD PRODUCT CARD  (unchanged)
+// STANDARD PRODUCT CARD
 // ─────────────────────────────────────────────────────────────
 function StandardProductCard({ line, index, snapshot, addonSelections, onAddonToggle, fieldAddonValues, onFieldAddonChange }) {
   const enriched  = snapshot.productLines.find(l => l.id === line.id);
   const baseTotal = enriched?.pricing?.lineSubtotal || 0;
   const priceNote = enriched?.pricing?.priceNote    || '';
   const qty       = parseInt(line.quantity, 10) || 1;
-
-  const availableAddons = getAddonsForProduct(line.product);
-  const selected        = addonSelections[line.id] || {};
-
-  const summaryAddonTotal = availableAddons.reduce((sum, addon) =>
-    selected[addon.id] ? sum + addon.price * qty : sum, 0);
-
-  const fieldAddonDefs  = getFieldAddonsForProduct(line.product);
-  const fieldTotal      = calcFieldAddonTotal(fieldAddonValues, line.product);
-  const grandLineTotal  = baseTotal + summaryAddonTotal + fieldTotal;
+  const availableAddons   = getAddonsForProduct(line.product);
+  const selected          = addonSelections[line.id] || {};
+  const summaryAddonTotal = availableAddons.reduce((s, a) => selected[a.id] ? s + a.price * qty : s, 0);
+  const fieldAddonDefs    = getFieldAddonsForProduct(line.product);
+  const fieldTotal        = calcFieldAddonTotal(fieldAddonValues, line.product);
+  const grandLineTotal    = baseTotal + summaryAddonTotal + fieldTotal;
 
   const details = [
-    { label:"Category",      value: line.category           },
-    { label:"Width",         value: line.width      || "—"  },
-    { label:"Height / Proj.",value: line.height     || "—"  },
-    { label:"Quantity",      value: line.quantity           },
+    { label:"Category",       value: line.category          },
+    { label:"Width",          value: line.width     || "—"  },
+    { label:"Height / Proj.", value: line.height    || "—"  },
+    { label:"Quantity",       value: line.quantity          },
     line.mount  && { label:"Mount Type", value: line.mount  },
     line.fabric && { label:"Fabric",     value: line.fabric },
     line.color  && { label:"Color",      value: line.color  },
@@ -1147,7 +1035,6 @@ function StandardProductCard({ line, index, snapshot, addonSelections, onAddonTo
         <div className="ps-product-name">{line.product}</div>
         <div className="ps-product-price">{fmt(grandLineTotal)}</div>
       </div>
-
       <div className="ps-detail-grid">
         {details.map(({ label, value, capitalize }) => (
           <div className="ps-detail-item" key={label}>
@@ -1156,35 +1043,23 @@ function StandardProductCard({ line, index, snapshot, addonSelections, onAddonTo
           </div>
         ))}
       </div>
-
       {priceNote && <div className="ps-price-note">💡 {priceNote}</div>}
 
       {availableAddons.length > 0 && (
         <div className="ps-addons-section">
           <div className="ps-addons-title">
-            <span className="ps-addons-icon">✦</span>
-            Available Add-ons
-            {summaryAddonTotal > 0 && (
-              <span className="ps-addons-running-total">+{fmt(summaryAddonTotal)} selected</span>
-            )}
+            <span className="ps-addons-icon">✦</span> Available Add-ons
+            {summaryAddonTotal > 0 && <span className="ps-addons-running-total">+{fmt(summaryAddonTotal)} selected</span>}
           </div>
           <div className="ps-addons-grid">
             {availableAddons.map(addon => {
               const isChecked = !!selected[addon.id];
               return (
                 <label key={addon.id} className={`ps-addon-item ${isChecked?"ps-addon-checked":""}`}>
-                  <input
-                    type="checkbox"
-                    className="ps-addon-checkbox"
-                    checked={isChecked}
-                    onChange={() => onAddonToggle(line.id, addon.id)}
-                  />
+                  <input type="checkbox" className="ps-addon-checkbox" checked={isChecked} onChange={() => onAddonToggle(line.id, addon.id)} />
                   <div className="ps-addon-content">
                     <span className="ps-addon-name">{addon.name}</span>
-                    <span className="ps-addon-price">
-                      +{fmt(addon.price)}
-                      {qty > 1 && <span className="ps-addon-per-unit"> × {qty} = {fmt(addon.price*qty)}</span>}
-                    </span>
+                    <span className="ps-addon-price">+{fmt(addon.price)}{qty>1&&<span className="ps-addon-per-unit"> × {qty} = {fmt(addon.price*qty)}</span>}</span>
                   </div>
                   {isChecked && <span className="ps-addon-check-mark">✓</span>}
                 </label>
@@ -1197,75 +1072,43 @@ function StandardProductCard({ line, index, snapshot, addonSelections, onAddonTo
       {fieldAddonDefs.length > 0 && (
         <div className="ps-addons-section field-addons-section">
           <div className="ps-addons-title">
-            <span className="ps-addons-icon">&#x25C6;</span>
-            Upgrades &amp; Add-ons
-            {fieldTotal > 0 && (
-              <span className="ps-addons-running-total">+{fmt(fieldTotal)} selected</span>
-            )}
+            <span className="ps-addons-icon">&#x25C6;</span> Upgrades &amp; Add-ons
+            {fieldTotal > 0 && <span className="ps-addons-running-total">+{fmt(fieldTotal)} selected</span>}
           </div>
           <div className="field-addons-grid">
             {(() => {
               const groupMap = {};
-              fieldAddonDefs.forEach(def => {
-                const g = def.group || "Add-ons";
-                if (!groupMap[g]) groupMap[g] = [];
-                groupMap[g].push(def);
-              });
-              const groupOrder = [...new Set(fieldAddonDefs.map(d => d.group || "Add-ons"))];
+              fieldAddonDefs.forEach(def => { const g = def.group||"Add-ons"; if (!groupMap[g]) groupMap[g]=[]; groupMap[g].push(def); });
+              const groupOrder = [...new Set(fieldAddonDefs.map(d=>d.group||"Add-ons"))];
               return groupOrder.map(groupLabel => (
                 <div key={groupLabel} className="field-addon-group">
                   <div className="field-addon-group-header">{groupLabel}</div>
                   {groupMap[groupLabel].map(def => {
-                    const val        = fieldAddonValues?.[def.id] || {};
-                    const enabled    = !!val.enabled;
-                    const qtyVal     = val.qty || "";
-                    const customPrice= val.customPrice || "";
-                    const isCustom   = def.pricingType === "custom";
-                    const lineAmt    = enabled
-                      ? isCustom ? (parseFloat(customPrice) || 0) : def.rate * (parseFloat(qtyVal) || 0)
-                      : 0;
+                    const val = fieldAddonValues?.[def.id] || {};
+                    const enabled = !!val.enabled;
+                    const qtyVal = val.qty || "";
+                    const customPrice = val.customPrice || "";
+                    const isCustom = def.pricingType === "custom";
+                    const lineAmt = enabled ? (isCustom ? (parseFloat(customPrice)||0) : def.rate*(parseFloat(qtyVal)||0)) : 0;
                     return (
-                      <div key={def.id} className={`field-addon-row ${enabled ? "field-addon-active" : ""}`}>
+                      <div key={def.id} className={`field-addon-row ${enabled?"field-addon-active":""}`}>
                         <label className="field-addon-check-label">
-                          <input
-                            type="checkbox"
-                            className="ps-addon-checkbox"
-                            checked={enabled}
-                            onChange={() => onFieldAddonChange(line.id, def.id, { ...val, enabled: !enabled })}
-                          />
+                          <input type="checkbox" className="ps-addon-checkbox" checked={enabled} onChange={() => onFieldAddonChange(line.id, def.id, {...val, enabled: !enabled})} />
                           <span className="field-addon-name">{def.name}</span>
                         </label>
                         <div className="field-addon-right">
-                          {!isCustom && (
-                            <div className="field-addon-rate">{fmt(def.rate)} / {def.unitShort}</div>
-                          )}
+                          {!isCustom && <div className="field-addon-rate">{fmt(def.rate)} / {def.unitShort}</div>}
                           {enabled && (
                             <div className="field-addon-input-wrap">
                               {isCustom ? (
-                                <>
-                                  <span className="field-addon-unit-label">$</span>
-                                  <input
-                                    type="number"
-                                    className="field-addon-qty-input"
-                                    value={customPrice}
-                                    min="0"
-                                    step="1"
-                                    placeholder={def.placeholder}
-                                    onChange={e => onFieldAddonChange(line.id, def.id, { ...val, enabled: true, customPrice: e.target.value })}
-                                  />
+                                <><span className="field-addon-unit-label">$</span>
+                                  <input type="number" className="field-addon-qty-input" value={customPrice} min="0" step="1" placeholder={def.placeholder}
+                                    onChange={e => onFieldAddonChange(line.id, def.id, {...val, enabled:true, customPrice:e.target.value})} />
                                   {lineAmt > 0 && <span className="field-addon-line-total">{fmt(lineAmt)}</span>}
                                 </>
                               ) : (
-                                <>
-                                  <input
-                                    type="number"
-                                    className="field-addon-qty-input"
-                                    value={qtyVal}
-                                    min="0"
-                                    step={def.pricingType === "per_lf" ? "0.5" : "1"}
-                                    placeholder={def.placeholder}
-                                    onChange={e => onFieldAddonChange(line.id, def.id, { ...val, enabled: true, qty: e.target.value })}
-                                  />
+                                <><input type="number" className="field-addon-qty-input" value={qtyVal} min="0" step={def.pricingType==="per_lf"?"0.5":"1"} placeholder={def.placeholder}
+                                    onChange={e => onFieldAddonChange(line.id, def.id, {...val, enabled:true, qty:e.target.value})} />
                                   <span className="field-addon-unit-label">{def.unit}</span>
                                   {lineAmt > 0 && <span className="field-addon-line-total">{fmt(lineAmt)}</span>}
                                 </>
@@ -1283,11 +1126,7 @@ function StandardProductCard({ line, index, snapshot, addonSelections, onAddonTo
         </div>
       )}
 
-      {line.notes && (
-        <div className="ps-product-notes">
-          <span className="ps-detail-label">Notes — </span>{line.notes}
-        </div>
-      )}
+      {line.notes && <div className="ps-product-notes"><span className="ps-detail-label">Notes — </span>{line.notes}</div>}
     </div>
   );
 }
@@ -1300,93 +1139,50 @@ export default function ProductSummary() {
   const navigate = useNavigate();
   const snapshot = location.state?.snapshot;
 
-  const [addonSelections, setAddonSelections] = useState({});
-  const [mpsData, setMpsData] = useState({});
+  const [addonSelections,  setAddonSelections]  = useState({});
+  const [mpsData,          setMpsData]          = useState({});
   const [fieldAddonValues, setFieldAddonValues] = useState({});
 
-  const handleFieldAddonChange = (lineId, addonId, val) => {
-    setFieldAddonValues(prev => ({
-      ...prev,
-      [lineId]: { ...(prev[lineId] || {}), [addonId]: val },
-    }));
-  };
+  const handleFieldAddonChange = (lineId, addonId, val) =>
+    setFieldAddonValues(prev => ({...prev, [lineId]: {...(prev[lineId]||{}), [addonId]: val}}));
+  const handleAddonToggle = (lineId, addonId) =>
+    setAddonSelections(prev => ({...prev, [lineId]: {...(prev[lineId]||{}), [addonId]: !(prev[lineId]?.[addonId])}}));
+  const handleMPSChange = (lineId, areas) =>
+    setMpsData(prev => ({...prev, [lineId]: areas}));
 
-  const handleAddonToggle = (lineId, addonId) => {
-    setAddonSelections(prev => ({
-      ...prev,
-      [lineId]: { ...(prev[lineId]||{}), [addonId]: !(prev[lineId]?.[addonId]) },
-    }));
-  };
-
-  const handleMPSChange = (lineId, areas) => {
-    setMpsData(prev => ({ ...prev, [lineId]: areas }));
-  };
-
-  // ── Grand total ─────────────────────────────────────────
   const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand } = useMemo(() => {
     if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0, mpsOpeningsProductGrand:0 };
-
     const configuredLines = snapshot.productLines.filter(l => l.category && l.product);
-    let addonGrand       = 0;
-    let structuralGrand  = 0;
-    let openingsGrand    = 0;  // total from per-opening pricing for MPS lines
-    let appBaseMPSGrand  = 0;  // App.js base price for MPS lines (used when no openings priced)
+    let addonGrand=0, structuralGrand=0, openingsGrand=0, appBaseMPSGrand=0;
 
     configuredLines.forEach(line => {
       if (MPS_PRODUCTS.includes(line.product)) {
-        const areas         = mpsData[line.id] || [];
+        const areas = mpsData[line.id] || [];
         const openingsTotal = calcMPSOpeningsTotal(areas, line.product);
-        structuralGrand    += areas.reduce((s,a) => s + calcAreaStructuralOnly(a), 0);
-        const qty           = parseInt(line.quantity,10)||1;
-        const sel           = addonSelections[line.id]||{};
+        structuralGrand += areas.reduce((s,a) => s + calcAreaStructuralOnly(a), 0);
+        const qty = parseInt(line.quantity,10)||1;
+        const sel = addonSelections[line.id]||{};
         MPS_SIMPLE_ADDONS.forEach(a => { if(sel[a.id]) addonGrand += a.price*qty; });
-
-        if (openingsTotal > 0) {
-          openingsGrand += openingsTotal;
-        } else {
-          // No openings priced yet — use the App.js base price
-          const enriched = snapshot.productLines.find(l2 => l2.id === line.id);
-          appBaseMPSGrand += enriched?.pricing?.lineSubtotal || 0;
-        }
+        if (openingsTotal > 0) openingsGrand += openingsTotal;
+        else { const e = snapshot.productLines.find(l2=>l2.id===line.id); appBaseMPSGrand += e?.pricing?.lineSubtotal||0; }
       } else {
-        const qty    = parseInt(line.quantity,10)||1;
+        const qty = parseInt(line.quantity,10)||1;
         const addons = getAddonsForProduct(line.product);
-        const sel    = addonSelections[line.id]||{};
+        const sel = addonSelections[line.id]||{};
         addons.forEach(a => { if(sel[a.id]) addonGrand += a.price*qty; });
         addonGrand += calcFieldAddonTotal(fieldAddonValues[line.id], line.product);
       }
     });
 
-    // Non-MPS base (from App.js)
-    const nonMPSBase = snapshot.productLines
-      .filter(l => l.category && l.product && !MPS_PRODUCTS.includes(l.product))
-      .reduce((s, l) => {
-        const enriched = snapshot.productLines.find(l2 => l2.id === l.id);
-        return s + (enriched?.pricing?.lineSubtotal || 0);
-      }, 0);
-
-    // Use pricingSummary.subtotal from snapshot as base for non-MPS,
-    // but replace MPS portions with opening-based pricing when available.
-    const mpsBase = openingsGrand + appBaseMPSGrand;
-    const base = snapshot.pricingSummary?.subtotal || 0;
-
-    // Recalculate: non-MPS base + MPS opening-based prices + addons + structural
-    // We need the non-MPS part from the original subtotal
-    const nonMPSOriginal = (snapshot.pricingSummary?.subtotal || 0) -
-      snapshot.productLines
-        .filter(l => l.category && l.product && MPS_PRODUCTS.includes(l.product))
-        .reduce((s,l) => {
-          const e = snapshot.productLines.find(l2=>l2.id===l.id);
-          return s + (e?.pricing?.lineSubtotal||0);
-        }, 0);
-
-    const finalBase = nonMPSOriginal + mpsBase;
+    const nonMPSOriginal = (snapshot.pricingSummary?.subtotal||0) -
+      snapshot.productLines.filter(l=>l.category&&l.product&&MPS_PRODUCTS.includes(l.product))
+        .reduce((s,l)=>{ const e=snapshot.productLines.find(l2=>l2.id===l.id); return s+(e?.pricing?.lineSubtotal||0); },0);
 
     return {
-      summaryAddonGrandTotal: addonGrand,
-      mpsStructuralGrand:     structuralGrand,
+      summaryAddonGrandTotal:  addonGrand,
+      mpsStructuralGrand:      structuralGrand,
       mpsOpeningsProductGrand: openingsGrand,
-      subtotalWithAddons:     finalBase + addonGrand + structuralGrand,
+      subtotalWithAddons:      nonMPSOriginal + openingsGrand + appBaseMPSGrand + addonGrand + structuralGrand,
     };
   }, [snapshot, addonSelections, mpsData, fieldAddonValues]);
 
@@ -1397,13 +1193,8 @@ export default function ProductSummary() {
   if (!snapshot) {
     return (
       <div className="ps-page">
-        <header className="ps-header">
-          <div className="ps-header-glow" />
-          <div className="ps-header-content"><h1>Product Add on's</h1><p>No order data found.</p></div>
-        </header>
-        <div className="ps-body">
-          <button className="ps-btn ps-btn-back" onClick={()=>navigate("/")}>← Back to Form</button>
-        </div>
+        <header className="ps-header"><div className="ps-header-glow"/><div className="ps-header-content"><h1>Product Add on's</h1><p>No order data found.</p></div></header>
+        <div className="ps-body"><button className="ps-btn ps-btn-back" onClick={()=>navigate("/")}>← Back to Form</button></div>
       </div>
     );
   }
@@ -1414,7 +1205,7 @@ export default function ProductSummary() {
   return (
     <div className="ps-page">
       <header className="ps-header">
-        <div className="ps-header-glow" />
+        <div className="ps-header-glow"/>
         <div className="ps-header-content">
           <h1>Product Add on's</h1>
           <p>Review your order, configure areas &amp; openings, and select add-ons</p>
@@ -1427,127 +1218,59 @@ export default function ProductSummary() {
           <span className="ps-last-updated">Last updated: {new Date(lastUpdated).toLocaleString()}</span>
         </div>
 
-        {/* Customer */}
         <section className="ps-card">
-          <div className="ps-card-heading">
-            <span className="ps-card-icon">👤</span>
-            <h2>Customer Information</h2>
-          </div>
+          <div className="ps-card-heading"><span className="ps-card-icon">👤</span><h2>Customer Information</h2></div>
           <div className="ps-customer-grid">
-            {[
-              { label:"Full Name",            value:customer.name    },
-              { label:"Email Address",        value:customer.email   },
-              { label:"Phone",                value:customer.phone   },
-              { label:"Installation Address", value:customer.address },
-            ].map(({label,value})=>(
-              <div className="ps-customer-item" key={label}>
-                <span className="ps-detail-label">{label}</span>
-                <span className="ps-detail-value">{value||"—"}</span>
-              </div>
-            ))}
+            {[{label:"Full Name",value:customer.name},{label:"Email Address",value:customer.email},{label:"Phone",value:customer.phone},{label:"Installation Address",value:customer.address}]
+              .map(({label,value}) => (
+                <div className="ps-customer-item" key={label}>
+                  <span className="ps-detail-label">{label}</span>
+                  <span className="ps-detail-value">{value||"—"}</span>
+                </div>
+              ))}
           </div>
         </section>
 
-        {/* Products */}
         <section className="ps-card">
-          <div className="ps-card-heading">
-            <span className="ps-card-icon">📦</span>
-            <h2>Products <span className="ps-badge">{configuredLines.length}</span></h2>
-          </div>
-          {configuredLines.length === 0 ? (
-            <p className="ps-empty">No products configured yet.</p>
-          ) : (
+          <div className="ps-card-heading"><span className="ps-card-icon">📦</span><h2>Products <span className="ps-badge">{configuredLines.length}</span></h2></div>
+          {configuredLines.length === 0 ? <p className="ps-empty">No products configured yet.</p> : (
             <div className="ps-products-list">
               {configuredLines.map((line, idx) =>
                 MPS_PRODUCTS.includes(line.product) ? (
-                  <MPSProductCard
-                    key={line.id}
-                    line={line}
-                    index={idx}
-                    snapshot={snapshot}
-                    mpsData={mpsData}
-                    onMPSChange={handleMPSChange}
-                    addonSelections={addonSelections}
-                    onAddonToggle={handleAddonToggle}
-                  />
+                  <MPSProductCard key={line.id} line={line} index={idx} snapshot={snapshot}
+                    mpsData={mpsData} onMPSChange={handleMPSChange}
+                    addonSelections={addonSelections} onAddonToggle={handleAddonToggle} />
                 ) : (
-                  <StandardProductCard
-                    key={line.id}
-                    line={line}
-                    index={idx}
-                    snapshot={snapshot}
-                    addonSelections={addonSelections}
-                    onAddonToggle={handleAddonToggle}
-                    fieldAddonValues={fieldAddonValues[line.id] || {}}
-                    onFieldAddonChange={handleFieldAddonChange}
-                  />
+                  <StandardProductCard key={line.id} line={line} index={idx} snapshot={snapshot}
+                    addonSelections={addonSelections} onAddonToggle={handleAddonToggle}
+                    fieldAddonValues={fieldAddonValues[line.id]||{}} onFieldAddonChange={handleFieldAddonChange} />
                 )
               )}
             </div>
           )}
         </section>
 
-        {/* Pricing */}
         <section className="ps-card ps-pricing-card">
-          <div className="ps-card-heading">
-            <span className="ps-card-icon">💰</span>
-            <h2>Pricing Summary</h2>
-          </div>
+          <div className="ps-card-heading"><span className="ps-card-icon">💰</span><h2>Pricing Summary</h2></div>
           <div className="ps-pricing-table">
-            <div className="ps-pricing-row">
-              <span>Product Subtotal</span>
-              <span>{fmt(snapshot.pricingSummary?.subtotal)}</span>
-            </div>
-            {mpsOpeningsProductGrand > 0 && (
-              <div className="ps-pricing-row ps-addon-total-row">
-                <span>MPS Opening-Based Pricing (replaces base)</span>
-                <span className="ps-addon-highlight">{fmt(mpsOpeningsProductGrand)}</span>
-              </div>
-            )}
-            {summaryAddonGrandTotal > 0 && (
-              <div className="ps-pricing-row ps-addon-total-row">
-                <span>Selected Add-ons</span>
-                <span className="ps-addon-highlight">+{fmt(summaryAddonGrandTotal)}</span>
-              </div>
-            )}
-            {mpsStructuralGrand > 0 && (
-              <div className="ps-pricing-row ps-addon-total-row">
-                <span>Structural Adjustments (L-Channel / Buildout)</span>
-                <span className="ps-addon-highlight">+{fmt(mpsStructuralGrand)}</span>
-              </div>
-            )}
-            <div className="ps-pricing-row ps-subtotal-addons-row">
-              <span>Subtotal (incl. all adjustments)</span>
-              <span>{fmt(subtotalWithAddons)}</span>
-            </div>
-            <div className="ps-pricing-row">
-              <span>Discount ({discountPercent}%)</span>
-              <span className="ps-discount-value">−{fmt(discountAmount)}</span>
-            </div>
-            {discount?.percent > 20 && (
-              <div className="ps-pricing-row ps-manager-row">
-                <span>Manager Approval</span>
-                <span>{discount.managerName||"—"}</span>
-              </div>
-            )}
-            <div className="ps-pricing-row ps-total-row">
-              <span>Total</span>
-              <span>{fmt(grandTotal)}</span>
-            </div>
+            <div className="ps-pricing-row"><span>Product Subtotal</span><span>{fmt(snapshot.pricingSummary?.subtotal)}</span></div>
+            {mpsOpeningsProductGrand > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>MPS Opening-Based Pricing (replaces base)</span><span className="ps-addon-highlight">{fmt(mpsOpeningsProductGrand)}</span></div>}
+            {summaryAddonGrandTotal  > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Selected Add-ons</span><span className="ps-addon-highlight">+{fmt(summaryAddonGrandTotal)}</span></div>}
+            {mpsStructuralGrand      > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Structural Adjustments (L-Channel / Buildout)</span><span className="ps-addon-highlight">+{fmt(mpsStructuralGrand)}</span></div>}
+            <div className="ps-pricing-row ps-subtotal-addons-row"><span>Subtotal (incl. all adjustments)</span><span>{fmt(subtotalWithAddons)}</span></div>
+            <div className="ps-pricing-row"><span>Discount ({discountPercent}%)</span><span className="ps-discount-value">−{fmt(discountAmount)}</span></div>
+            {discount?.percent > 20 && <div className="ps-pricing-row ps-manager-row"><span>Manager Approval</span><span>{discount.managerName||"—"}</span></div>}
+            <div className="ps-pricing-row ps-total-row"><span>Total</span><span>{fmt(grandTotal)}</span></div>
           </div>
         </section>
 
         {orderNotes && (
           <section className="ps-card">
-            <div className="ps-card-heading">
-              <span className="ps-card-icon">📝</span>
-              <h2>Order Notes</h2>
-            </div>
+            <div className="ps-card-heading"><span className="ps-card-icon">📝</span><h2>Order Notes</h2></div>
             <p className="ps-notes-text">{orderNotes}</p>
           </section>
         )}
 
-        {/* Actions */}
         <div className="ps-actions">
           <button className="ps-btn ps-btn-back" onClick={()=>navigate("/")}>← Back to Form</button>
           <button className="ps-btn ps-btn-primary" onClick={()=>alert("submitting order...")}>Submit Order</button>
