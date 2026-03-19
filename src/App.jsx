@@ -268,7 +268,6 @@ const productCatalog = {
   ]
 };
 
-// ── MPS products that use per-opening pricing in ProductSummary ──
 const MPS_PRODUCTS = [
   "Motorized Power Screen 5in Cassette",
   "Motorized Power Screen 6in Cassette",
@@ -286,6 +285,11 @@ const addOns = [
   {name:'Cordless Lift', price:50},
   {name:'Premium Fabric Upgrade', price:125}
 ];
+
+// ============================================================
+// SESSION STORAGE KEY
+// ============================================================
+const SESSION_KEY = 'retail_intake_form_data';
 
 // ============================================================
 // PRICING HELPERS
@@ -384,7 +388,6 @@ function getBasePriceUnified(line) {
 
 function calcLineTotal(line) {
   if (!line.category || !line.product) return 0;
-  // MPS products are priced per-opening in ProductSummary — no base price here
   if (MPS_PRODUCTS.includes(line.product)) return 0;
   const base = getBasePriceUnified(line);
   if (!base.ok) return 0;
@@ -496,7 +499,6 @@ function ProductLine({ line, lineNumber, onUpdate, onRemove, showRemove }) {
         )}
       </div>
 
-      {/* Category + Product selectors — always visible */}
       <div className="grid-2">
         <div className="form-group">
           <label className="required">Product Category</label>
@@ -523,7 +525,6 @@ function ProductLine({ line, lineNumber, onUpdate, onRemove, showRemove }) {
         </div>
       </div>
 
-      {/* MPS notice — shown instead of dimension/qty/notes fields */}
       {isMPS && (
         <div className="alert alert-info mps-intake-notice">
           <span>ℹ️</span>
@@ -535,7 +536,6 @@ function ProductLine({ line, lineNumber, onUpdate, onRemove, showRemove }) {
         </div>
       )}
 
-      {/* Dimension / qty / notes fields — hidden for MPS products */}
       {!isMPS && (
         <>
           <div className="dim-row">
@@ -547,7 +547,7 @@ function ProductLine({ line, lineNumber, onUpdate, onRemove, showRemove }) {
                 min="0"
                 value={line.width}
                 onChange={e => onUpdate({...line, width:e.target.value})}
-                placeholder={p?.dimensionUnit === 'in' ? "e.g. 48 (inches)" : "e.g. 10 (or 120 inches)"}
+                placeholder={p?.dimensionUnit === 'in' ? "e.g. 98 (inches)" : "e.g. 10 (or 120 inches)"}
               />
             </div>
             <div className="form-group">
@@ -556,7 +556,7 @@ function ProductLine({ line, lineNumber, onUpdate, onRemove, showRemove }) {
                 type="text"
                 value={line.height}
                 onChange={e => onUpdate({...line, height:e.target.value})}
-                placeholder={p?.pricingModel === 'matrix_axes' ? `e.g. 4' 11" or 59` : p?.dimensionUnit === 'in' ? "e.g. 98 (inches)" : "e.g. 8"}
+                placeholder={p?.pricingModel === 'matrix_axes' ? `e.g. 4' 11" or 59` : p?.dimensionUnit === 'in' ? "e.g. 48 (inches)" : "e.g. 8"}
               />
             </div>
             <div className="form-group">
@@ -594,7 +594,6 @@ function ProductLine({ line, lineNumber, onUpdate, onRemove, showRemove }) {
         </>
       )}
 
-      {/* For MPS: show a $0.00 placeholder subtotal so the layout stays consistent */}
       {isMPS && (
         <div className="product-subtotal">
           <div className="product-subtotal-row">
@@ -633,7 +632,7 @@ function createEmptyLine() {
 
 function createInitialOrderData() {
   return {
-    customer: { name:'', email:'', phone:'', address:'' },
+    customer: { name:'', email:'', phone:'', address:'', installationDate:'' },
     productLines: [createEmptyLine()],
     discount: { percent:0, managerName:'', managerEmail:'', approvalCode:'' },
     orderNotes: '',
@@ -643,11 +642,35 @@ function createInitialOrderData() {
   };
 }
 
+// ── Load from sessionStorage, or fall back to fresh state ──
+function loadInitialState() {
+  try {
+    const saved = sessionStorage.getItem(SESSION_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Make sure idCounter stays ahead of any restored line ids
+      const maxId = parsed.productLines?.reduce((m, l) => Math.max(m, l.id || 0), 0) || 0;
+      if (maxId >= idCounter) idCounter = maxId + 1;
+      // Ensure installationDate field exists for old saved data
+      if (!parsed.customer.installationDate) parsed.customer.installationDate = '';
+      return parsed;
+    }
+  } catch (_) { /* ignore parse errors */ }
+  return createInitialOrderData();
+}
+
 export default function App() {
   const navigate = useNavigate();
-  const [orderData, setOrderData] = useState(createInitialOrderData());
+  const [orderData, setOrderData] = useState(loadInitialState);
   const { customer, productLines, discount, orderNotes } = orderData;
   const canvasRef = useRef(null);
+
+  // ── Persist to sessionStorage whenever orderData changes ──
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(orderData));
+    } catch (_) { /* quota exceeded — silently ignore */ }
+  }, [orderData]);
 
   const updateOrder = (key, value) =>
     setOrderData(prev => ({
@@ -706,7 +729,6 @@ export default function App() {
     if (productLines.length === 0) {
       alert('Please add at least one product.'); return false;
     }
-    // A line is valid if it's a configured MPS product OR has a valid base price
     const hasValid = productLines.some(line => {
       if (!line.category || !line.product) return false;
       if (MPS_PRODUCTS.includes(line.product)) return true;
@@ -726,7 +748,8 @@ export default function App() {
     return true;
   };
 
- 
+  // Minimum date for the date picker = today
+  const todayISO = new Date().toISOString().split('T')[0];
 
   return (
     <div className="container">
@@ -736,24 +759,68 @@ export default function App() {
       </header>
 
       <div className="form-wrapper">
+        {/* ── SECTION 1: Customer Information ── */}
         <div className="section">
           <div className="section-header"><div className="section-number">1</div><h2>Customer Information</h2></div>
           <div className="grid-2">
-            <div className="form-group"><label className="required">Customer Name</label><input type="text" value={customer.name} onChange={e => updateCustomer('name', e.target.value)} /></div>
-            <div className="form-group"><label className="required">Email</label><input type="text" value={customer.email} onChange={e => updateCustomer('email', e.target.value)} /></div>
-            <div className="form-group"><label className="required">Phone</label><input type="text" value={customer.phone} onChange={e => updateCustomer('phone', e.target.value)} /></div>
-            <div className="form-group"><label>Installation Address</label><input type="text" value={customer.address} onChange={e => updateCustomer('address', e.target.value)} /></div>
+            <div className="form-group">
+              <label className="required">Customer Name</label>
+              <input type="text" value={customer.name} onChange={e => updateCustomer('name', e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="required">Email</label>
+              <input type="text" value={customer.email} onChange={e => updateCustomer('email', e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="required">Phone</label>
+              <input type="text" value={customer.phone} onChange={e => updateCustomer('phone', e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label>Installation Address</label>
+              <input type="text" value={customer.address} onChange={e => updateCustomer('address', e.target.value)} />
+            </div>
+
+            {/* ── NEW: Date of Installation ── */}
+            <div className="form-group installation-date-group">
+              <label>
+                Date of Installation
+                <span className="field-hint">Estimated or confirmed install date</span>
+              </label>
+              <input
+                type="date"
+                className="installation-date-input"
+                value={customer.installationDate || ''}
+                min={todayISO}
+                onChange={e => updateCustomer('installationDate', e.target.value)}
+              />
+              {customer.installationDate && (
+                <div className="installation-date-display">
+                  📅 {new Date(customer.installationDate + 'T12:00:00').toLocaleDateString('en-US', {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
+        {/* ── SECTION 2: Product Selection ── */}
         <div className="section">
           <div className="section-header"><div className="section-number">2</div><h2>Product Selection</h2></div>
           {productLines.map((line, idx) => (
-            <ProductLine key={line.id} line={line} lineNumber={idx + 1} onUpdate={updateLine} onRemove={() => removeLine(line.id)} showRemove={productLines.length > 1} />
+            <ProductLine
+              key={line.id}
+              line={line}
+              lineNumber={idx + 1}
+              onUpdate={updateLine}
+              onRemove={() => removeLine(line.id)}
+              showRemove={productLines.length > 1}
+            />
           ))}
           <button type="button" className="btn btn-primary" onClick={addLine}><span>+</span> Add Product Line</button>
         </div>
 
+        {/* ── SECTION 3: Pricing & Discount ── */}
         <div className="section">
           <div className="section-header"><div className="section-number">3</div><h2>Pricing &amp; Discount</h2></div>
           <div className="form-group">
@@ -783,20 +850,38 @@ export default function App() {
           </div>
         </div>
 
+        {/* ── SECTION 4: Additional Notes ── */}
         <div className="section">
           <div className="section-header"><div className="section-number">4</div><h2>Additional Notes</h2></div>
-          <div className="form-group"><label>Special Instructions or Notes</label><textarea value={orderNotes} onChange={e => updateOrder('orderNotes', e.target.value)} placeholder="Enter any special instructions, site conditions, or important notes..." /></div>
+          <div className="form-group">
+            <label>Special Instructions or Notes</label>
+            <textarea value={orderNotes} onChange={e => updateOrder('orderNotes', e.target.value)} placeholder="Enter any special instructions, site conditions, or important notes..." />
+          </div>
         </div>
 
+        {/* ── SECTION 5: Signature ── */}
         <div className="section">
           <div className="section-header"><div className="section-number">5</div><h2>Customer Signature</h2></div>
-          <div className="alert alert-info"><span>ℹ️</span><div><strong>Electronic Signature Required</strong><br />Please draw your signature in the box below to approve this order.</div></div>
+          <div className="alert alert-info">
+            <span>ℹ️</span>
+            <div><strong>Electronic Signature Required</strong><br />Please draw your signature in the box below to approve this order.</div>
+          </div>
           <div className="form-group"><label className="required">Sign Here</label><SignaturePad canvasRef={canvasRef} /></div>
           <button type="button" className="btn btn-outline" onClick={clearSignature}>Clear Signature</button>
         </div>
 
         <div className="action-buttons">
-          <button type="button" className="btn btn-next" onClick={() => { const snapshot = buildSnapshot(); navigate('/summary', { state: { snapshot } }); }}>Next →</button>
+          <button
+            type="button"
+            className="btn btn-next"
+            onClick={() => {
+              if (!validateForm()) return;
+              const snapshot = buildSnapshot();
+              navigate('/summary', { state: { snapshot } });
+            }}
+          >
+            Next →
+          </button>
         </div>
       </div>
     </div>

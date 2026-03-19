@@ -20,10 +20,25 @@ const MPS_DEFAULTS = {
   lChannelLocs: ["Left", "Right", "Top", "Bottom"],
   buildoutTypes:["Wood", "Aluminum Tube"],
   motorSides:   ["Left", "Right"],
+  weightBarTypes: ["Standard", "Upgraded", "None"],
+  remoteTypes:  ["1 Channel Somfy Remote", "5 Channel Somfy Remote", "16 Channel Somfy Remote"],
 };
 
 const L_CHANNEL_RATE  = 12;
 const BUILDOUT_RATE   = 18;
+
+// Remote pricing based on opening count
+const REMOTE_PRICING = {
+  "1 Channel Somfy Remote":  125,
+  "5 Channel Somfy Remote":  180,
+  "16 Channel Somfy Remote": 320,
+};
+
+function getAutoRemote(openingCount) {
+  if (openingCount <= 1)  return "1 Channel Somfy Remote";
+  if (openingCount <= 5)  return "5 Channel Somfy Remote";
+  return "16 Channel Somfy Remote";
+}
 
 const MPS_SIMPLE_ADDONS = [
   { id: "remote_1ch",   name: "1 Channel Somfy Remote",         price: 125 },
@@ -419,17 +434,26 @@ function calcFieldAddonTotal(lineFieldValues, productName) {
 let _uid = 1;
 const uid = () => `id_${_uid++}`;
 
+// CHANGE 6: L-channels and buildouts are now arrays per opening
+function createLChannel() {
+  return { id: uid(), loc: "Left", size: "1×1", customSize: "", lf: "" };
+}
+
+function createBuildout() {
+  return { id: uid(), type: "Wood", dims: "", lf: "", price: "", photo: null };
+}
+
 function createOpening(areaDefaults = {}) {
   return {
     id: uid(), label: "", width: "", height: "",
     motorSide: areaDefaults.motorSide || "Left",
-    lChannelRequired: false, lChannelLoc: "Left", lChannelSize: "1×1",
-    lChannelLF: "", lChannelCustomSize: "",
-    buildoutRequired: false, buildoutType: "Wood",
-    buildoutDims: "", buildoutLF: "", buildoutPrice: "",
+    // CHANGE 6: arrays instead of single items
+    lChannels: [],
+    buildouts: [],
     mountOverride: "", trackOverride: "", fabricOverride: "",
     colorOverride: "", motorOverride: "",
-    openingPhoto: null, lChannelPhoto: null, buildoutPhoto: null,
+    weightBarOverride: "", remoteOverride: "",
+    openingPhoto: null,
   };
 }
 
@@ -437,17 +461,22 @@ function createArea() {
   return {
     id: uid(), name: "", mountType: "", trackType: "", fabricType: "",
     cassetteColor: "", trackColor: "", motorType: "Somfy (default)",
+    weightBar: "", remote: "",
     areaPhoto: null, openings: [createOpening()],
   };
 }
 
 function calcOpeningStructural(opening) {
   let total = 0;
-  if (opening.lChannelRequired) total += (parseFloat(opening.lChannelLF) || 0) * L_CHANNEL_RATE;
-  if (opening.buildoutRequired) {
-    const op = parseFloat(opening.buildoutPrice);
-    total += (!isNaN(op) && op > 0) ? op : (parseFloat(opening.buildoutLF) || 0) * BUILDOUT_RATE;
-  }
+  // CHANGE 6: sum all L-channels
+  (opening.lChannels || []).forEach(lc => {
+    total += (parseFloat(lc.lf) || 0) * L_CHANNEL_RATE;
+  });
+  // CHANGE 6: sum all buildouts
+  (opening.buildouts || []).forEach(bo => {
+    const op = parseFloat(bo.price);
+    total += (!isNaN(op) && op > 0) ? op : (parseFloat(bo.lf) || 0) * BUILDOUT_RATE;
+  });
   return total;
 }
 
@@ -465,9 +494,13 @@ function calcAreaStructuralOnly(area) {
   return area.openings.reduce((sum, o) => sum + calcOpeningStructural(o), 0);
 }
 
+// Count total openings across all areas for a product
+function countTotalOpenings(areas) {
+  return areas.reduce((sum, a) => sum + a.openings.length, 0);
+}
+
 // ─────────────────────────────────────────────────────────────
 // CAMERA MODAL
-// Uses navigator.mediaDevices.getUserMedia — works on laptop AND mobile
 // ─────────────────────────────────────────────────────────────
 function CameraModal({ onCapture, onClose }) {
   const videoRef  = useRef(null);
@@ -475,7 +508,7 @@ function CameraModal({ onCapture, onClose }) {
   const streamRef = useRef(null);
   const [ready,      setReady]      = useState(false);
   const [error,      setError]      = useState(null);
-  const [facingMode, setFacingMode] = useState("user"); // "user"=front/laptop, "environment"=rear mobile
+  const [facingMode, setFacingMode] = useState("user");
 
   const stopStream = () => {
     if (streamRef.current) {
@@ -508,8 +541,6 @@ function CameraModal({ onCapture, onClose }) {
         msg = "No camera found on this device.";
       else if (err.name === "NotReadableError" || err.name === "TrackStartError")
         msg = "Camera is in use by another application. Please close it and try again.";
-      else if (err.name === "OverconstrainedError")
-        msg = "Camera constraints could not be satisfied. Trying again…";
       setError(msg);
     }
   }, []);
@@ -532,7 +563,6 @@ function CameraModal({ onCapture, onClose }) {
     canvas.width  = video.videoWidth  || 640;
     canvas.height = video.videoHeight || 480;
     const ctx = canvas.getContext("2d");
-    // Mirror if using front camera
     if (facingMode === "user") {
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
@@ -546,33 +576,21 @@ function CameraModal({ onCapture, onClose }) {
   return (
     <div className="camera-modal-overlay" onClick={onClose}>
       <div className="camera-modal" onClick={e => e.stopPropagation()}>
-
-        {/* Header */}
         <div className="camera-modal-header">
           <span className="camera-modal-title">📸 Take Photo</span>
           <button type="button" className="camera-modal-close" onClick={onClose}>✕</button>
         </div>
-
-        {/* Viewfinder */}
         <div className="camera-viewfinder">
           {error ? (
             <div className="camera-error">
               <div className="camera-error-icon">⚠️</div>
               <p className="camera-error-msg">{error}</p>
-              <button type="button" className="camera-retry-btn" onClick={() => startStream(facingMode)}>
-                Try Again
-              </button>
+              <button type="button" className="camera-retry-btn" onClick={() => startStream(facingMode)}>Try Again</button>
             </div>
           ) : (
             <>
-              <video
-                ref={videoRef}
-                className={`camera-video ${facingMode === "user" ? "camera-video--mirror" : ""}`}
-                autoPlay
-                playsInline
-                muted
-                style={{ opacity: ready ? 1 : 0, transition: "opacity 0.3s" }}
-              />
+              <video ref={videoRef} className={`camera-video ${facingMode === "user" ? "camera-video--mirror" : ""}`}
+                autoPlay playsInline muted style={{ opacity: ready ? 1 : 0, transition: "opacity 0.3s" }} />
               {!ready && (
                 <div className="camera-loading">
                   <div className="camera-spinner" />
@@ -583,34 +601,21 @@ function CameraModal({ onCapture, onClose }) {
           )}
           <canvas ref={canvasRef} style={{ display: "none" }} />
         </div>
-
-        {/* Footer controls */}
         <div className="camera-modal-footer">
-          <button type="button" className="camera-flip-btn" onClick={flipCamera} title="Switch camera">
-            🔄 Flip
-          </button>
-          <button
-            type="button"
-            className="camera-capture-btn"
-            onClick={capture}
-            disabled={!ready || !!error}
-            title="Take photo"
-          >
+          <button type="button" className="camera-flip-btn" onClick={flipCamera} title="Switch camera">🔄 Flip</button>
+          <button type="button" className="camera-capture-btn" onClick={capture} disabled={!ready || !!error} title="Take photo">
             <span className="camera-shutter-ring" />
             <span className="camera-shutter-dot" />
           </button>
-          <button type="button" className="camera-cancel-btn" onClick={onClose}>
-            Cancel
-          </button>
+          <button type="button" className="camera-cancel-btn" onClick={onClose}>Cancel</button>
         </div>
-
       </div>
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────
-// PHOTO UPLOAD  — picker → camera live view OR file upload
+// PHOTO UPLOAD
 // ─────────────────────────────────────────────────────────────
 function PhotoUpload({ label, value, onChange }) {
   const fileRef = useRef();
@@ -630,37 +635,25 @@ function PhotoUpload({ label, value, onChange }) {
     setShowCamera(false);
   };
 
-  const openCamera = () => {
-    setShowPicker(false);
-    setShowCamera(true);
-  };
-
-  const openFilePicker = () => {
-    fileRef.current.click();
-  };
-
   return (
     <div className="photo-upload-field">
       <input type="file" accept="image/*" ref={fileRef} style={{ display: "none" }} onChange={handleFile} />
-
       <button type="button" className="photo-btn" onClick={() => setShowPicker(true)}>
         {value ? "📷 Change Photo" : `📷 ${label}`}
       </button>
       {value && <span className="photo-uploaded">✓ Uploaded</span>}
       {value && <img src={value} alt="preview" className="photo-thumb" />}
-
-      {/* Source picker */}
       {showPicker && !showCamera && (
         <div className="photo-picker-overlay" onClick={() => setShowPicker(false)}>
           <div className="photo-picker-modal" onClick={e => e.stopPropagation()}>
             <div className="photo-picker-title">Add Photo</div>
             <div className="photo-picker-options">
-              <button type="button" className="photo-picker-option" onClick={openCamera}>
+              <button type="button" className="photo-picker-option" onClick={() => { setShowPicker(false); setShowCamera(true); }}>
                 <span className="photo-picker-icon">📸</span>
                 <span className="photo-picker-option-label">Take Photo</span>
                 <span className="photo-picker-option-sub">Use camera live</span>
               </button>
-              <button type="button" className="photo-picker-option" onClick={openFilePicker}>
+              <button type="button" className="photo-picker-option" onClick={() => { fileRef.current.click(); }}>
                 <span className="photo-picker-icon">🖼️</span>
                 <span className="photo-picker-option-label">Upload File</span>
                 <span className="photo-picker-option-sub">Choose from device</span>
@@ -670,13 +663,8 @@ function PhotoUpload({ label, value, onChange }) {
           </div>
         </div>
       )}
-
-      {/* Live camera modal */}
       {showCamera && (
-        <CameraModal
-          onCapture={handleCapture}
-          onClose={() => setShowCamera(false)}
-        />
+        <CameraModal onCapture={handleCapture} onClose={() => setShowCamera(false)} />
       )}
     </div>
   );
@@ -737,6 +725,66 @@ function OpeningPriceBadge({ opening, productName }) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// CHANGE 6: L-CHANNEL ITEM EDITOR (multiple per opening)
+// ─────────────────────────────────────────────────────────────
+function LChannelItem({ lc, index, onChange, onRemove, showRemove }) {
+  const set = (field, val) => onChange({ ...lc, [field]: val });
+  const cost = (parseFloat(lc.lf) || 0) * L_CHANNEL_RATE;
+  return (
+    <div className="structural-item-card">
+      <div className="structural-item-header">
+        <span className="structural-item-label">L-Channel #{index + 1}</span>
+        {showRemove && (
+          <button type="button" className="structural-item-remove" onClick={onRemove}>✕ Remove</button>
+        )}
+      </div>
+      <div className="structural-fields-grid">
+        <Sel label="Location" value={lc.loc}  options={MPS_DEFAULTS.lChannelLocs}  onChange={v => set("loc", v)} />
+        <Sel label="Size"     value={lc.size} options={MPS_DEFAULTS.lChannelSizes} onChange={v => set("size", v)} />
+        {lc.size === "Custom" && <Field label="Custom Size" value={lc.customSize} onChange={v => set("customSize", v)} placeholder='e.g. 2"×3"' />}
+        <Field label={`Linear Feet (× $${L_CHANNEL_RATE}/LF)`} type="number" value={lc.lf} onChange={v => set("lf", v)} placeholder="e.g. 8" min="0" step="0.5" />
+      </div>
+      {lc.lf && <div className="structural-calc">L-Channel: {lc.lf} LF × ${L_CHANNEL_RATE} = <strong>{fmt(cost)}</strong></div>}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// CHANGE 6: BUILDOUT ITEM EDITOR (multiple per opening)
+// ─────────────────────────────────────────────────────────────
+function BuildoutItem({ bo, index, onChange, onRemove, showRemove }) {
+  const set = (field, val) => onChange({ ...bo, [field]: val });
+  const cost = bo.price
+    ? (parseFloat(bo.price) || 0)
+    : (parseFloat(bo.lf) || 0) * BUILDOUT_RATE;
+  return (
+    <div className="structural-item-card">
+      <div className="structural-item-header">
+        <span className="structural-item-label">Buildout #{index + 1}</span>
+        {showRemove && (
+          <button type="button" className="structural-item-remove" onClick={onRemove}>✕ Remove</button>
+        )}
+      </div>
+      <div className="structural-fields-grid">
+        <Sel label="Type" value={bo.type} options={MPS_DEFAULTS.buildoutTypes} onChange={v => set("type", v)} />
+        <Field label="Dimensions" value={bo.dims} onChange={v => set("dims", v)} placeholder='e.g. 2"×4"×96"' />
+        <Field label={`Linear Feet (× $${BUILDOUT_RATE}/LF)`} type="number" value={bo.lf} onChange={v => set("lf", v)} placeholder="e.g. 12" min="0" step="0.5" />
+        <Field label="Override Price ($)" type="number" value={bo.price} onChange={v => set("price", v)} placeholder="Leave blank to use LF rate" min="0" />
+      </div>
+      {(bo.lf || bo.price) && (
+        <div className="structural-calc">
+          {bo.price
+            ? <>Buildout (override): <strong>{fmt(bo.price)}</strong></>
+            : <>Buildout: {bo.lf} LF × ${BUILDOUT_RATE} = <strong>{fmt(cost)}</strong></>
+          }
+        </div>
+      )}
+      <PhotoUpload label="Buildout Photo (optional)" value={bo.photo} onChange={v => set("photo", v)} />
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
 // OPENING EDITOR
 // ─────────────────────────────────────────────────────────────
 function OpeningEditor({ opening, index, areaDefaults, productName, onChange, onRemove, showRemove }) {
@@ -744,6 +792,30 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
   const openingPrice = calcOpeningBasePrice(opening, productName);
   const openingTotal = openingPrice + structural;
   const set = (field, val) => onChange({ ...opening, [field]: val });
+
+  // CHANGE 3: resolve effective values (override > area default)
+  const effectiveMount  = opening.mountOverride  || areaDefaults.mountType  || "";
+  const effectiveTrack  = opening.trackOverride  || areaDefaults.trackType  || "";
+  const effectiveFabric = opening.fabricOverride || areaDefaults.fabricType || "";
+  const effectiveMotor  = opening.motorOverride  || areaDefaults.motorType  || "";
+
+  // CHANGE 6: L-channel helpers
+  const addLChannel = () => set("lChannels", [...(opening.lChannels || []), createLChannel()]);
+  const updateLChannel = (id, updated) => set("lChannels", (opening.lChannels || []).map(lc => lc.id === id ? updated : lc));
+  const removeLChannel = (id) => set("lChannels", (opening.lChannels || []).filter(lc => lc.id !== id));
+
+  // CHANGE 6: Buildout helpers
+  const addBuildout = () => set("buildouts", [...(opening.buildouts || []), createBuildout()]);
+  const updateBuildout = (id, updated) => set("buildouts", (opening.buildouts || []).map(bo => bo.id === id ? updated : bo));
+  const removeBuildout = (id) => set("buildouts", (opening.buildouts || []).filter(bo => bo.id !== id));
+
+  const lChannels = opening.lChannels || [];
+  const buildouts = opening.buildouts || [];
+  const lChannelTotal = lChannels.reduce((s, lc) => s + (parseFloat(lc.lf) || 0) * L_CHANNEL_RATE, 0);
+  const buildoutTotal = buildouts.reduce((s, bo) => {
+    const op = parseFloat(bo.price);
+    return s + ((!isNaN(op) && op > 0) ? op : (parseFloat(bo.lf) || 0) * BUILDOUT_RATE);
+  }, 0);
 
   return (
     <div className="opening-card">
@@ -763,65 +835,183 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
         <Sel label="Motor Side" value={opening.motorSide} options={MPS_DEFAULTS.motorSides} onChange={v => set("motorSide", v)} required />
       </div>
 
+      {/* CHANGE 4: Extra opening-level fields for MPS — empty dropdown means "not set / use area default" */}
+      <div className="opening-grid-3">
+        <Sel label="Mount Type"   value={opening.mountOverride}            options={MPS_DEFAULTS.mountTypes}    onChange={v => set("mountOverride", v)}            placeholder="— Select —" />
+        <Sel label="Track Type"   value={opening.trackOverride}            options={MPS_DEFAULTS.trackTypes}    onChange={v => set("trackOverride", v)}            placeholder="— Select —" />
+        <Sel label="Fabric Type"  value={opening.fabricOverride}           options={MPS_DEFAULTS.fabricTypes}   onChange={v => set("fabricOverride", v)}           placeholder="— Select —" />
+        <Field label="Cassette Color" value={opening.colorOverride}        onChange={v => set("colorOverride", v)}        placeholder="e.g. White" />
+        <Field label="Track Color"    value={opening.trackColorOverride || ""} onChange={v => set("trackColorOverride", v)} placeholder="e.g. Beige" />
+        <Sel label="Motor Type"   value={opening.motorOverride}            options={MPS_DEFAULTS.motorTypes}    onChange={v => set("motorOverride", v)}            placeholder="— Select —" />
+        <Sel label="Weight Bar"   value={opening.weightBarOverride || ""}  options={MPS_DEFAULTS.weightBarTypes} onChange={v => set("weightBarOverride", v)}       placeholder="— Select —" />
+      </div>
+
       <OpeningPriceBadge opening={opening} productName={productName} />
 
-      <details className="override-details">
+      {/* CHANGE 3: Effective settings panel — shows resolved values and lets user edit them directly */}
+      <details className="override-details" open>
         <summary className="override-summary">
-          ⚙ Override area defaults for this opening
+          ⚙ Effective Settings
           <span className="override-hint">
-            (Mount: {opening.mountOverride || areaDefaults.mountType || "—"} · Track: {opening.trackOverride || areaDefaults.trackType || "—"} · Fabric: {opening.fabricOverride || areaDefaults.fabricType || "—"} · Motor: {opening.motorOverride || areaDefaults.motorType || "—"})
+            (Mount: <strong>{effectiveMount || "—"}</strong> · Track: <strong>{effectiveTrack || "—"}</strong> · Fabric: <strong>{effectiveFabric || "—"}</strong> · Motor: <strong>{effectiveMotor || "—"}</strong>)
           </span>
         </summary>
-        <div className="override-grid">
-          <Sel label="Mount Override"  value={opening.mountOverride}  options={MPS_DEFAULTS.mountTypes}  onChange={v=>set("mountOverride",v)}  placeholder="Use area default" />
-          <Sel label="Track Override"  value={opening.trackOverride}  options={MPS_DEFAULTS.trackTypes}  onChange={v=>set("trackOverride",v)}  placeholder="Use area default" />
-          <Sel label="Fabric Override" value={opening.fabricOverride} options={MPS_DEFAULTS.fabricTypes} onChange={v=>set("fabricOverride",v)} placeholder="Use area default" />
-          <Sel label="Motor Override"  value={opening.motorOverride}  options={MPS_DEFAULTS.motorTypes}  onChange={v=>set("motorOverride",v)}  placeholder="Use area default" />
-          <Field label="Cassette Color Override" value={opening.colorOverride} onChange={v=>set("colorOverride",v)} placeholder="Use area default" />
+        <div className="override-resolved-info">
+          Fields below show the resolved value for this opening. Values set here override the area default. Clear a field to fall back to the area default.
+        </div>
+        <div className="override-resolved-grid">
+          {/* Mount Type */}
+          <div className="override-resolved-item">
+            <label className="override-resolved-label">
+              Mount Type
+              <span className="override-resolved-source">{opening.mountOverride ? "opening value" : "area default"}</span>
+            </label>
+            <select
+              className={`override-resolved-select ${opening.mountOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
+              value={opening.mountOverride || areaDefaults.mountType || ""}
+              onChange={e => set("mountOverride", e.target.value)}
+            >
+              <option value="">— not set —</option>
+              {MPS_DEFAULTS.mountTypes.map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+          {/* Track Type */}
+          <div className="override-resolved-item">
+            <label className="override-resolved-label">
+              Track Type
+              <span className="override-resolved-source">{opening.trackOverride ? "opening value" : "area default"}</span>
+            </label>
+            <select
+              className={`override-resolved-select ${opening.trackOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
+              value={opening.trackOverride || areaDefaults.trackType || ""}
+              onChange={e => set("trackOverride", e.target.value)}
+            >
+              <option value="">— not set —</option>
+              {MPS_DEFAULTS.trackTypes.map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+          {/* Fabric Type */}
+          <div className="override-resolved-item">
+            <label className="override-resolved-label">
+              Fabric Type
+              <span className="override-resolved-source">{opening.fabricOverride ? "opening value" : "area default"}</span>
+            </label>
+            <select
+              className={`override-resolved-select ${opening.fabricOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
+              value={opening.fabricOverride || areaDefaults.fabricType || ""}
+              onChange={e => set("fabricOverride", e.target.value)}
+            >
+              <option value="">— not set —</option>
+              {MPS_DEFAULTS.fabricTypes.map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+          {/* Motor Type */}
+          <div className="override-resolved-item">
+            <label className="override-resolved-label">
+              Motor Type
+              <span className="override-resolved-source">{opening.motorOverride ? "opening value" : "area default"}</span>
+            </label>
+            <select
+              className={`override-resolved-select ${opening.motorOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
+              value={opening.motorOverride || areaDefaults.motorType || ""}
+              onChange={e => set("motorOverride", e.target.value)}
+            >
+              <option value="">— not set —</option>
+              {MPS_DEFAULTS.motorTypes.map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+          {/* Cassette Color */}
+          <div className="override-resolved-item">
+            <label className="override-resolved-label">
+              Cassette Color
+              <span className="override-resolved-source">{opening.colorOverride ? "opening value" : "area default"}</span>
+            </label>
+            <input
+              className={`override-resolved-input ${opening.colorOverride ? "override-resolved-input--set" : "override-resolved-input--default"}`}
+              type="text"
+              value={opening.colorOverride || areaDefaults.cassetteColor || ""}
+              placeholder="e.g. White"
+              onChange={e => set("colorOverride", e.target.value)}
+            />
+          </div>
+          {/* Track Color */}
+          <div className="override-resolved-item">
+            <label className="override-resolved-label">
+              Track Color
+              <span className="override-resolved-source">{opening.trackColorOverride ? "opening value" : "area default"}</span>
+            </label>
+            <input
+              className={`override-resolved-input ${opening.trackColorOverride ? "override-resolved-input--set" : "override-resolved-input--default"}`}
+              type="text"
+              value={opening.trackColorOverride || areaDefaults.trackColor || ""}
+              placeholder="e.g. Beige"
+              onChange={e => set("trackColorOverride", e.target.value)}
+            />
+          </div>
+          {/* Weight Bar */}
+          <div className="override-resolved-item">
+            <label className="override-resolved-label">
+              Weight Bar
+              <span className="override-resolved-source">{opening.weightBarOverride ? "opening value" : "area default"}</span>
+            </label>
+            <select
+              className={`override-resolved-select ${opening.weightBarOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
+              value={opening.weightBarOverride || areaDefaults.weightBar || ""}
+              onChange={e => set("weightBarOverride", e.target.value)}
+            >
+              <option value="">— not set —</option>
+              {MPS_DEFAULTS.weightBarTypes.map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
         </div>
       </details>
 
+      {/* CHANGE 6: Multiple L-Channels */}
       <div className="structural-section">
-        <Toggle label="L-Channel Required?" checked={opening.lChannelRequired} onChange={v => set("lChannelRequired", v)} />
-        {opening.lChannelRequired && (
-          <div className="structural-fields">
-            <div className="structural-fields-grid">
-              <Sel label="Location" value={opening.lChannelLoc}  options={MPS_DEFAULTS.lChannelLocs}  onChange={v=>set("lChannelLoc",v)} />
-              <Sel label="Size"     value={opening.lChannelSize} options={MPS_DEFAULTS.lChannelSizes} onChange={v=>set("lChannelSize",v)} />
-              {opening.lChannelSize === "Custom" && <Field label="Custom Size" value={opening.lChannelCustomSize} onChange={v=>set("lChannelCustomSize",v)} placeholder='e.g. 2"×3"' />}
-              <Field label={`Linear Feet (× $${L_CHANNEL_RATE}/LF)`} type="number" value={opening.lChannelLF} onChange={v=>set("lChannelLF",v)} placeholder="e.g. 8" min="0" step="0.5" />
-            </div>
-            {opening.lChannelLF && <div className="structural-calc">L-Channel: {opening.lChannelLF} LF × ${L_CHANNEL_RATE} = <strong>{fmt(parseFloat(opening.lChannelLF)*L_CHANNEL_RATE)}</strong></div>}
-            <PhotoUpload label="L-Channel Photo (optional)" value={opening.lChannelPhoto} onChange={v=>set("lChannelPhoto",v)} />
-          </div>
+        <div className="structural-section-header">
+          <span className="mps-label">L-Channels</span>
+          {lChannelTotal > 0 && <span className="structural-section-total">{fmt(lChannelTotal)} total</span>}
+          <button type="button" className="structural-add-btn" onClick={addLChannel}>+ Add L-Channel</button>
+        </div>
+        {lChannels.length === 0 && (
+          <div className="structural-empty">No L-channels added. Click "Add L-Channel" if required.</div>
         )}
+        {lChannels.map((lc, idx) => (
+          <LChannelItem
+            key={lc.id}
+            lc={lc}
+            index={idx}
+            onChange={updated => updateLChannel(lc.id, updated)}
+            onRemove={() => removeLChannel(lc.id)}
+            showRemove={true}
+          />
+        ))}
       </div>
 
+      {/* CHANGE 6: Multiple Buildouts */}
       <div className="structural-section">
-        <Toggle label="Buildout Required?" checked={opening.buildoutRequired} onChange={v => set("buildoutRequired", v)} />
-        {opening.buildoutRequired && (
-          <div className="structural-fields">
-            <div className="structural-fields-grid">
-              <Sel label="Type" value={opening.buildoutType} options={MPS_DEFAULTS.buildoutTypes} onChange={v=>set("buildoutType",v)} />
-              <Field label="Dimensions" value={opening.buildoutDims} onChange={v=>set("buildoutDims",v)} placeholder='e.g. 2"×4"×96"' />
-              <Field label={`Linear Feet (× $${BUILDOUT_RATE}/LF)`} type="number" value={opening.buildoutLF} onChange={v=>set("buildoutLF",v)} placeholder="e.g. 12" min="0" step="0.5" />
-              <Field label="Override Price ($)" type="number" value={opening.buildoutPrice} onChange={v=>set("buildoutPrice",v)} placeholder="Leave blank to use LF rate" min="0" />
-            </div>
-            {(opening.buildoutLF || opening.buildoutPrice) && (
-              <div className="structural-calc">
-                {opening.buildoutPrice
-                  ? <>Buildout (override): <strong>{fmt(opening.buildoutPrice)}</strong></>
-                  : <>Buildout: {opening.buildoutLF} LF × ${BUILDOUT_RATE} = <strong>{fmt(parseFloat(opening.buildoutLF)*BUILDOUT_RATE)}</strong></>
-                }
-              </div>
-            )}
-            <PhotoUpload label="Buildout Photo (optional)" value={opening.buildoutPhoto} onChange={v=>set("buildoutPhoto",v)} />
-          </div>
+        <div className="structural-section-header">
+          <span className="mps-label">Buildouts</span>
+          {buildoutTotal > 0 && <span className="structural-section-total">{fmt(buildoutTotal)} total</span>}
+          <button type="button" className="structural-add-btn" onClick={addBuildout}>+ Add Buildout</button>
+        </div>
+        {buildouts.length === 0 && (
+          <div className="structural-empty">No buildouts added. Click "Add Buildout" if required.</div>
         )}
+        {buildouts.map((bo, idx) => (
+          <BuildoutItem
+            key={bo.id}
+            bo={bo}
+            index={idx}
+            onChange={updated => updateBuildout(bo.id, updated)}
+            onRemove={() => removeBuildout(bo.id)}
+            showRemove={true}
+          />
+        ))}
       </div>
 
       <div className="opening-photo-row">
-        <PhotoUpload label="Opening Photo" value={opening.openingPhoto} onChange={v=>set("openingPhoto",v)} />
+        <PhotoUpload label="Opening Photo" value={opening.openingPhoto} onChange={v => set("openingPhoto", v)} />
       </div>
 
       {openingTotal > 0 && (
@@ -878,13 +1068,19 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
       <div className="area-defaults">
         <div className="area-defaults-label">Area Defaults (auto-populated per opening)</div>
         <div className="area-defaults-grid">
-          <Sel label="Product"     value={area.product || ""} options={[]} onChange={()=>{}} placeholder="Inherited from line" />
+          {/* CHANGE 1: Show actual product name, not "Inherited from line" */}
+          <div className="mps-field">
+            <label className="mps-label">Product</label>
+            <div className="mps-input mps-input--readonly">{productName}</div>
+          </div>
           <Sel label="Mount Type"  value={area.mountType}  options={MPS_DEFAULTS.mountTypes}  onChange={v=>setArea("mountType",v)} />
           <Sel label="Track Type"  value={area.trackType}  options={MPS_DEFAULTS.trackTypes}  onChange={v=>setArea("trackType",v)} />
           <Sel label="Fabric Type" value={area.fabricType} options={MPS_DEFAULTS.fabricTypes} onChange={v=>setArea("fabricType",v)} />
           <Field label="Cassette Color" value={area.cassetteColor} onChange={v=>setArea("cassetteColor",v)} placeholder="e.g. White" />
           <Field label="Track Color"    value={area.trackColor}    onChange={v=>setArea("trackColor",v)}    placeholder="e.g. Beige" />
           <Sel label="Motor Type"  value={area.motorType}  options={MPS_DEFAULTS.motorTypes}  onChange={v=>setArea("motorType",v)} />
+          {/* CHANGE 4: Weight Bar field at area level */}
+          <Sel label="Weight Bar"  value={area.weightBar || ""} options={MPS_DEFAULTS.weightBarTypes} onChange={v=>setArea("weightBar",v)} placeholder="Select Weight Bar" />
         </div>
         <PhotoUpload label="Area Photo (wide shot)" value={area.areaPhoto} onChange={v=>setArea("areaPhoto",v)} />
       </div>
@@ -912,7 +1108,7 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
 // ─────────────────────────────────────────────────────────────
 // MPS PRODUCT CARD
 // ─────────────────────────────────────────────────────────────
-function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSelections, onAddonToggle }) {
+function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSelections, onAddonToggle, productNotes, onProductNoteChange }) {
   const qty   = parseInt(line.quantity, 10) || 1;
   const areas = mpsData[line.id] || [];
   const setAreas   = (a) => onMPSChange(line.id, a);
@@ -923,31 +1119,68 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
   const openingsProductTotal = calcMPSOpeningsTotal(areas, line.product);
   const structuralTotal      = areas.reduce((s,a) => s + calcAreaStructuralOnly(a), 0);
   const selected             = addonSelections[line.id] || {};
+
+  // CHANGE 5: Auto-remote based on total opening count
+  const totalOpenings = countTotalOpenings(areas);
+  const autoRemoteName = getAutoRemote(totalOpenings > 0 ? totalOpenings : 1);
+  const autoRemotePrice = REMOTE_PRICING[autoRemoteName];
+
   const simpleAddonTotal     = MPS_SIMPLE_ADDONS.reduce((s, a) => selected[a.id] ? s + a.price * qty : s, 0);
   const enriched             = snapshot.productLines.find(l => l.id === line.id);
   const appBaseTotal         = enriched?.pricing?.lineSubtotal || 0;
   const effectiveProductTotal = openingsProductTotal > 0 ? openingsProductTotal : appBaseTotal;
-  const grandLineTotal       = effectiveProductTotal + structuralTotal + simpleAddonTotal;
+  // CHANGE 5: Include auto remote in grand total
+  const grandLineTotal       = effectiveProductTotal + structuralTotal + simpleAddonTotal + autoRemotePrice;
   const hasUnpriced = areas.some(a => a.openings.some(o => (o.width || o.height) && !getMPSOpeningPrice(line.product, o.width, o.height).ok));
 
   return (
     <div className="ps-product-card mps-product-card">
       <div className="ps-product-header">
         <div className="ps-product-number">#{index + 1}</div>
+        {/* CHANGE 1: Show actual product name */}
         <div className="ps-product-name">{line.product}</div>
         <div className="ps-product-price">{fmt(grandLineTotal)}</div>
       </div>
       <div className="ps-detail-grid">
-        {[{label:"Product",value:line.category},{label:"Base Size",value:`${line.width||"—"} × ${line.height||"—"}`},{label:"Quantity",value:line.quantity},{label:"Operation",value:line.operation,capitalize:true}]
-          .map(({label,value,capitalize}) => (
-            <div className="ps-detail-item" key={label}>
-              <span className="ps-detail-label">{label}</span>
-              <span className="ps-detail-value" style={capitalize?{textTransform:"capitalize"}:{}}>{value}</span>
-            </div>
-          ))}
+        {/* CHANGE 1: Show product name in details too */}
+        {[
+          {label:"Product Name", value:line.product},
+          {label:"Category",     value:line.category},
+          {label:"Base Size",    value:`${line.width||"—"} × ${line.height||"—"}`},
+          {label:"Quantity",     value:line.quantity},
+          {label:"Operation",    value:line.operation, capitalize:true}
+        ].map(({label,value,capitalize}) => (
+          <div className="ps-detail-item" key={label}>
+            <span className="ps-detail-label">{label}</span>
+            <span className="ps-detail-value" style={capitalize?{textTransform:"capitalize"}:{}}>{value}</span>
+          </div>
+        ))}
       </div>
+
+      {/* CHANGE 2: Product note field */}
+      <div className="product-note-section">
+        <label className="mps-label">📝 Product Notes</label>
+        <textarea
+          className="product-note-textarea"
+          placeholder="Add any important notes about this product (e.g. special instructions, site conditions, client preferences)…"
+          value={productNotes || ""}
+          onChange={e => onProductNoteChange(line.id, e.target.value)}
+          rows={3}
+        />
+      </div>
+
       {enriched?.pricing?.priceNote && <div className="ps-price-note">💡 Reference (from intake form): {enriched.pricing.priceNote}</div>}
       {hasUnpriced && <div className="ps-price-note ps-price-note--warn">⚠ Some openings have dimensions that don't match the price matrix.</div>}
+
+      {/* CHANGE 5: Auto remote info badge */}
+      {totalOpenings > 0 && (
+        <div className="auto-remote-badge">
+          <span className="auto-remote-icon">🎛</span>
+          <span className="auto-remote-text">
+            Auto-selected Remote: <strong>{autoRemoteName}</strong> ({totalOpenings} opening{totalOpenings !== 1 ? "s" : ""}) — <strong>{fmt(autoRemotePrice)}</strong>
+          </span>
+        </div>
+      )}
 
       <div className="mps-builder">
         <div className="mps-builder-header">
@@ -994,6 +1227,7 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
 
       <div className="mps-line-total">
         {openingsProductTotal > 0 ? <span>Openings Price: {fmt(openingsProductTotal)}</span> : <span>Base Price (from form): {fmt(appBaseTotal)}</span>}
+        {autoRemotePrice  > 0 && <span>+ Remote ({autoRemoteName}): {fmt(autoRemotePrice)}</span>}
         {simpleAddonTotal > 0 && <span>+ Add-ons: {fmt(simpleAddonTotal)}</span>}
         {structuralTotal  > 0 && <span>+ Structural: {fmt(structuralTotal)}</span>}
         <span className="mps-line-grand">Line Total: {fmt(grandLineTotal)}</span>
@@ -1005,7 +1239,7 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
 // ─────────────────────────────────────────────────────────────
 // STANDARD PRODUCT CARD
 // ─────────────────────────────────────────────────────────────
-function StandardProductCard({ line, index, snapshot, addonSelections, onAddonToggle, fieldAddonValues, onFieldAddonChange }) {
+function StandardProductCard({ line, index, snapshot, addonSelections, onAddonToggle, fieldAddonValues, onFieldAddonChange, productNotes, onProductNoteChange }) {
   const enriched  = snapshot.productLines.find(l => l.id === line.id);
   const baseTotal = enriched?.pricing?.lineSubtotal || 0;
   const priceNote = enriched?.pricing?.priceNote    || '';
@@ -1019,6 +1253,8 @@ function StandardProductCard({ line, index, snapshot, addonSelections, onAddonTo
 
   const details = [
     { label:"Category",       value: line.category          },
+    // CHANGE 1: Show actual product name
+    { label:"Product Name",   value: line.product           },
     { label:"Width",          value: line.width     || "—"  },
     { label:"Height / Proj.", value: line.height    || "—"  },
     { label:"Quantity",       value: line.quantity          },
@@ -1032,6 +1268,7 @@ function StandardProductCard({ line, index, snapshot, addonSelections, onAddonTo
     <div className="ps-product-card">
       <div className="ps-product-header">
         <div className="ps-product-number">#{index + 1}</div>
+        {/* CHANGE 1: Actual product name in header */}
         <div className="ps-product-name">{line.product}</div>
         <div className="ps-product-price">{fmt(grandLineTotal)}</div>
       </div>
@@ -1043,6 +1280,19 @@ function StandardProductCard({ line, index, snapshot, addonSelections, onAddonTo
           </div>
         ))}
       </div>
+
+      {/* CHANGE 2: Product note field */}
+      <div className="product-note-section">
+        <label className="mps-label">📝 Product Notes</label>
+        <textarea
+          className="product-note-textarea"
+          placeholder="Add any important notes about this product…"
+          value={productNotes || ""}
+          onChange={e => onProductNoteChange(line.id, e.target.value)}
+          rows={3}
+        />
+      </div>
+
       {priceNote && <div className="ps-price-note">💡 {priceNote}</div>}
 
       {availableAddons.length > 0 && (
@@ -1142,7 +1392,11 @@ export default function ProductSummary() {
   const [addonSelections,  setAddonSelections]  = useState({});
   const [mpsData,          setMpsData]          = useState({});
   const [fieldAddonValues, setFieldAddonValues] = useState({});
+  // CHANGE 2: product notes state
+  const [productNotes,     setProductNotes]     = useState({});
 
+  const handleProductNoteChange = (lineId, note) =>
+    setProductNotes(prev => ({ ...prev, [lineId]: note }));
   const handleFieldAddonChange = (lineId, addonId, val) =>
     setFieldAddonValues(prev => ({...prev, [lineId]: {...(prev[lineId]||{}), [addonId]: val}}));
   const handleAddonToggle = (lineId, addonId) =>
@@ -1150,10 +1404,10 @@ export default function ProductSummary() {
   const handleMPSChange = (lineId, areas) =>
     setMpsData(prev => ({...prev, [lineId]: areas}));
 
-  const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand } = useMemo(() => {
-    if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0, mpsOpeningsProductGrand:0 };
+  const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand, mpsRemoteGrand } = useMemo(() => {
+    if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0, mpsOpeningsProductGrand:0, mpsRemoteGrand:0 };
     const configuredLines = snapshot.productLines.filter(l => l.category && l.product);
-    let addonGrand=0, structuralGrand=0, openingsGrand=0, appBaseMPSGrand=0;
+    let addonGrand=0, structuralGrand=0, openingsGrand=0, appBaseMPSGrand=0, remoteGrand=0;
 
     configuredLines.forEach(line => {
       if (MPS_PRODUCTS.includes(line.product)) {
@@ -1163,6 +1417,10 @@ export default function ProductSummary() {
         const qty = parseInt(line.quantity,10)||1;
         const sel = addonSelections[line.id]||{};
         MPS_SIMPLE_ADDONS.forEach(a => { if(sel[a.id]) addonGrand += a.price*qty; });
+        // CHANGE 5: Add auto remote to grand total
+        const totalOpenings = countTotalOpenings(areas);
+        const autoRemote = getAutoRemote(totalOpenings > 0 ? totalOpenings : 1);
+        remoteGrand += REMOTE_PRICING[autoRemote];
         if (openingsTotal > 0) openingsGrand += openingsTotal;
         else { const e = snapshot.productLines.find(l2=>l2.id===line.id); appBaseMPSGrand += e?.pricing?.lineSubtotal||0; }
       } else {
@@ -1182,7 +1440,8 @@ export default function ProductSummary() {
       summaryAddonGrandTotal:  addonGrand,
       mpsStructuralGrand:      structuralGrand,
       mpsOpeningsProductGrand: openingsGrand,
-      subtotalWithAddons:      nonMPSOriginal + openingsGrand + appBaseMPSGrand + addonGrand + structuralGrand,
+      mpsRemoteGrand:          remoteGrand,
+      subtotalWithAddons:      nonMPSOriginal + openingsGrand + appBaseMPSGrand + addonGrand + structuralGrand + remoteGrand,
     };
   }, [snapshot, addonSelections, mpsData, fieldAddonValues]);
 
@@ -1239,11 +1498,13 @@ export default function ProductSummary() {
                 MPS_PRODUCTS.includes(line.product) ? (
                   <MPSProductCard key={line.id} line={line} index={idx} snapshot={snapshot}
                     mpsData={mpsData} onMPSChange={handleMPSChange}
-                    addonSelections={addonSelections} onAddonToggle={handleAddonToggle} />
+                    addonSelections={addonSelections} onAddonToggle={handleAddonToggle}
+                    productNotes={productNotes[line.id]} onProductNoteChange={handleProductNoteChange} />
                 ) : (
                   <StandardProductCard key={line.id} line={line} index={idx} snapshot={snapshot}
                     addonSelections={addonSelections} onAddonToggle={handleAddonToggle}
-                    fieldAddonValues={fieldAddonValues[line.id]||{}} onFieldAddonChange={handleFieldAddonChange} />
+                    fieldAddonValues={fieldAddonValues[line.id]||{}} onFieldAddonChange={handleFieldAddonChange}
+                    productNotes={productNotes[line.id]} onProductNoteChange={handleProductNoteChange} />
                 )
               )}
             </div>
@@ -1257,6 +1518,8 @@ export default function ProductSummary() {
             {mpsOpeningsProductGrand > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>MPS Opening-Based Pricing (replaces base)</span><span className="ps-addon-highlight">{fmt(mpsOpeningsProductGrand)}</span></div>}
             {summaryAddonGrandTotal  > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Selected Add-ons</span><span className="ps-addon-highlight">+{fmt(summaryAddonGrandTotal)}</span></div>}
             {mpsStructuralGrand      > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Structural Adjustments (L-Channel / Buildout)</span><span className="ps-addon-highlight">+{fmt(mpsStructuralGrand)}</span></div>}
+            {/* CHANGE 5: Show remote line in pricing summary */}
+            {mpsRemoteGrand          > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Auto-Selected Remotes</span><span className="ps-addon-highlight">+{fmt(mpsRemoteGrand)}</span></div>}
             <div className="ps-pricing-row ps-subtotal-addons-row"><span>Subtotal (incl. all adjustments)</span><span>{fmt(subtotalWithAddons)}</span></div>
             <div className="ps-pricing-row"><span>Discount ({discountPercent}%)</span><span className="ps-discount-value">−{fmt(discountAmount)}</span></div>
             {discount?.percent > 20 && <div className="ps-pricing-row ps-manager-row"><span>Manager Approval</span><span>{discount.managerName||"—"}</span></div>}
