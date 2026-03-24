@@ -21,7 +21,7 @@ const MPS_DEFAULTS = {
   buildoutTypes:["Wood", "Aluminum Tube"],
   motorSides:   ["Left", "Right"],
   // CHANGE 4: renamed from weightBarTypes to reflect correct label "Weight Bar"
-  weightBarTypes: ["Standard", "Upgraded", "None"],
+  weightBarTypes: ["Sand", "White", "Black", "Bronze", "Custom"],
   remoteTypes:  ["1 Channel Somfy Remote", "5 Channel Somfy Remote", "16 Channel Somfy Remote"],
 };
 
@@ -987,7 +987,7 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
           {/* CHANGE 4: label is "Weight Bar" (not "Weight Bar Color") */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
-              Weight Bar
+              Weight Bar Color
               {opening.weightBarOverride
                 ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
                 : <span className="override-resolved-source">area default</span>}
@@ -1118,7 +1118,7 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
           <Field label="Track Color"    value={area.trackColor}    onChange={v=>setArea("trackColor",v)}    placeholder="e.g. Beige" />
           <Sel label="Motor Type"  value={area.motorType}  options={MPS_DEFAULTS.motorTypes}  onChange={v=>setArea("motorType",v)} />
           {/* CHANGE 4: correct label "Weight Bar" */}
-          <Sel label="Weight Bar"  value={area.weightBar || ""} options={MPS_DEFAULTS.weightBarTypes} onChange={v=>setArea("weightBar",v)} placeholder="Select Weight Bar" />
+          <Sel label="Weight Bar color"  value={area.weightBar || ""} options={MPS_DEFAULTS.weightBarTypes} onChange={v=>setArea("weightBar",v)} placeholder="Select Weight Bar color" />
         </div>
         <PhotoUpload label="Area Photo (wide shot)" value={area.areaPhoto} onChange={v=>setArea("areaPhoto",v)} />
       </div>
