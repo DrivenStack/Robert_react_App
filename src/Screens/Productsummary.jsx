@@ -20,6 +20,7 @@ const MPS_DEFAULTS = {
   lChannelLocs: ["Left", "Right", "Top", "Bottom"],
   buildoutTypes:["Wood", "Aluminum Tube"],
   motorSides:   ["Left", "Right"],
+  // CHANGE 4: renamed from weightBarTypes to reflect correct label "Weight Bar"
   weightBarTypes: ["Standard", "Upgraded", "None"],
   remoteTypes:  ["1 Channel Somfy Remote", "5 Channel Somfy Remote", "16 Channel Somfy Remote"],
 };
@@ -42,9 +43,10 @@ function getAutoRemote(openingCount) {
 
 const MPS_SIMPLE_ADDONS = [
   { id: "remote_1ch",   name: "1 Channel Somfy Remote",         price: 125 },
-  { id: "remote_5ch",   name: "5 Channel Somfy Remote",         price: 320 },
+  { id: "remote_5ch",   name: "5 Channel Somfy Remote",         price: 180 },
   { id: "wind_sensor",  name: "Wind Sensor (Shaker or Whirly)", price: 290 },
   { id: "tahoma",       name: "Somfy Tahoma",                   price: 420 },
+  { id: "remote_16ch",  name: "16 Channel Somfy Remote",        price: 320 },
 ];
 
 const fmt = (n) =>
@@ -434,9 +436,8 @@ function calcFieldAddonTotal(lineFieldValues, productName) {
 let _uid = 1;
 const uid = () => `id_${_uid++}`;
 
-// CHANGE 6: L-channels and buildouts are now arrays per opening
 function createLChannel() {
-  return { id: uid(), loc: "Left", size: "1×1", customSize: "", lf: "" };
+  return { id: uid(), loc: "Left", size: "1×1", customSize: "", lf: "", photo: null };
 }
 
 function createBuildout() {
@@ -447,11 +448,10 @@ function createOpening(areaDefaults = {}) {
   return {
     id: uid(), label: "", width: "", height: "",
     motorSide: areaDefaults.motorSide || "Left",
-    // CHANGE 6: arrays instead of single items
     lChannels: [],
     buildouts: [],
     mountOverride: "", trackOverride: "", fabricOverride: "",
-    colorOverride: "", motorOverride: "",
+    colorOverride: "", trackColorOverride: "", motorOverride: "",
     weightBarOverride: "", remoteOverride: "",
     openingPhoto: null,
   };
@@ -468,11 +468,9 @@ function createArea() {
 
 function calcOpeningStructural(opening) {
   let total = 0;
-  // CHANGE 6: sum all L-channels
   (opening.lChannels || []).forEach(lc => {
     total += (parseFloat(lc.lf) || 0) * L_CHANNEL_RATE;
   });
-  // CHANGE 6: sum all buildouts
   (opening.buildouts || []).forEach(bo => {
     const op = parseFloat(bo.price);
     total += (!isNaN(op) && op > 0) ? op : (parseFloat(bo.lf) || 0) * BUILDOUT_RATE;
@@ -494,9 +492,30 @@ function calcAreaStructuralOnly(area) {
   return area.openings.reduce((sum, o) => sum + calcOpeningStructural(o), 0);
 }
 
-// Count total openings across all areas for a product
 function countTotalOpenings(areas) {
   return areas.reduce((sum, a) => sum + a.openings.length, 0);
+}
+
+// ─────────────────────────────────────────────────────────────
+// CHANGE 2: SESSION STORAGE PERSISTENCE KEY
+// ─────────────────────────────────────────────────────────────
+const SESSION_KEY = "productSummaryState_v1";
+
+function saveToSession(state) {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(state));
+  } catch (e) {
+    // ignore storage errors
+  }
+}
+
+function loadFromSession() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -725,7 +744,7 @@ function OpeningPriceBadge({ opening, productName }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// CHANGE 6: L-CHANNEL ITEM EDITOR (multiple per opening)
+// CHANGE 5: L-CHANNEL ITEM EDITOR — now includes photo upload
 // ─────────────────────────────────────────────────────────────
 function LChannelItem({ lc, index, onChange, onRemove, showRemove }) {
   const set = (field, val) => onChange({ ...lc, [field]: val });
@@ -745,12 +764,14 @@ function LChannelItem({ lc, index, onChange, onRemove, showRemove }) {
         <Field label={`Linear Feet (× $${L_CHANNEL_RATE}/LF)`} type="number" value={lc.lf} onChange={v => set("lf", v)} placeholder="e.g. 8" min="0" step="0.5" />
       </div>
       {lc.lf && <div className="structural-calc">L-Channel: {lc.lf} LF × ${L_CHANNEL_RATE} = <strong>{fmt(cost)}</strong></div>}
+      {/* CHANGE 5: Photo upload for L-channel */}
+      <PhotoUpload label="L-Channel Photo (optional)" value={lc.photo} onChange={v => set("photo", v)} />
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────
-// CHANGE 6: BUILDOUT ITEM EDITOR (multiple per opening)
+// BUILDOUT ITEM EDITOR
 // ─────────────────────────────────────────────────────────────
 function BuildoutItem({ bo, index, onChange, onRemove, showRemove }) {
   const set = (field, val) => onChange({ ...bo, [field]: val });
@@ -785,7 +806,11 @@ function BuildoutItem({ bo, index, onChange, onRemove, showRemove }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// OPENING EDITOR
+// CHANGE 6: OPENING EDITOR — Effective Settings replaces
+//           the duplicate dropdown block. Opening-level fields
+//           removed; one clean "Effective Settings" panel that
+//           shows area defaults and lets the user override
+//           per-opening without any duplicate selects.
 // ─────────────────────────────────────────────────────────────
 function OpeningEditor({ opening, index, areaDefaults, productName, onChange, onRemove, showRemove }) {
   const structural   = calcOpeningStructural(opening);
@@ -793,19 +818,13 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
   const openingTotal = openingPrice + structural;
   const set = (field, val) => onChange({ ...opening, [field]: val });
 
-  // CHANGE 3: resolve effective values (override > area default)
-  const effectiveMount  = opening.mountOverride  || areaDefaults.mountType  || "";
-  const effectiveTrack  = opening.trackOverride  || areaDefaults.trackType  || "";
-  const effectiveFabric = opening.fabricOverride || areaDefaults.fabricType || "";
-  const effectiveMotor  = opening.motorOverride  || areaDefaults.motorType  || "";
-
-  // CHANGE 6: L-channel helpers
-  const addLChannel = () => set("lChannels", [...(opening.lChannels || []), createLChannel()]);
+  // L-channel helpers
+  const addLChannel    = () => set("lChannels", [...(opening.lChannels || []), createLChannel()]);
   const updateLChannel = (id, updated) => set("lChannels", (opening.lChannels || []).map(lc => lc.id === id ? updated : lc));
   const removeLChannel = (id) => set("lChannels", (opening.lChannels || []).filter(lc => lc.id !== id));
 
-  // CHANGE 6: Buildout helpers
-  const addBuildout = () => set("buildouts", [...(opening.buildouts || []), createBuildout()]);
+  // Buildout helpers
+  const addBuildout    = () => set("buildouts", [...(opening.buildouts || []), createBuildout()]);
   const updateBuildout = (id, updated) => set("buildouts", (opening.buildouts || []).map(bo => bo.id === id ? updated : bo));
   const removeBuildout = (id) => set("buildouts", (opening.buildouts || []).filter(bo => bo.id !== id));
 
@@ -816,6 +835,12 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
     const op = parseFloat(bo.price);
     return s + ((!isNaN(op) && op > 0) ? op : (parseFloat(bo.lf) || 0) * BUILDOUT_RATE);
   }, 0);
+
+  // CHANGE 6: resolve effective values for display in summary chip
+  const effectiveMount  = opening.mountOverride  || areaDefaults.mountType  || "—";
+  const effectiveTrack  = opening.trackOverride  || areaDefaults.trackType  || "—";
+  const effectiveFabric = opening.fabricOverride || areaDefaults.fabricType || "—";
+  const effectiveMotor  = opening.motorOverride  || areaDefaults.motorType  || "—";
 
   return (
     <div className="opening-card">
@@ -829,144 +854,158 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
         {showRemove && <button type="button" className="opening-remove" onClick={onRemove}>✕</button>}
       </div>
 
+      {/* Dimensions + Motor Side */}
       <div className="opening-grid-3">
         <Field label="Width (ft or inches)" type="number" value={opening.width} onChange={v => set("width", v)} placeholder='e.g. 10 (ft) or 120 (in)' min="0" required />
         <Field label="Height (ft or inches)" type="number" value={opening.height} onChange={v => set("height", v)} placeholder='e.g. 8 (ft) or 96 (in)' min="0" required />
         <Sel label="Motor Side" value={opening.motorSide} options={MPS_DEFAULTS.motorSides} onChange={v => set("motorSide", v)} required />
       </div>
 
-      {/* CHANGE 4: Extra opening-level fields for MPS — empty dropdown means "not set / use area default" */}
-      <div className="opening-grid-3">
-        <Sel label="Mount Type"   value={opening.mountOverride}            options={MPS_DEFAULTS.mountTypes}    onChange={v => set("mountOverride", v)}            placeholder="— Select —" />
-        <Sel label="Track Type"   value={opening.trackOverride}            options={MPS_DEFAULTS.trackTypes}    onChange={v => set("trackOverride", v)}            placeholder="— Select —" />
-        <Sel label="Fabric Type"  value={opening.fabricOverride}           options={MPS_DEFAULTS.fabricTypes}   onChange={v => set("fabricOverride", v)}           placeholder="— Select —" />
-        <Field label="Cassette Color" value={opening.colorOverride}        onChange={v => set("colorOverride", v)}        placeholder="e.g. White" />
-        <Field label="Track Color"    value={opening.trackColorOverride || ""} onChange={v => set("trackColorOverride", v)} placeholder="e.g. Beige" />
-        <Sel label="Motor Type"   value={opening.motorOverride}            options={MPS_DEFAULTS.motorTypes}    onChange={v => set("motorOverride", v)}            placeholder="— Select —" />
-        <Sel label="Weight Bar"   value={opening.weightBarOverride || ""}  options={MPS_DEFAULTS.weightBarTypes} onChange={v => set("weightBarOverride", v)}       placeholder="— Select —" />
-      </div>
-
       <OpeningPriceBadge opening={opening} productName={productName} />
 
-      {/* CHANGE 3: Effective settings panel — shows resolved values and lets user edit them directly */}
+      {/* CHANGE 6: Single unified "Opening Settings" panel.
+          Each field shows the resolved (area default) value and the user
+          can override it here. No duplicate selects anywhere else. */}
       <details className="override-details" open>
         <summary className="override-summary">
-          ⚙ Effective Settings
+          ⚙ Opening Settings
           <span className="override-hint">
-            (Mount: <strong>{effectiveMount || "—"}</strong> · Track: <strong>{effectiveTrack || "—"}</strong> · Fabric: <strong>{effectiveFabric || "—"}</strong> · Motor: <strong>{effectiveMotor || "—"}</strong>)
+            (Mount: <strong>{effectiveMount}</strong> · Track: <strong>{effectiveTrack}</strong> · Fabric: <strong>{effectiveFabric}</strong> · Motor: <strong>{effectiveMotor}</strong>)
           </span>
         </summary>
         <div className="override-resolved-info">
-          Fields below show the resolved value for this opening. Values set here override the area default. Clear a field to fall back to the area default.
+          These settings default to the Area values above. Change any field here to override for this opening only. Clear back to "— area default —" to revert.
         </div>
         <div className="override-resolved-grid">
+
           {/* Mount Type */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Mount Type
-              <span className="override-resolved-source">{opening.mountOverride ? "opening value" : "area default"}</span>
+              {opening.mountOverride
+                ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
+                : <span className="override-resolved-source">area default</span>}
             </label>
             <select
               className={`override-resolved-select ${opening.mountOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
-              value={opening.mountOverride || areaDefaults.mountType || ""}
+              value={opening.mountOverride || ""}
               onChange={e => set("mountOverride", e.target.value)}
             >
-              <option value="">— not set —</option>
+              <option value="">— area default ({areaDefaults.mountType || "not set"}) —</option>
               {MPS_DEFAULTS.mountTypes.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
           </div>
+
           {/* Track Type */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Track Type
-              <span className="override-resolved-source">{opening.trackOverride ? "opening value" : "area default"}</span>
+              {opening.trackOverride
+                ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
+                : <span className="override-resolved-source">area default</span>}
             </label>
             <select
               className={`override-resolved-select ${opening.trackOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
-              value={opening.trackOverride || areaDefaults.trackType || ""}
+              value={opening.trackOverride || ""}
               onChange={e => set("trackOverride", e.target.value)}
             >
-              <option value="">— not set —</option>
+              <option value="">— area default ({areaDefaults.trackType || "not set"}) —</option>
               {MPS_DEFAULTS.trackTypes.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
           </div>
+
           {/* Fabric Type */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Fabric Type
-              <span className="override-resolved-source">{opening.fabricOverride ? "opening value" : "area default"}</span>
+              {opening.fabricOverride
+                ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
+                : <span className="override-resolved-source">area default</span>}
             </label>
             <select
               className={`override-resolved-select ${opening.fabricOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
-              value={opening.fabricOverride || areaDefaults.fabricType || ""}
+              value={opening.fabricOverride || ""}
               onChange={e => set("fabricOverride", e.target.value)}
             >
-              <option value="">— not set —</option>
+              <option value="">— area default ({areaDefaults.fabricType || "not set"}) —</option>
               {MPS_DEFAULTS.fabricTypes.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
           </div>
+
           {/* Motor Type */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Motor Type
-              <span className="override-resolved-source">{opening.motorOverride ? "opening value" : "area default"}</span>
+              {opening.motorOverride
+                ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
+                : <span className="override-resolved-source">area default</span>}
             </label>
             <select
               className={`override-resolved-select ${opening.motorOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
-              value={opening.motorOverride || areaDefaults.motorType || ""}
+              value={opening.motorOverride || ""}
               onChange={e => set("motorOverride", e.target.value)}
             >
-              <option value="">— not set —</option>
+              <option value="">— area default ({areaDefaults.motorType || "not set"}) —</option>
               {MPS_DEFAULTS.motorTypes.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
           </div>
+
           {/* Cassette Color */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Cassette Color
-              <span className="override-resolved-source">{opening.colorOverride ? "opening value" : "area default"}</span>
+              {opening.colorOverride
+                ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
+                : <span className="override-resolved-source">area default</span>}
             </label>
             <input
               className={`override-resolved-input ${opening.colorOverride ? "override-resolved-input--set" : "override-resolved-input--default"}`}
               type="text"
-              value={opening.colorOverride || areaDefaults.cassetteColor || ""}
-              placeholder="e.g. White"
+              value={opening.colorOverride || ""}
+              placeholder={`area default (${areaDefaults.cassetteColor || "not set"})`}
               onChange={e => set("colorOverride", e.target.value)}
             />
           </div>
+
           {/* Track Color */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Track Color
-              <span className="override-resolved-source">{opening.trackColorOverride ? "opening value" : "area default"}</span>
+              {opening.trackColorOverride
+                ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
+                : <span className="override-resolved-source">area default</span>}
             </label>
             <input
               className={`override-resolved-input ${opening.trackColorOverride ? "override-resolved-input--set" : "override-resolved-input--default"}`}
               type="text"
-              value={opening.trackColorOverride || areaDefaults.trackColor || ""}
-              placeholder="e.g. Beige"
+              value={opening.trackColorOverride || ""}
+              placeholder={`area default (${areaDefaults.trackColor || "not set"})`}
               onChange={e => set("trackColorOverride", e.target.value)}
             />
           </div>
-          {/* Weight Bar */}
+
+          {/* CHANGE 4: label is "Weight Bar" (not "Weight Bar Color") */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Weight Bar
-              <span className="override-resolved-source">{opening.weightBarOverride ? "opening value" : "area default"}</span>
+              {opening.weightBarOverride
+                ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
+                : <span className="override-resolved-source">area default</span>}
             </label>
             <select
               className={`override-resolved-select ${opening.weightBarOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
-              value={opening.weightBarOverride || areaDefaults.weightBar || ""}
+              value={opening.weightBarOverride || ""}
               onChange={e => set("weightBarOverride", e.target.value)}
             >
-              <option value="">— not set —</option>
+              <option value="">— area default ({areaDefaults.weightBar || "not set"}) —</option>
               {MPS_DEFAULTS.weightBarTypes.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
           </div>
+
         </div>
       </details>
 
-      {/* CHANGE 6: Multiple L-Channels */}
+      {/* Multiple L-Channels */}
       <div className="structural-section">
         <div className="structural-section-header">
           <span className="mps-label">L-Channels</span>
@@ -988,7 +1027,7 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
         ))}
       </div>
 
-      {/* CHANGE 6: Multiple Buildouts */}
+      {/* Multiple Buildouts */}
       <div className="structural-section">
         <div className="structural-section-header">
           <span className="mps-label">Buildouts</span>
@@ -1066,9 +1105,8 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
       </div>
 
       <div className="area-defaults">
-        <div className="area-defaults-label">Area Defaults (auto-populated per opening)</div>
+        <div className="area-defaults-label">Area Defaults (auto-populated per opening — override per opening below)</div>
         <div className="area-defaults-grid">
-          {/* CHANGE 1: Show actual product name, not "Inherited from line" */}
           <div className="mps-field">
             <label className="mps-label">Product</label>
             <div className="mps-input mps-input--readonly">{productName}</div>
@@ -1079,7 +1117,7 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
           <Field label="Cassette Color" value={area.cassetteColor} onChange={v=>setArea("cassetteColor",v)} placeholder="e.g. White" />
           <Field label="Track Color"    value={area.trackColor}    onChange={v=>setArea("trackColor",v)}    placeholder="e.g. Beige" />
           <Sel label="Motor Type"  value={area.motorType}  options={MPS_DEFAULTS.motorTypes}  onChange={v=>setArea("motorType",v)} />
-          {/* CHANGE 4: Weight Bar field at area level */}
+          {/* CHANGE 4: correct label "Weight Bar" */}
           <Sel label="Weight Bar"  value={area.weightBar || ""} options={MPS_DEFAULTS.weightBarTypes} onChange={v=>setArea("weightBar",v)} placeholder="Select Weight Bar" />
         </div>
         <PhotoUpload label="Area Photo (wide shot)" value={area.areaPhoto} onChange={v=>setArea("areaPhoto",v)} />
@@ -1106,6 +1144,124 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
 }
 
 // ─────────────────────────────────────────────────────────────
+// CHANGE 1: SIGNATURE PAD COMPONENT
+// ─────────────────────────────────────────────────────────────
+function SignaturePad({ value, onChange }) {
+  const canvasRef = useRef(null);
+  const isDrawing = useRef(false);
+  const lastPos   = useRef(null);
+  const [isEmpty, setIsEmpty] = useState(!value);
+
+  // Draw saved signature from data URL when value prop is provided
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (value) {
+      const img = new Image();
+      img.onload = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+      };
+      img.src = value;
+      setIsEmpty(false);
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      setIsEmpty(true);
+    }
+  }, [value]);
+
+  const getPos = (e, canvas) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width  / rect.width;
+    const scaleY = canvas.height / rect.height;
+    if (e.touches) {
+      return {
+        x: (e.touches[0].clientX - rect.left) * scaleX,
+        y: (e.touches[0].clientY - rect.top)  * scaleY,
+      };
+    }
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top)  * scaleY,
+    };
+  };
+
+  const startDraw = (e) => {
+    e.preventDefault();
+    isDrawing.current = true;
+    const canvas = canvasRef.current;
+    lastPos.current = getPos(e, canvas);
+    const ctx = canvas.getContext("2d");
+    ctx.beginPath();
+    ctx.moveTo(lastPos.current.x, lastPos.current.y);
+  };
+
+  const draw = (e) => {
+    e.preventDefault();
+    if (!isDrawing.current) return;
+    const canvas = canvasRef.current;
+    const ctx    = canvas.getContext("2d");
+    const pos    = getPos(e, canvas);
+    ctx.strokeStyle = "#1a1a2e";
+    ctx.lineWidth   = 2;
+    ctx.lineCap     = "round";
+    ctx.lineJoin    = "round";
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+    lastPos.current = pos;
+    setIsEmpty(false);
+  };
+
+  const endDraw = (e) => {
+    if (!isDrawing.current) return;
+    isDrawing.current = false;
+    const canvas = canvasRef.current;
+    onChange(canvas.toDataURL("image/png"));
+  };
+
+  const clearSig = () => {
+    const canvas = canvasRef.current;
+    const ctx    = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    onChange(null);
+    setIsEmpty(true);
+  };
+
+  return (
+    <div className="signature-pad-wrapper">
+      <div className="signature-pad-header">
+        <span className="signature-pad-label">✍️ Customer Signature</span>
+        {!isEmpty && (
+          <button type="button" className="signature-clear-btn" onClick={clearSig}>
+            Clear
+          </button>
+        )}
+      </div>
+      <div className="signature-canvas-container">
+        <canvas
+          ref={canvasRef}
+          width={600}
+          height={160}
+          className={`signature-canvas ${isEmpty ? "signature-canvas--empty" : "signature-canvas--signed"}`}
+          onMouseDown={startDraw}
+          onMouseMove={draw}
+          onMouseUp={endDraw}
+          onMouseLeave={endDraw}
+          onTouchStart={startDraw}
+          onTouchMove={draw}
+          onTouchEnd={endDraw}
+        />
+        {isEmpty && (
+          <div className="signature-placeholder">Sign here</div>
+        )}
+      </div>
+      <p className="signature-pad-hint">Draw your signature above using mouse or touch</p>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
 // MPS PRODUCT CARD
 // ─────────────────────────────────────────────────────────────
 function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSelections, onAddonToggle, productNotes, onProductNoteChange }) {
@@ -1120,29 +1276,26 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
   const structuralTotal      = areas.reduce((s,a) => s + calcAreaStructuralOnly(a), 0);
   const selected             = addonSelections[line.id] || {};
 
-  // CHANGE 5: Auto-remote based on total opening count
-  const totalOpenings = countTotalOpenings(areas);
+  // CHANGE 3: auto-remote shown but NOT added to price
+  const totalOpenings  = countTotalOpenings(areas);
   const autoRemoteName = getAutoRemote(totalOpenings > 0 ? totalOpenings : 1);
-  const autoRemotePrice = REMOTE_PRICING[autoRemoteName];
 
-  const simpleAddonTotal     = MPS_SIMPLE_ADDONS.reduce((s, a) => selected[a.id] ? s + a.price * qty : s, 0);
-  const enriched             = snapshot.productLines.find(l => l.id === line.id);
-  const appBaseTotal         = enriched?.pricing?.lineSubtotal || 0;
+  const simpleAddonTotal      = MPS_SIMPLE_ADDONS.reduce((s, a) => selected[a.id] ? s + a.price * qty : s, 0);
+  const enriched              = snapshot.productLines.find(l => l.id === line.id);
+  const appBaseTotal          = enriched?.pricing?.lineSubtotal || 0;
   const effectiveProductTotal = openingsProductTotal > 0 ? openingsProductTotal : appBaseTotal;
-  // CHANGE 5: Include auto remote in grand total
-  const grandLineTotal       = effectiveProductTotal + structuralTotal + simpleAddonTotal + autoRemotePrice;
+  // CHANGE 3: remote price removed from grand total
+  const grandLineTotal        = effectiveProductTotal + structuralTotal + simpleAddonTotal;
   const hasUnpriced = areas.some(a => a.openings.some(o => (o.width || o.height) && !getMPSOpeningPrice(line.product, o.width, o.height).ok));
 
   return (
     <div className="ps-product-card mps-product-card">
       <div className="ps-product-header">
         <div className="ps-product-number">#{index + 1}</div>
-        {/* CHANGE 1: Show actual product name */}
         <div className="ps-product-name">{line.product}</div>
         <div className="ps-product-price">{fmt(grandLineTotal)}</div>
       </div>
       <div className="ps-detail-grid">
-        {/* CHANGE 1: Show product name in details too */}
         {[
           {label:"Product Name", value:line.product},
           {label:"Category",     value:line.category},
@@ -1157,7 +1310,6 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
         ))}
       </div>
 
-      {/* CHANGE 2: Product note field */}
       <div className="product-note-section">
         <label className="mps-label">📝 Product Notes</label>
         <textarea
@@ -1172,12 +1324,12 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
       {enriched?.pricing?.priceNote && <div className="ps-price-note">💡 Reference (from intake form): {enriched.pricing.priceNote}</div>}
       {hasUnpriced && <div className="ps-price-note ps-price-note--warn">⚠ Some openings have dimensions that don't match the price matrix.</div>}
 
-      {/* CHANGE 5: Auto remote info badge */}
+      {/* CHANGE 3: Show remote name only, no price impact */}
       {totalOpenings > 0 && (
         <div className="auto-remote-badge">
           <span className="auto-remote-icon">🎛</span>
           <span className="auto-remote-text">
-            Auto-selected Remote: <strong>{autoRemoteName}</strong> ({totalOpenings} opening{totalOpenings !== 1 ? "s" : ""}) — <strong>{fmt(autoRemotePrice)}</strong>
+            Recommended Remote: <strong>{autoRemoteName}</strong> ({totalOpenings} opening{totalOpenings !== 1 ? "s" : ""}) — <em>included, no extra charge</em>
           </span>
         </div>
       )}
@@ -1227,9 +1379,10 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
 
       <div className="mps-line-total">
         {openingsProductTotal > 0 ? <span>Openings Price: {fmt(openingsProductTotal)}</span> : <span>Base Price (from form): {fmt(appBaseTotal)}</span>}
-        {autoRemotePrice  > 0 && <span>+ Remote ({autoRemoteName}): {fmt(autoRemotePrice)}</span>}
         {simpleAddonTotal > 0 && <span>+ Add-ons: {fmt(simpleAddonTotal)}</span>}
         {structuralTotal  > 0 && <span>+ Structural: {fmt(structuralTotal)}</span>}
+        {/* CHANGE 3: show remote as info only, no price in line total */}
+        {totalOpenings > 0 && <span className="mps-remote-info-line">Remote included: {autoRemoteName}</span>}
         <span className="mps-line-grand">Line Total: {fmt(grandLineTotal)}</span>
       </div>
     </div>
@@ -1253,7 +1406,6 @@ function StandardProductCard({ line, index, snapshot, addonSelections, onAddonTo
 
   const details = [
     { label:"Category",       value: line.category          },
-    // CHANGE 1: Show actual product name
     { label:"Product Name",   value: line.product           },
     { label:"Width",          value: line.width     || "—"  },
     { label:"Height / Proj.", value: line.height    || "—"  },
@@ -1268,7 +1420,6 @@ function StandardProductCard({ line, index, snapshot, addonSelections, onAddonTo
     <div className="ps-product-card">
       <div className="ps-product-header">
         <div className="ps-product-number">#{index + 1}</div>
-        {/* CHANGE 1: Actual product name in header */}
         <div className="ps-product-name">{line.product}</div>
         <div className="ps-product-price">{fmt(grandLineTotal)}</div>
       </div>
@@ -1281,7 +1432,6 @@ function StandardProductCard({ line, index, snapshot, addonSelections, onAddonTo
         ))}
       </div>
 
-      {/* CHANGE 2: Product note field */}
       <div className="product-note-section">
         <label className="mps-label">📝 Product Notes</label>
         <textarea
@@ -1389,11 +1539,18 @@ export default function ProductSummary() {
   const navigate = useNavigate();
   const snapshot = location.state?.snapshot;
 
-  const [addonSelections,  setAddonSelections]  = useState({});
-  const [mpsData,          setMpsData]          = useState({});
-  const [fieldAddonValues, setFieldAddonValues] = useState({});
-  // CHANGE 2: product notes state
-  const [productNotes,     setProductNotes]     = useState({});
+  // CHANGE 2: Initialise state from sessionStorage so back-navigation preserves data
+  const [addonSelections,  setAddonSelections]  = useState(() => loadFromSession()?.addonSelections  || {});
+  const [mpsData,          setMpsData]          = useState(() => loadFromSession()?.mpsData          || {});
+  const [fieldAddonValues, setFieldAddonValues] = useState(() => loadFromSession()?.fieldAddonValues || {});
+  const [productNotes,     setProductNotes]     = useState(() => loadFromSession()?.productNotes     || {});
+  // CHANGE 1: signature state
+  const [signature,        setSignature]        = useState(() => loadFromSession()?.signature        || null);
+
+  // CHANGE 2: Persist all mutable state to sessionStorage on every change
+  useEffect(() => {
+    saveToSession({ addonSelections, mpsData, fieldAddonValues, productNotes, signature });
+  }, [addonSelections, mpsData, fieldAddonValues, productNotes, signature]);
 
   const handleProductNoteChange = (lineId, note) =>
     setProductNotes(prev => ({ ...prev, [lineId]: note }));
@@ -1404,10 +1561,10 @@ export default function ProductSummary() {
   const handleMPSChange = (lineId, areas) =>
     setMpsData(prev => ({...prev, [lineId]: areas}));
 
-  const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand, mpsRemoteGrand } = useMemo(() => {
-    if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0, mpsOpeningsProductGrand:0, mpsRemoteGrand:0 };
+  const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand } = useMemo(() => {
+    if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0, mpsOpeningsProductGrand:0 };
     const configuredLines = snapshot.productLines.filter(l => l.category && l.product);
-    let addonGrand=0, structuralGrand=0, openingsGrand=0, appBaseMPSGrand=0, remoteGrand=0;
+    let addonGrand=0, structuralGrand=0, openingsGrand=0, appBaseMPSGrand=0;
 
     configuredLines.forEach(line => {
       if (MPS_PRODUCTS.includes(line.product)) {
@@ -1417,10 +1574,7 @@ export default function ProductSummary() {
         const qty = parseInt(line.quantity,10)||1;
         const sel = addonSelections[line.id]||{};
         MPS_SIMPLE_ADDONS.forEach(a => { if(sel[a.id]) addonGrand += a.price*qty; });
-        // CHANGE 5: Add auto remote to grand total
-        const totalOpenings = countTotalOpenings(areas);
-        const autoRemote = getAutoRemote(totalOpenings > 0 ? totalOpenings : 1);
-        remoteGrand += REMOTE_PRICING[autoRemote];
+        // CHANGE 3: remote is NOT added to grand total
         if (openingsTotal > 0) openingsGrand += openingsTotal;
         else { const e = snapshot.productLines.find(l2=>l2.id===line.id); appBaseMPSGrand += e?.pricing?.lineSubtotal||0; }
       } else {
@@ -1440,8 +1594,8 @@ export default function ProductSummary() {
       summaryAddonGrandTotal:  addonGrand,
       mpsStructuralGrand:      structuralGrand,
       mpsOpeningsProductGrand: openingsGrand,
-      mpsRemoteGrand:          remoteGrand,
-      subtotalWithAddons:      nonMPSOriginal + openingsGrand + appBaseMPSGrand + addonGrand + structuralGrand + remoteGrand,
+      // CHANGE 3: no mpsRemoteGrand
+      subtotalWithAddons: nonMPSOriginal + openingsGrand + appBaseMPSGrand + addonGrand + structuralGrand,
     };
   }, [snapshot, addonSelections, mpsData, fieldAddonValues]);
 
@@ -1518,8 +1672,7 @@ export default function ProductSummary() {
             {mpsOpeningsProductGrand > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>MPS Opening-Based Pricing (replaces base)</span><span className="ps-addon-highlight">{fmt(mpsOpeningsProductGrand)}</span></div>}
             {summaryAddonGrandTotal  > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Selected Add-ons</span><span className="ps-addon-highlight">+{fmt(summaryAddonGrandTotal)}</span></div>}
             {mpsStructuralGrand      > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Structural Adjustments (L-Channel / Buildout)</span><span className="ps-addon-highlight">+{fmt(mpsStructuralGrand)}</span></div>}
-            {/* CHANGE 5: Show remote line in pricing summary */}
-            {mpsRemoteGrand          > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Auto-Selected Remotes</span><span className="ps-addon-highlight">+{fmt(mpsRemoteGrand)}</span></div>}
+            {/* CHANGE 3: remote line removed from pricing summary */}
             <div className="ps-pricing-row ps-subtotal-addons-row"><span>Subtotal (incl. all adjustments)</span><span>{fmt(subtotalWithAddons)}</span></div>
             <div className="ps-pricing-row"><span>Discount ({discountPercent}%)</span><span className="ps-discount-value">−{fmt(discountAmount)}</span></div>
             {discount?.percent > 20 && <div className="ps-pricing-row ps-manager-row"><span>Manager Approval</span><span>{discount.managerName||"—"}</span></div>}
@@ -1534,9 +1687,33 @@ export default function ProductSummary() {
           </section>
         )}
 
+        {/* CHANGE 1: Signature section before submit */}
+        <section className="ps-card ps-signature-card">
+          <div className="ps-card-heading"><span className="ps-card-icon">✍️</span><h2>Customer Signature</h2></div>
+          <p className="ps-signature-desc">
+            By signing below, the customer confirms they have reviewed and agree to the order details and pricing above.
+          </p>
+          <SignaturePad value={signature} onChange={setSignature} />
+          {!signature && (
+            <p className="ps-signature-required">⚠ Signature required before submitting</p>
+          )}
+        </section>
+
         <div className="ps-actions">
           <button className="ps-btn ps-btn-back" onClick={()=>navigate("/")}>← Back to Form</button>
-          <button className="ps-btn ps-btn-primary" onClick={()=>alert("submitting order...")}>Submit Order</button>
+          <button
+            className={`ps-btn ps-btn-primary ${!signature ? "ps-btn-disabled" : ""}`}
+            onClick={() => {
+              if (!signature) {
+                alert("Please provide a customer signature before submitting.");
+                return;
+              }
+              alert("Submitting order...");
+            }}
+            title={!signature ? "Signature required" : "Submit order"}
+          >
+            Submit Order
+          </button>
         </div>
       </div>
     </div>

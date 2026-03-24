@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './App.css';
 
@@ -400,66 +400,6 @@ function calcLineTotal(line) {
 }
 
 // ============================================================
-// SIGNATURE PAD COMPONENT
-// ============================================================
-function SignaturePad({ canvasRef }) {
-  const isDrawing = useRef(false);
-
-  const getPos = (e, canvas) => {
-    const rect = canvas.getBoundingClientRect();
-    if (e.touches) {
-      return {x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top};
-    }
-    return {x: e.clientX - rect.left, y: e.clientY - rect.top};
-  };
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight || 200;
-  }, [canvasRef]);
-
-  const startDraw = (e) => {
-    isDrawing.current = true;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const pos = getPos(e, canvas);
-    ctx.beginPath();
-    ctx.moveTo(pos.x, pos.y);
-  };
-
-  const draw = (e) => {
-    if (!isDrawing.current) return;
-    e.preventDefault();
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const pos = getPos(e, canvas);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.strokeStyle = '#1a3a52';
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.stroke();
-  };
-
-  const stopDraw = () => { isDrawing.current = false; };
-
-  return (
-    <canvas
-      ref={canvasRef}
-      className="signature-pad"
-      onMouseDown={startDraw}
-      onMouseMove={draw}
-      onMouseUp={stopDraw}
-      onMouseOut={stopDraw}
-      onTouchStart={startDraw}
-      onTouchMove={draw}
-      onTouchEnd={stopDraw}
-    />
-  );
-}
-
-// ============================================================
 // PRODUCT LINE COMPONENT
 // ============================================================
 function ProductLine({ line, lineNumber, onUpdate, onRemove, showRemove }) {
@@ -635,8 +575,6 @@ function createInitialOrderData() {
     customer: { name:'', email:'', phone:'', address:'', installationDate:'' },
     productLines: [createEmptyLine()],
     discount: { percent:0, managerName:'', managerEmail:'', approvalCode:'' },
-    orderNotes: '',
-    signature: '',
     createdAt:   new Date().toISOString(),
     lastUpdated: new Date().toISOString(),
   };
@@ -648,29 +586,25 @@ function loadInitialState() {
     const saved = sessionStorage.getItem(SESSION_KEY);
     if (saved) {
       const parsed = JSON.parse(saved);
-      // Make sure idCounter stays ahead of any restored line ids
       const maxId = parsed.productLines?.reduce((m, l) => Math.max(m, l.id || 0), 0) || 0;
       if (maxId >= idCounter) idCounter = maxId + 1;
-      // Ensure installationDate field exists for old saved data
       if (!parsed.customer.installationDate) parsed.customer.installationDate = '';
-      return parsed;
+      return {
+        customer: parsed.customer || { name:'', email:'', phone:'', address:'', installationDate:'' },
+        productLines: parsed.productLines?.length ? parsed.productLines : [createEmptyLine()],
+        discount: parsed.discount || { percent:0, managerName:'', managerEmail:'', approvalCode:'' },
+        createdAt: parsed.createdAt || new Date().toISOString(),
+        lastUpdated: parsed.lastUpdated || new Date().toISOString(),
+      };
     }
-  } catch (_) { /* ignore parse errors */ }
+  } catch (_) {}
   return createInitialOrderData();
 }
 
 export default function App() {
   const navigate = useNavigate();
   const [orderData, setOrderData] = useState(loadInitialState);
-  const { customer, productLines, discount, orderNotes } = orderData;
-  const canvasRef = useRef(null);
-
-  // ── Persist to sessionStorage whenever orderData changes ──
-  useEffect(() => {
-    try {
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(orderData));
-    } catch (_) { /* quota exceeded — silently ignore */ }
-  }, [orderData]);
+  const { customer, productLines, discount } = orderData;
 
   const updateOrder = (key, value) =>
     setOrderData(prev => ({
@@ -692,14 +626,7 @@ export default function App() {
   const total        = subtotal - discountAmt;
   const needsManager = discount.percent > 20;
 
-  const clearSignature = () => {
-    const canvas = canvasRef.current;
-    if (canvas) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-    updateOrder('signature', '');
-  };
-
   const buildSnapshot = () => {
-    const signatureData = canvasRef.current?.toDataURL() || '';
     return {
       ...orderData,
       productLines: productLines.map(line => {
@@ -717,7 +644,6 @@ export default function App() {
         };
       }),
       pricingSummary: { subtotal, discountPercent: discount.percent, discountAmount: discountAmt, total },
-      signature: signatureData,
       submittedAt: new Date().toISOString(),
     };
   };
@@ -737,18 +663,18 @@ export default function App() {
     if (!hasValid) {
       alert('Please configure at least one product with a valid size.'); return false;
     }
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const imageData = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
-      if (!imageData.data.some(c => c !== 0)) { alert('Please provide your signature.'); return false; }
-    }
     if (needsManager && (!discount.managerName || !discount.managerEmail || !discount.approvalCode)) {
       alert('Manager approval required for discounts above 20%.'); return false;
     }
     return true;
   };
 
-  // Minimum date for the date picker = today
+  React.useEffect(() => {
+    try {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(orderData));
+    } catch (_) {}
+  }, [orderData]);
+
   const todayISO = new Date().toISOString().split('T')[0];
 
   return (
@@ -780,7 +706,6 @@ export default function App() {
               <input type="text" value={customer.address} onChange={e => updateCustomer('address', e.target.value)} />
             </div>
 
-            {/* ── NEW: Date of Installation ── */}
             <div className="form-group installation-date-group">
               <label>
                 Date of Installation
@@ -848,26 +773,6 @@ export default function App() {
             <div className="pricing-row"><span className="pricing-label">Discount ({discount.percent}%)</span><span className="pricing-value">-${discountAmt.toFixed(2)}</span></div>
             <div className="pricing-row total-row"><span className="pricing-label">Total</span><span className="pricing-value">${total.toFixed(2)}</span></div>
           </div>
-        </div>
-
-        {/* ── SECTION 4: Additional Notes ── */}
-        <div className="section">
-          <div className="section-header"><div className="section-number">4</div><h2>Additional Notes</h2></div>
-          <div className="form-group">
-            <label>Special Instructions or Notes</label>
-            <textarea value={orderNotes} onChange={e => updateOrder('orderNotes', e.target.value)} placeholder="Enter any special instructions, site conditions, or important notes..." />
-          </div>
-        </div>
-
-        {/* ── SECTION 5: Signature ── */}
-        <div className="section">
-          <div className="section-header"><div className="section-number">5</div><h2>Customer Signature</h2></div>
-          <div className="alert alert-info">
-            <span>ℹ️</span>
-            <div><strong>Electronic Signature Required</strong><br />Please draw your signature in the box below to approve this order.</div>
-          </div>
-          <div className="form-group"><label className="required">Sign Here</label><SignaturePad canvasRef={canvasRef} /></div>
-          <button type="button" className="btn btn-outline" onClick={clearSignature}>Clear Signature</button>
         </div>
 
         <div className="action-buttons">
