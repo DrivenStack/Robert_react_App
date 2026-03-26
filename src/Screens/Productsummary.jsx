@@ -12,21 +12,42 @@ const MPS_PRODUCTS = [
 ];
 
 const MPS_DEFAULTS = {
-  mountTypes:   ["Surface", "Inside"],
-  trackTypes:   ["Zipper", "Wire Guide"],
+  // CHANGE 2: Added "Soffit Mount" to mountTypes
+  mountTypes:   ["Surface", "Inside", "Soffit Mount"],
+  // CHANGE 2: Added "Storm Rail" to trackTypes
+  trackTypes:   ["Zipper", "Wire Guide", "Storm Rail"],
   fabricTypes:  ["Light Filtering", "Solar Screen", "Blackout", "Privacy", "Clear View"],
   motorTypes:   ["Somfy (default)", "Somfy RTS", "Somfy WireFree", "Custom"],
   lChannelSizes:["1×1", "1×2", "Custom"],
   lChannelLocs: ["Left", "Right", "Top", "Bottom"],
-  buildoutTypes:["Wood", "Aluminum Tube"],
+  // CHANGE 4: Updated buildout types to Wood / Alumitube
+  buildoutTypes:["Wood", "Alumitube"],
+  // CHANGE 4: Wood subtypes
+  woodSizes: ["2x4", "2x6", "2x8", "2x10", "4x4", "4x6", "4x8", "4x10"],
   motorSides:   ["Left", "Right"],
-  // CHANGE 4: renamed from weightBarTypes to reflect correct label "Weight Bar"
   weightBarTypes: ["Sand", "White", "Black", "Bronze", "Custom"],
   remoteTypes:  ["1 Channel Somfy Remote", "5 Channel Somfy Remote", "16 Channel Somfy Remote"],
 };
 
-const L_CHANNEL_RATE  = 12;
-const BUILDOUT_RATE   = 18;
+// CHANGE 4: Exact wood buildout pricing per LF
+const WOOD_BUILDOUT_RATES = {
+  "2x4":  4,
+  "2x6":  6,
+  "2x8":  8,
+  "2x10": 10,
+  "4x4":  10,
+  "4x6":  25,
+  "4x8":  30,
+  "4x10": 40,
+};
+
+// CHANGE 2: Storm Rail pricing per LF based on opening height
+const STORM_RAIL_RATE = 40;
+
+// CHANGE 5: Updated L-Channel rate to $25/LF
+const L_CHANNEL_RATE  = 25;
+// Old buildout rate kept for fallback reference but Alumitube default is $35
+const ALUMITUBE_DEFAULT_RATE = 35;
 
 // Remote pricing based on opening count
 const REMOTE_PRICING = {
@@ -436,12 +457,33 @@ function calcFieldAddonTotal(lineFieldValues, productName) {
 let _uid = 1;
 const uid = () => `id_${_uid++}`;
 
+// CHANGE 5: Updated L-Channel with manualPrice and photo
 function createLChannel() {
-  return { id: uid(), loc: "Left", size: "1×1", customSize: "", lf: "", photo: null };
+  return {
+    id: uid(),
+    loc: "Left",
+    size: "1×1",
+    customSize: "",
+    lf: "",
+    manualPrice: "",  // CHANGE 5: manual price override
+    photo: null,
+  };
 }
 
+// CHANGE 4: Updated Buildout with new types and pricing logic
 function createBuildout() {
-  return { id: uid(), type: "Wood", dims: "", lf: "", price: "", photo: null };
+  return {
+    id: uid(),
+    type: "Wood",
+    woodSize: "2x4",        // CHANGE 4: wood size selector
+    aluminubeSize: "1.5×1.5", // CHANGE 4: alumitube size
+    isCustomAlumitubeSize: false,
+    customAlumitubeSize: "",
+    dims: "",
+    lf: "",
+    customRate: "",         // CHANGE 4: custom rate for custom alumitube
+    photo: null,
+  };
 }
 
 function createOpening(areaDefaults = {}) {
@@ -453,6 +495,10 @@ function createOpening(areaDefaults = {}) {
     mountOverride: "", trackOverride: "", fabricOverride: "",
     colorOverride: "", trackColorOverride: "", motorOverride: "",
     weightBarOverride: "", remoteOverride: "",
+    // CHANGE 3: Custom color pricing fields
+    customTrackColorPrice: "",
+    customCassetteColorPrice: "",
+    customWeightBarColorPrice: "",
     openingPhoto: null,
   };
 }
@@ -466,15 +512,77 @@ function createArea() {
   };
 }
 
-function calcOpeningStructural(opening) {
+// CHANGE 2: Storm Rail cost for an opening — based on opening height, once per opening
+function calcStormRailCost(opening, effectiveTrackType) {
+  if (effectiveTrackType !== "Storm Rail") return 0;
+  const heightKey = toFeetKey(opening.height);
+  if (!heightKey) return 0;
+  return heightKey * STORM_RAIL_RATE;
+}
+
+// CHANGE 4: Buildout cost calculation
+function calcBuildoutCost(bo) {
+  if (bo.type === "Wood") {
+    const rate = WOOD_BUILDOUT_RATES[bo.woodSize] || 0;
+    return (parseFloat(bo.lf) || 0) * rate;
+  }
+  // Alumitube
+  if (bo.isCustomAlumitubeSize) {
+    // Custom alumitube: requires manual pricing
+    return parseFloat(bo.customRate) || 0;
+  }
+  // Default 1.5×1.5 alumitube = $35/LF
+  return (parseFloat(bo.lf) || 0) * ALUMITUBE_DEFAULT_RATE;
+}
+
+// CHANGE 5: L-Channel cost — $25/LF with optional manual override
+function calcLChannelCost(lc) {
+  if (lc.manualPrice !== "" && !isNaN(parseFloat(lc.manualPrice))) {
+    return parseFloat(lc.manualPrice);
+  }
+  return (parseFloat(lc.lf) || 0) * L_CHANNEL_RATE;
+}
+
+// CHANGE 3: Custom color pricing per opening
+function calcCustomColorCost(opening, effectiveTrackType, areaDefaults) {
+  // Resolve effective values for color fields
+  const cassetteColor   = opening.colorOverride      || areaDefaults?.cassetteColor || "";
+  const trackColor      = opening.trackColorOverride || areaDefaults?.trackColor    || "";
+  const weightBarColor  = opening.weightBarOverride  || areaDefaults?.weightBar     || "";
+
   let total = 0;
+  if (cassetteColor.toLowerCase().includes("custom")) {
+    total += parseFloat(opening.customCassetteColorPrice) || 0;
+  }
+  if (trackColor.toLowerCase().includes("custom")) {
+    total += parseFloat(opening.customTrackColorPrice) || 0;
+  }
+  if (weightBarColor.toLowerCase() === "custom") {
+    total += parseFloat(opening.customWeightBarColorPrice) || 0;
+  }
+  return total;
+}
+
+function calcOpeningStructural(opening, areaDefaults) {
+  let total = 0;
+
+  // L-Channels (CHANGE 5: use new calcLChannelCost)
   (opening.lChannels || []).forEach(lc => {
-    total += (parseFloat(lc.lf) || 0) * L_CHANNEL_RATE;
+    total += calcLChannelCost(lc);
   });
+
+  // Buildouts (CHANGE 4: use new calcBuildoutCost)
   (opening.buildouts || []).forEach(bo => {
-    const op = parseFloat(bo.price);
-    total += (!isNaN(op) && op > 0) ? op : (parseFloat(bo.lf) || 0) * BUILDOUT_RATE;
+    total += calcBuildoutCost(bo);
   });
+
+  // CHANGE 2: Storm Rail
+  const effectiveTrackType = opening.trackOverride || areaDefaults?.trackType || "";
+  total += calcStormRailCost(opening, effectiveTrackType);
+
+  // CHANGE 3: Custom color costs
+  total += calcCustomColorCost(opening, effectiveTrackType, areaDefaults);
+
   return total;
 }
 
@@ -489,7 +597,7 @@ function calcMPSOpeningsTotal(areas, productName) {
 }
 
 function calcAreaStructuralOnly(area) {
-  return area.openings.reduce((sum, o) => sum + calcOpeningStructural(o), 0);
+  return area.openings.reduce((sum, o) => sum + calcOpeningStructural(o, area), 0);
 }
 
 function countTotalOpenings(areas) {
@@ -497,25 +605,19 @@ function countTotalOpenings(areas) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// CHANGE 2: SESSION STORAGE PERSISTENCE KEY
+// SESSION STORAGE PERSISTENCE
 // ─────────────────────────────────────────────────────────────
 const SESSION_KEY = "productSummaryState_v1";
 
 function saveToSession(state) {
-  try {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(state));
-  } catch (e) {
-    // ignore storage errors
-  }
+  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(state)); } catch (e) {}
 }
 
 function loadFromSession() {
   try {
     const raw = sessionStorage.getItem(SESSION_KEY);
     return raw ? JSON.parse(raw) : null;
-  } catch (e) {
-    return null;
-  }
+  } catch (e) { return null; }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -564,10 +666,7 @@ function CameraModal({ onCapture, onClose }) {
     }
   }, []);
 
-  useEffect(() => {
-    startStream(facingMode);
-    return stopStream;
-  }, []); // eslint-disable-line
+  useEffect(() => { startStream(facingMode); return stopStream; }, []); // eslint-disable-line
 
   const flipCamera = () => {
     const next = facingMode === "user" ? "environment" : "user";
@@ -582,10 +681,7 @@ function CameraModal({ onCapture, onClose }) {
     canvas.width  = video.videoWidth  || 640;
     canvas.height = video.videoHeight || 480;
     const ctx = canvas.getContext("2d");
-    if (facingMode === "user") {
-      ctx.translate(canvas.width, 0);
-      ctx.scale(-1, 1);
-    }
+    if (facingMode === "user") { ctx.translate(canvas.width, 0); ctx.scale(-1, 1); }
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
     stopStream();
@@ -611,10 +707,7 @@ function CameraModal({ onCapture, onClose }) {
               <video ref={videoRef} className={`camera-video ${facingMode === "user" ? "camera-video--mirror" : ""}`}
                 autoPlay playsInline muted style={{ opacity: ready ? 1 : 0, transition: "opacity 0.3s" }} />
               {!ready && (
-                <div className="camera-loading">
-                  <div className="camera-spinner" />
-                  <p>Starting camera…</p>
-                </div>
+                <div className="camera-loading"><div className="camera-spinner" /><p>Starting camera…</p></div>
               )}
             </>
           )}
@@ -623,8 +716,7 @@ function CameraModal({ onCapture, onClose }) {
         <div className="camera-modal-footer">
           <button type="button" className="camera-flip-btn" onClick={flipCamera} title="Switch camera">🔄 Flip</button>
           <button type="button" className="camera-capture-btn" onClick={capture} disabled={!ready || !!error} title="Take photo">
-            <span className="camera-shutter-ring" />
-            <span className="camera-shutter-dot" />
+            <span className="camera-shutter-ring" /><span className="camera-shutter-dot" />
           </button>
           <button type="button" className="camera-cancel-btn" onClick={onClose}>Cancel</button>
         </div>
@@ -649,10 +741,7 @@ function PhotoUpload({ label, value, onChange }) {
     e.target.value = "";
   };
 
-  const handleCapture = (dataUrl) => {
-    onChange(dataUrl);
-    setShowCamera(false);
-  };
+  const handleCapture = (dataUrl) => { onChange(dataUrl); setShowCamera(false); };
 
   return (
     <div className="photo-upload-field">
@@ -682,9 +771,7 @@ function PhotoUpload({ label, value, onChange }) {
           </div>
         </div>
       )}
-      {showCamera && (
-        <CameraModal onCapture={handleCapture} onClose={() => setShowCamera(false)} />
-      )}
+      {showCamera && <CameraModal onCapture={handleCapture} onClose={() => setShowCamera(false)} />}
     </div>
   );
 }
@@ -744,11 +831,13 @@ function OpeningPriceBadge({ opening, productName }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// CHANGE 5: L-CHANNEL ITEM EDITOR — now includes photo upload
+// CHANGE 5: L-CHANNEL ITEM EDITOR — $25/LF, manual override, custom size, photo
 // ─────────────────────────────────────────────────────────────
 function LChannelItem({ lc, index, onChange, onRemove, showRemove }) {
-  const set = (field, val) => onChange({ ...lc, [field]: val });
-  const cost = (parseFloat(lc.lf) || 0) * L_CHANNEL_RATE;
+  const set  = (field, val) => onChange({ ...lc, [field]: val });
+  const cost = calcLChannelCost(lc);
+  const isManualOverride = lc.manualPrice !== "" && !isNaN(parseFloat(lc.manualPrice));
+
   return (
     <div className="structural-item-card">
       <div className="structural-item-header">
@@ -760,24 +849,50 @@ function LChannelItem({ lc, index, onChange, onRemove, showRemove }) {
       <div className="structural-fields-grid">
         <Sel label="Location" value={lc.loc}  options={MPS_DEFAULTS.lChannelLocs}  onChange={v => set("loc", v)} />
         <Sel label="Size"     value={lc.size} options={MPS_DEFAULTS.lChannelSizes} onChange={v => set("size", v)} />
-        {lc.size === "Custom" && <Field label="Custom Size" value={lc.customSize} onChange={v => set("customSize", v)} placeholder='e.g. 2"×3"' />}
-        <Field label={`Linear Feet (× $${L_CHANNEL_RATE}/LF)`} type="number" value={lc.lf} onChange={v => set("lf", v)} placeholder="e.g. 8" min="0" step="0.5" />
+        {/* CHANGE 5: Custom size input */}
+        {lc.size === "Custom" && (
+          <Field label="Custom Size" value={lc.customSize} onChange={v => set("customSize", v)} placeholder='e.g. 2"×3"' />
+        )}
+        <Field
+          label={`Linear Feet (× $${L_CHANNEL_RATE}/LF)`}
+          type="number" value={lc.lf}
+          onChange={v => set("lf", v)}
+          placeholder="e.g. 8" min="0" step="0.5"
+        />
+        {/* CHANGE 5: Manual price override */}
+        <Field
+          label="Manual Price Override ($)"
+          type="number" value={lc.manualPrice}
+          onChange={v => set("manualPrice", v)}
+          placeholder="Leave blank to use LF rate"
+          min="0"
+        />
       </div>
-      {lc.lf && <div className="structural-calc">L-Channel: {lc.lf} LF × ${L_CHANNEL_RATE} = <strong>{fmt(cost)}</strong></div>}
-      {/* CHANGE 5: Photo upload for L-channel */}
+      {(lc.lf || isManualOverride) && (
+        <div className="structural-calc">
+          {isManualOverride
+            ? <>L-Channel (manual override): <strong>{fmt(cost)}</strong></>
+            : <>L-Channel: {lc.lf} LF × ${L_CHANNEL_RATE} = <strong>{fmt(cost)}</strong></>
+          }
+        </div>
+      )}
+      {/* CHANGE 5: Photo upload */}
       <PhotoUpload label="L-Channel Photo (optional)" value={lc.photo} onChange={v => set("photo", v)} />
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────
-// BUILDOUT ITEM EDITOR
+// CHANGE 4: BUILDOUT ITEM EDITOR — Wood with size rates + Alumitube with custom
 // ─────────────────────────────────────────────────────────────
 function BuildoutItem({ bo, index, onChange, onRemove, showRemove }) {
-  const set = (field, val) => onChange({ ...bo, [field]: val });
-  const cost = bo.price
-    ? (parseFloat(bo.price) || 0)
-    : (parseFloat(bo.lf) || 0) * BUILDOUT_RATE;
+  const set  = (field, val) => onChange({ ...bo, [field]: val });
+  const cost = calcBuildoutCost(bo);
+
+  const woodRate      = WOOD_BUILDOUT_RATES[bo.woodSize] || 0;
+  const isAlumitube   = bo.type === "Alumitube";
+  const isCustomAlumi = bo.isCustomAlumitubeSize;
+
   return (
     <div className="structural-item-card">
       <div className="structural-item-header">
@@ -787,16 +902,77 @@ function BuildoutItem({ bo, index, onChange, onRemove, showRemove }) {
         )}
       </div>
       <div className="structural-fields-grid">
+        {/* CHANGE 4: Wood or Alumitube */}
         <Sel label="Type" value={bo.type} options={MPS_DEFAULTS.buildoutTypes} onChange={v => set("type", v)} />
-        <Field label="Dimensions" value={bo.dims} onChange={v => set("dims", v)} placeholder='e.g. 2"×4"×96"' />
-        <Field label={`Linear Feet (× $${BUILDOUT_RATE}/LF)`} type="number" value={bo.lf} onChange={v => set("lf", v)} placeholder="e.g. 12" min="0" step="0.5" />
-        <Field label="Override Price ($)" type="number" value={bo.price} onChange={v => set("price", v)} placeholder="Leave blank to use LF rate" min="0" />
+
+        {/* CHANGE 4: Wood size selector with per-LF rates */}
+        {!isAlumitube && (
+          <div className="mps-field">
+            <label className="mps-label">Wood Size</label>
+            <select className="mps-select" value={bo.woodSize} onChange={e => set("woodSize", e.target.value)}>
+              {MPS_DEFAULTS.woodSizes.map(s => (
+                <option key={s} value={s}>{s} — ${WOOD_BUILDOUT_RATES[s]}/LF</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* CHANGE 4: Alumitube size toggle */}
+        {isAlumitube && (
+          <div className="mps-field">
+            <label className="mps-label">Alumitube Size</label>
+            <div className="alumitube-size-row">
+              <label className="alumitube-radio">
+                <input type="radio" checked={!isCustomAlumi} onChange={() => set("isCustomAlumitubeSize", false)} />
+                <span>1.5" × 1.5" (${ALUMITUBE_DEFAULT_RATE}/LF)</span>
+              </label>
+              <label className="alumitube-radio">
+                <input type="radio" checked={isCustomAlumi} onChange={() => set("isCustomAlumitubeSize", true)} />
+                <span>Custom Size</span>
+              </label>
+            </div>
+          </div>
+        )}
+
+        {/* Custom Alumitube size input */}
+        {isAlumitube && isCustomAlumi && (
+          <Field label="Custom Alumitube Size" value={bo.customAlumitubeSize} onChange={v => set("customAlumitubeSize", v)} placeholder='e.g. 2"×2"' />
+        )}
+
+        {/* LF input — only for non-custom alumitube and wood */}
+        {(!isAlumitube || !isCustomAlumi) && (
+          <Field
+            label={isAlumitube
+              ? `Linear Feet (× $${ALUMITUBE_DEFAULT_RATE}/LF)`
+              : `Linear Feet (× $${woodRate}/LF for ${bo.woodSize})`
+            }
+            type="number" value={bo.lf}
+            onChange={v => set("lf", v)}
+            placeholder="e.g. 12" min="0" step="0.5"
+          />
+        )}
+
+        {/* Custom price for custom alumitube */}
+        {isAlumitube && isCustomAlumi && (
+          <Field
+            label="Manual Price ($)"
+            type="number" value={bo.customRate}
+            onChange={v => set("customRate", v)}
+            placeholder="Enter total price for custom alumitube"
+            min="0"
+          />
+        )}
+
+        <Field label="Dimensions (optional)" value={bo.dims} onChange={v => set("dims", v)} placeholder='e.g. 2"×4"×96"' />
       </div>
-      {(bo.lf || bo.price) && (
+
+      {(bo.lf || bo.customRate) && (
         <div className="structural-calc">
-          {bo.price
-            ? <>Buildout (override): <strong>{fmt(bo.price)}</strong></>
-            : <>Buildout: {bo.lf} LF × ${BUILDOUT_RATE} = <strong>{fmt(cost)}</strong></>
+          {isAlumitube && isCustomAlumi
+            ? <>Alumitube (custom size, manual price): <strong>{fmt(cost)}</strong></>
+            : isAlumitube
+              ? <>Alumitube: {bo.lf} LF × ${ALUMITUBE_DEFAULT_RATE} = <strong>{fmt(cost)}</strong></>
+              : <>Wood ({bo.woodSize}): {bo.lf} LF × ${woodRate} = <strong>{fmt(cost)}</strong></>
           }
         </div>
       )}
@@ -806,17 +982,30 @@ function BuildoutItem({ bo, index, onChange, onRemove, showRemove }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// CHANGE 6: OPENING EDITOR — Effective Settings replaces
-//           the duplicate dropdown block. Opening-level fields
-//           removed; one clean "Effective Settings" panel that
-//           shows area defaults and lets the user override
-//           per-opening without any duplicate selects.
+// OPENING EDITOR
 // ─────────────────────────────────────────────────────────────
 function OpeningEditor({ opening, index, areaDefaults, productName, onChange, onRemove, showRemove }) {
-  const structural   = calcOpeningStructural(opening);
+  const structural   = calcOpeningStructural(opening, areaDefaults);
   const openingPrice = calcOpeningBasePrice(opening, productName);
   const openingTotal = openingPrice + structural;
   const set = (field, val) => onChange({ ...opening, [field]: val });
+
+  // Effective settings for display
+  const effectiveMount      = opening.mountOverride      || areaDefaults.mountType      || "—";
+  const effectiveTrack      = opening.trackOverride      || areaDefaults.trackType      || "—";
+  const effectiveFabric     = opening.fabricOverride     || areaDefaults.fabricType     || "—";
+  const effectiveMotor      = opening.motorOverride      || areaDefaults.motorType      || "—";
+  const effectiveWeightBar  = opening.weightBarOverride  || areaDefaults.weightBar      || "—";
+  const effectiveCassette   = opening.colorOverride      || areaDefaults.cassetteColor  || "";
+  const effectiveTrackColor = opening.trackColorOverride || areaDefaults.trackColor     || "";
+
+  // CHANGE 2: Storm Rail cost display
+  const stormRailCost = calcStormRailCost(opening, effectiveTrack);
+
+  // CHANGE 3: custom color flags
+  const cassIsCustom    = effectiveCassette.toLowerCase().includes("custom");
+  const trackColIsCustom = effectiveTrackColor.toLowerCase().includes("custom");
+  const weightBarIsCustom = effectiveWeightBar.toLowerCase() === "custom";
 
   // L-channel helpers
   const addLChannel    = () => set("lChannels", [...(opening.lChannels || []), createLChannel()]);
@@ -830,17 +1019,8 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
 
   const lChannels = opening.lChannels || [];
   const buildouts = opening.buildouts || [];
-  const lChannelTotal = lChannels.reduce((s, lc) => s + (parseFloat(lc.lf) || 0) * L_CHANNEL_RATE, 0);
-  const buildoutTotal = buildouts.reduce((s, bo) => {
-    const op = parseFloat(bo.price);
-    return s + ((!isNaN(op) && op > 0) ? op : (parseFloat(bo.lf) || 0) * BUILDOUT_RATE);
-  }, 0);
-
-  // CHANGE 6: resolve effective values for display in summary chip
-  const effectiveMount  = opening.mountOverride  || areaDefaults.mountType  || "—";
-  const effectiveTrack  = opening.trackOverride  || areaDefaults.trackType  || "—";
-  const effectiveFabric = opening.fabricOverride || areaDefaults.fabricType || "—";
-  const effectiveMotor  = opening.motorOverride  || areaDefaults.motorType  || "—";
+  const lChannelTotal = lChannels.reduce((s, lc) => s + calcLChannelCost(lc), 0);
+  const buildoutTotal = buildouts.reduce((s, bo) => s + calcBuildoutCost(bo), 0);
 
   return (
     <div className="opening-card">
@@ -851,7 +1031,12 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
             value={opening.label} onChange={e => set("label", e.target.value)} />
         </div>
         {structural > 0 && <div className="opening-structural-badge">{fmt(structural)} structural</div>}
-        {showRemove && <button type="button" className="opening-remove" onClick={onRemove}>✕</button>}
+        {/* CHANGE 1: Delete Opening button */}
+        {showRemove && (
+          <button type="button" className="opening-remove ctrl-btn-danger" onClick={onRemove} title="Delete this opening">
+            🗑 Delete Opening
+          </button>
+        )}
       </div>
 
       {/* Dimensions + Motor Side */}
@@ -863,9 +1048,15 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
 
       <OpeningPriceBadge opening={opening} productName={productName} />
 
-      {/* CHANGE 6: Single unified "Opening Settings" panel.
-          Each field shows the resolved (area default) value and the user
-          can override it here. No duplicate selects anywhere else. */}
+      {/* CHANGE 2: Storm Rail badge if applicable */}
+      {effectiveTrack === "Storm Rail" && (
+        <div className="storm-rail-badge">
+          ⚡ Storm Rail: {toFeetKey(opening.height) || "—"}ft height × ${STORM_RAIL_RATE}/LF = <strong>{fmt(stormRailCost)}</strong>
+          {!opening.height && <span className="storm-rail-hint"> (enter height to calculate)</span>}
+        </div>
+      )}
+
+      {/* Opening Settings */}
       <details className="override-details" open>
         <summary className="override-summary">
           ⚙ Opening Settings
@@ -892,6 +1083,7 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
               onChange={e => set("mountOverride", e.target.value)}
             >
               <option value="">— area default ({areaDefaults.mountType || "not set"}) —</option>
+              {/* CHANGE 2: includes Soffit Mount */}
               {MPS_DEFAULTS.mountTypes.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
           </div>
@@ -910,6 +1102,7 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
               onChange={e => set("trackOverride", e.target.value)}
             >
               <option value="">— area default ({areaDefaults.trackType || "not set"}) —</option>
+              {/* CHANGE 2: includes Storm Rail */}
               {MPS_DEFAULTS.trackTypes.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
           </div>
@@ -950,7 +1143,7 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
             </select>
           </div>
 
-          {/* Cassette Color */}
+          {/* Cassette Color — CHANGE 3: show price input when Custom */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Cassette Color
@@ -965,9 +1158,23 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
               placeholder={`area default (${areaDefaults.cassetteColor || "not set"})`}
               onChange={e => set("colorOverride", e.target.value)}
             />
+            {/* CHANGE 3: Custom color pricing — cassette, based on width */}
+            {cassIsCustom && (
+              <div className="custom-color-price-row">
+                <span className="custom-color-price-label">Custom Cassette Color Price (based on width):</span>
+                <input
+                  className="custom-color-price-input"
+                  type="number" min="0"
+                  value={opening.customCassetteColorPrice || ""}
+                  placeholder="Enter $"
+                  onChange={e => set("customCassetteColorPrice", e.target.value)}
+                />
+                {opening.customCassetteColorPrice && <span className="custom-color-price-value">{fmt(opening.customCassetteColorPrice)}</span>}
+              </div>
+            )}
           </div>
 
-          {/* Track Color */}
+          {/* Track Color — CHANGE 3 */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Track Color
@@ -982,9 +1189,23 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
               placeholder={`area default (${areaDefaults.trackColor || "not set"})`}
               onChange={e => set("trackColorOverride", e.target.value)}
             />
+            {/* CHANGE 3: Custom track color pricing */}
+            {trackColIsCustom && (
+              <div className="custom-color-price-row">
+                <span className="custom-color-price-label">Custom Track Color Price (based on width):</span>
+                <input
+                  className="custom-color-price-input"
+                  type="number" min="0"
+                  value={opening.customTrackColorPrice || ""}
+                  placeholder="Enter $"
+                  onChange={e => set("customTrackColorPrice", e.target.value)}
+                />
+                {opening.customTrackColorPrice && <span className="custom-color-price-value">{fmt(opening.customTrackColorPrice)}</span>}
+              </div>
+            )}
           </div>
 
-          {/* CHANGE 4: label is "Weight Bar" (not "Weight Bar Color") */}
+          {/* Weight Bar Color — CHANGE 3 */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Weight Bar Color
@@ -1000,6 +1221,20 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
               <option value="">— area default ({areaDefaults.weightBar || "not set"}) —</option>
               {MPS_DEFAULTS.weightBarTypes.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
+            {/* CHANGE 3: Custom weight bar pricing */}
+            {weightBarIsCustom && (
+              <div className="custom-color-price-row">
+                <span className="custom-color-price-label">Custom Weight Bar Price (based on width):</span>
+                <input
+                  className="custom-color-price-input"
+                  type="number" min="0"
+                  value={opening.customWeightBarColorPrice || ""}
+                  placeholder="Enter $"
+                  onChange={e => set("customWeightBarColorPrice", e.target.value)}
+                />
+                {opening.customWeightBarColorPrice && <span className="custom-color-price-value">{fmt(opening.customWeightBarColorPrice)}</span>}
+              </div>
+            )}
           </div>
 
         </div>
@@ -1016,10 +1251,7 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
           <div className="structural-empty">No L-channels added. Click "Add L-Channel" if required.</div>
         )}
         {lChannels.map((lc, idx) => (
-          <LChannelItem
-            key={lc.id}
-            lc={lc}
-            index={idx}
+          <LChannelItem key={lc.id} lc={lc} index={idx}
             onChange={updated => updateLChannel(lc.id, updated)}
             onRemove={() => removeLChannel(lc.id)}
             showRemove={true}
@@ -1038,10 +1270,7 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
           <div className="structural-empty">No buildouts added. Click "Add Buildout" if required.</div>
         )}
         {buildouts.map((bo, idx) => (
-          <BuildoutItem
-            key={bo.id}
-            bo={bo}
-            index={idx}
+          <BuildoutItem key={bo.id} bo={bo} index={idx}
             onChange={updated => updateBuildout(bo.id, updated)}
             onRemove={() => removeBuildout(bo.id)}
             showRemove={true}
@@ -1100,7 +1329,12 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
               }
             </div>
           )}
-          {showRemove && <button type="button" className="area-remove" onClick={onRemove}>Remove Area</button>}
+          {/* CHANGE 1: Delete Area button */}
+          {showRemove && (
+            <button type="button" className="area-remove ctrl-btn-danger" onClick={onRemove} title="Delete this area">
+              🗑 Delete Area
+            </button>
+          )}
         </div>
       </div>
 
@@ -1111,14 +1345,15 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
             <label className="mps-label">Product</label>
             <div className="mps-input mps-input--readonly">{productName}</div>
           </div>
+          {/* CHANGE 2: includes Soffit Mount */}
           <Sel label="Mount Type"  value={area.mountType}  options={MPS_DEFAULTS.mountTypes}  onChange={v=>setArea("mountType",v)} />
+          {/* CHANGE 2: includes Storm Rail */}
           <Sel label="Track Type"  value={area.trackType}  options={MPS_DEFAULTS.trackTypes}  onChange={v=>setArea("trackType",v)} />
           <Sel label="Fabric Type" value={area.fabricType} options={MPS_DEFAULTS.fabricTypes} onChange={v=>setArea("fabricType",v)} />
-          <Field label="Cassette Color" value={area.cassetteColor} onChange={v=>setArea("cassetteColor",v)} placeholder="e.g. White" />
-          <Field label="Track Color"    value={area.trackColor}    onChange={v=>setArea("trackColor",v)}    placeholder="e.g. Beige" />
+          <Field label="Cassette Color" value={area.cassetteColor} onChange={v=>setArea("cassetteColor",v)} placeholder="e.g. White or Custom" />
+          <Field label="Track Color"    value={area.trackColor}    onChange={v=>setArea("trackColor",v)}    placeholder="e.g. Beige or Custom" />
           <Sel label="Motor Type"  value={area.motorType}  options={MPS_DEFAULTS.motorTypes}  onChange={v=>setArea("motorType",v)} />
-          {/* CHANGE 4: correct label "Weight Bar" */}
-          <Sel label="Weight Bar color"  value={area.weightBar || ""} options={MPS_DEFAULTS.weightBarTypes} onChange={v=>setArea("weightBar",v)} placeholder="Select Weight Bar color" />
+          <Sel label="Weight Bar Color" value={area.weightBar || ""} options={MPS_DEFAULTS.weightBarTypes} onChange={v=>setArea("weightBar",v)} placeholder="Select Weight Bar Color" />
         </div>
         <PhotoUpload label="Area Photo (wide shot)" value={area.areaPhoto} onChange={v=>setArea("areaPhoto",v)} />
       </div>
@@ -1144,7 +1379,7 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
 }
 
 // ─────────────────────────────────────────────────────────────
-// CHANGE 1: SIGNATURE PAD COMPONENT
+// SIGNATURE PAD COMPONENT
 // ─────────────────────────────────────────────────────────────
 function SignaturePad({ value, onChange }) {
   const canvasRef = useRef(null);
@@ -1152,17 +1387,13 @@ function SignaturePad({ value, onChange }) {
   const lastPos   = useRef(null);
   const [isEmpty, setIsEmpty] = useState(!value);
 
-  // Draw saved signature from data URL when value prop is provided
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (value) {
       const img = new Image();
-      img.onload = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-      };
+      img.onload = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0); };
       img.src = value;
       setIsEmpty(false);
     } else {
@@ -1176,15 +1407,9 @@ function SignaturePad({ value, onChange }) {
     const scaleX = canvas.width  / rect.width;
     const scaleY = canvas.height / rect.height;
     if (e.touches) {
-      return {
-        x: (e.touches[0].clientX - rect.left) * scaleX,
-        y: (e.touches[0].clientY - rect.top)  * scaleY,
-      };
+      return { x: (e.touches[0].clientX - rect.left) * scaleX, y: (e.touches[0].clientY - rect.top) * scaleY };
     }
-    return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top)  * scaleY,
-    };
+    return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
   };
 
   const startDraw = (e) => {
@@ -1213,7 +1438,7 @@ function SignaturePad({ value, onChange }) {
     setIsEmpty(false);
   };
 
-  const endDraw = (e) => {
+  const endDraw = () => {
     if (!isDrawing.current) return;
     isDrawing.current = false;
     const canvas = canvasRef.current;
@@ -1222,8 +1447,7 @@ function SignaturePad({ value, onChange }) {
 
   const clearSig = () => {
     const canvas = canvasRef.current;
-    const ctx    = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
     onChange(null);
     setIsEmpty(true);
   };
@@ -1232,29 +1456,15 @@ function SignaturePad({ value, onChange }) {
     <div className="signature-pad-wrapper">
       <div className="signature-pad-header">
         <span className="signature-pad-label">✍️ Customer Signature</span>
-        {!isEmpty && (
-          <button type="button" className="signature-clear-btn" onClick={clearSig}>
-            Clear
-          </button>
-        )}
+        {!isEmpty && <button type="button" className="signature-clear-btn" onClick={clearSig}>Clear</button>}
       </div>
       <div className="signature-canvas-container">
-        <canvas
-          ref={canvasRef}
-          width={600}
-          height={160}
+        <canvas ref={canvasRef} width={600} height={160}
           className={`signature-canvas ${isEmpty ? "signature-canvas--empty" : "signature-canvas--signed"}`}
-          onMouseDown={startDraw}
-          onMouseMove={draw}
-          onMouseUp={endDraw}
-          onMouseLeave={endDraw}
-          onTouchStart={startDraw}
-          onTouchMove={draw}
-          onTouchEnd={endDraw}
+          onMouseDown={startDraw} onMouseMove={draw} onMouseUp={endDraw} onMouseLeave={endDraw}
+          onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={endDraw}
         />
-        {isEmpty && (
-          <div className="signature-placeholder">Sign here</div>
-        )}
+        {isEmpty && <div className="signature-placeholder">Sign here</div>}
       </div>
       <p className="signature-pad-hint">Draw your signature above using mouse or touch</p>
     </div>
@@ -1264,7 +1474,7 @@ function SignaturePad({ value, onChange }) {
 // ─────────────────────────────────────────────────────────────
 // MPS PRODUCT CARD
 // ─────────────────────────────────────────────────────────────
-function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSelections, onAddonToggle, productNotes, onProductNoteChange }) {
+function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSelections, onAddonToggle, productNotes, onProductNoteChange, onResetQuote }) {
   const qty   = parseInt(line.quantity, 10) || 1;
   const areas = mpsData[line.id] || [];
   const setAreas   = (a) => onMPSChange(line.id, a);
@@ -1275,18 +1485,23 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
   const openingsProductTotal = calcMPSOpeningsTotal(areas, line.product);
   const structuralTotal      = areas.reduce((s,a) => s + calcAreaStructuralOnly(a), 0);
   const selected             = addonSelections[line.id] || {};
-
-  // CHANGE 3: auto-remote shown but NOT added to price
-  const totalOpenings  = countTotalOpenings(areas);
-  const autoRemoteName = getAutoRemote(totalOpenings > 0 ? totalOpenings : 1);
+  const totalOpenings        = countTotalOpenings(areas);
+  const autoRemoteName       = getAutoRemote(totalOpenings > 0 ? totalOpenings : 1);
 
   const simpleAddonTotal      = MPS_SIMPLE_ADDONS.reduce((s, a) => selected[a.id] ? s + a.price * qty : s, 0);
   const enriched              = snapshot.productLines.find(l => l.id === line.id);
   const appBaseTotal          = enriched?.pricing?.lineSubtotal || 0;
   const effectiveProductTotal = openingsProductTotal > 0 ? openingsProductTotal : appBaseTotal;
-  // CHANGE 3: remote price removed from grand total
   const grandLineTotal        = effectiveProductTotal + structuralTotal + simpleAddonTotal;
   const hasUnpriced = areas.some(a => a.openings.some(o => (o.width || o.height) && !getMPSOpeningPrice(line.product, o.width, o.height).ok));
+
+  // CHANGE 1: Reset handler for this product's quote tool
+  const handleReset = () => {
+    if (window.confirm("Reset all areas, openings, and add-ons for this product? This cannot be undone.")) {
+      onMPSChange(line.id, []);
+      onAddonToggle(line.id, "__RESET__");
+    }
+  };
 
   return (
     <div className="ps-product-card mps-product-card">
@@ -1295,6 +1510,15 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
         <div className="ps-product-name">{line.product}</div>
         <div className="ps-product-price">{fmt(grandLineTotal)}</div>
       </div>
+
+      {/* CHANGE 1: Quote Tool Controls bar */}
+      <div className="quote-tool-controls">
+        <span className="quote-tool-controls-label">🛠 Quote Tool Controls</span>
+        <button type="button" className="ctrl-btn ctrl-btn-reset" onClick={handleReset} title="Reset all areas and openings for this product">
+          ↺ Reset Quote Tool
+        </button>
+      </div>
+
       <div className="ps-detail-grid">
         {[
           {label:"Product Name", value:line.product},
@@ -1324,7 +1548,6 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
       {enriched?.pricing?.priceNote && <div className="ps-price-note">💡 Reference (from intake form): {enriched.pricing.priceNote}</div>}
       {hasUnpriced && <div className="ps-price-note ps-price-note--warn">⚠ Some openings have dimensions that don't match the price matrix.</div>}
 
-      {/* CHANGE 3: Show remote name only, no price impact */}
       {totalOpenings > 0 && (
         <div className="auto-remote-badge">
           <span className="auto-remote-icon">🎛</span>
@@ -1349,7 +1572,10 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
           ? <div className="mps-empty-state"><p>No areas configured yet. Add an area to specify openings.</p></div>
           : areas.map((area, idx) => (
               <AreaEditor key={area.id} area={area} areaIndex={idx} productName={line.product}
-                onChange={u => updateArea(area.id, u)} onRemove={() => removeArea(area.id)} showRemove={areas.length > 1} />
+                onChange={u => updateArea(area.id, u)}
+                onRemove={() => removeArea(area.id)}
+                showRemove={areas.length > 1}
+              />
             ))
         }
         <button type="button" className="add-area-btn" onClick={addArea}>+ Add Area</button>
@@ -1381,7 +1607,6 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
         {openingsProductTotal > 0 ? <span>Openings Price: {fmt(openingsProductTotal)}</span> : <span>Base Price (from form): {fmt(appBaseTotal)}</span>}
         {simpleAddonTotal > 0 && <span>+ Add-ons: {fmt(simpleAddonTotal)}</span>}
         {structuralTotal  > 0 && <span>+ Structural: {fmt(structuralTotal)}</span>}
-        {/* CHANGE 3: show remote as info only, no price in line total */}
         {totalOpenings > 0 && <span className="mps-remote-info-line">Remote included: {autoRemoteName}</span>}
         <span className="mps-line-grand">Line Total: {fmt(grandLineTotal)}</span>
       </div>
@@ -1539,27 +1764,44 @@ export default function ProductSummary() {
   const navigate = useNavigate();
   const snapshot = location.state?.snapshot;
 
-  // CHANGE 2: Initialise state from sessionStorage so back-navigation preserves data
   const [addonSelections,  setAddonSelections]  = useState(() => loadFromSession()?.addonSelections  || {});
   const [mpsData,          setMpsData]          = useState(() => loadFromSession()?.mpsData          || {});
   const [fieldAddonValues, setFieldAddonValues] = useState(() => loadFromSession()?.fieldAddonValues || {});
   const [productNotes,     setProductNotes]     = useState(() => loadFromSession()?.productNotes     || {});
-  // CHANGE 1: signature state
   const [signature,        setSignature]        = useState(() => loadFromSession()?.signature        || null);
 
-  // CHANGE 2: Persist all mutable state to sessionStorage on every change
   useEffect(() => {
     saveToSession({ addonSelections, mpsData, fieldAddonValues, productNotes, signature });
   }, [addonSelections, mpsData, fieldAddonValues, productNotes, signature]);
 
   const handleProductNoteChange = (lineId, note) =>
     setProductNotes(prev => ({ ...prev, [lineId]: note }));
+
   const handleFieldAddonChange = (lineId, addonId, val) =>
     setFieldAddonValues(prev => ({...prev, [lineId]: {...(prev[lineId]||{}), [addonId]: val}}));
-  const handleAddonToggle = (lineId, addonId) =>
+
+  // CHANGE 1: Updated toggle handler to support __RESET__ sentinel for clearing all addons for a line
+  const handleAddonToggle = (lineId, addonId) => {
+    if (addonId === "__RESET__") {
+      setAddonSelections(prev => ({ ...prev, [lineId]: {} }));
+      return;
+    }
     setAddonSelections(prev => ({...prev, [lineId]: {...(prev[lineId]||{}), [addonId]: !(prev[lineId]?.[addonId])}}));
+  };
+
   const handleMPSChange = (lineId, areas) =>
     setMpsData(prev => ({...prev, [lineId]: areas}));
+
+  // CHANGE 1: Global reset for the entire quote tool
+  const handleGlobalReset = () => {
+    if (window.confirm("Reset ALL areas, openings, add-ons, and notes for the entire quote? This cannot be undone.")) {
+      setAddonSelections({});
+      setMpsData({});
+      setFieldAddonValues({});
+      setProductNotes({});
+      setSignature(null);
+    }
+  };
 
   const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand } = useMemo(() => {
     if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0, mpsOpeningsProductGrand:0 };
@@ -1574,7 +1816,6 @@ export default function ProductSummary() {
         const qty = parseInt(line.quantity,10)||1;
         const sel = addonSelections[line.id]||{};
         MPS_SIMPLE_ADDONS.forEach(a => { if(sel[a.id]) addonGrand += a.price*qty; });
-        // CHANGE 3: remote is NOT added to grand total
         if (openingsTotal > 0) openingsGrand += openingsTotal;
         else { const e = snapshot.productLines.find(l2=>l2.id===line.id); appBaseMPSGrand += e?.pricing?.lineSubtotal||0; }
       } else {
@@ -1594,7 +1835,6 @@ export default function ProductSummary() {
       summaryAddonGrandTotal:  addonGrand,
       mpsStructuralGrand:      structuralGrand,
       mpsOpeningsProductGrand: openingsGrand,
-      // CHANGE 3: no mpsRemoteGrand
       subtotalWithAddons: nonMPSOriginal + openingsGrand + appBaseMPSGrand + addonGrand + structuralGrand,
     };
   }, [snapshot, addonSelections, mpsData, fieldAddonValues]);
@@ -1628,7 +1868,13 @@ export default function ProductSummary() {
       <div className="ps-body">
         <div className="ps-nav-row">
           <button className="ps-btn ps-btn-back" onClick={()=>navigate("/")}>← Back to Form</button>
-          <span className="ps-last-updated">Last updated: {new Date(lastUpdated).toLocaleString()}</span>
+          <div className="ps-nav-row-right">
+            <span className="ps-last-updated">Last updated: {new Date(lastUpdated).toLocaleString()}</span>
+            {/* CHANGE 1: Global Reset Quote Tool button */}
+            <button className="ps-btn ctrl-btn-reset ctrl-btn-global-reset" onClick={handleGlobalReset} title="Reset entire quote tool">
+              ↺ Reset Quote Tool
+            </button>
+          </div>
         </div>
 
         <section className="ps-card">
@@ -1671,8 +1917,7 @@ export default function ProductSummary() {
             <div className="ps-pricing-row"><span>Product Subtotal</span><span>{fmt(snapshot.pricingSummary?.subtotal)}</span></div>
             {mpsOpeningsProductGrand > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>MPS Opening-Based Pricing (replaces base)</span><span className="ps-addon-highlight">{fmt(mpsOpeningsProductGrand)}</span></div>}
             {summaryAddonGrandTotal  > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Selected Add-ons</span><span className="ps-addon-highlight">+{fmt(summaryAddonGrandTotal)}</span></div>}
-            {mpsStructuralGrand      > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Structural Adjustments (L-Channel / Buildout)</span><span className="ps-addon-highlight">+{fmt(mpsStructuralGrand)}</span></div>}
-            {/* CHANGE 3: remote line removed from pricing summary */}
+            {mpsStructuralGrand      > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Structural Adjustments (L-Channel / Buildout / Storm Rail / Custom Color)</span><span className="ps-addon-highlight">+{fmt(mpsStructuralGrand)}</span></div>}
             <div className="ps-pricing-row ps-subtotal-addons-row"><span>Subtotal (incl. all adjustments)</span><span>{fmt(subtotalWithAddons)}</span></div>
             <div className="ps-pricing-row"><span>Discount ({discountPercent}%)</span><span className="ps-discount-value">−{fmt(discountAmount)}</span></div>
             {discount?.percent > 20 && <div className="ps-pricing-row ps-manager-row"><span>Manager Approval</span><span>{discount.managerName||"—"}</span></div>}
@@ -1687,16 +1932,13 @@ export default function ProductSummary() {
           </section>
         )}
 
-        {/* CHANGE 1: Signature section before submit */}
         <section className="ps-card ps-signature-card">
           <div className="ps-card-heading"><span className="ps-card-icon">✍️</span><h2>Customer Signature</h2></div>
           <p className="ps-signature-desc">
             By signing below, the customer confirms they have reviewed and agree to the order details and pricing above.
           </p>
           <SignaturePad value={signature} onChange={setSignature} />
-          {!signature && (
-            <p className="ps-signature-required">⚠ Signature required before submitting</p>
-          )}
+          {!signature && <p className="ps-signature-required">⚠ Signature required before submitting</p>}
         </section>
 
         <div className="ps-actions">
@@ -1704,10 +1946,7 @@ export default function ProductSummary() {
           <button
             className={`ps-btn ps-btn-primary ${!signature ? "ps-btn-disabled" : ""}`}
             onClick={() => {
-              if (!signature) {
-                alert("Please provide a customer signature before submitting.");
-                return;
-              }
+              if (!signature) { alert("Please provide a customer signature before submitting."); return; }
               alert("Submitting order...");
             }}
             title={!signature ? "Signature required" : "Submit order"}
