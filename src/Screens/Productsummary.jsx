@@ -11,25 +11,172 @@ const MPS_PRODUCTS = [
   "Motorized Power Screen open roll",
 ];
 
-const MPS_DEFAULTS = {
-  // CHANGE 2: Added "Soffit Mount" to mountTypes
-  mountTypes:   ["Surface", "Inside", "Soffit Mount"],
-  // CHANGE 2: Added "Storm Rail" to trackTypes
-  trackTypes:   ["Zipper", "Wire Guide", "Storm Rail"],
-  fabricTypes:  ["Light Filtering", "Solar Screen", "Blackout", "Privacy", "Clear View"],
-  motorTypes:   ["Somfy (default)", "Somfy RTS", "Somfy WireFree", "Custom"],
-  lChannelSizes:["1×1", "1×2", "Custom"],
-  lChannelLocs: ["Left", "Right", "Top", "Bottom"],
-  // CHANGE 4: Updated buildout types to Wood / Alumitube
-  buildoutTypes:["Wood", "Alumitube"],
-  // CHANGE 4: Wood subtypes
-  woodSizes: ["2x4", "2x6", "2x8", "2x10", "4x4", "4x6", "4x8", "4x10"],
-  motorSides:   ["Left", "Right"],
-  weightBarTypes: ["Sand", "White", "Black", "Bronze", "Custom"],
-  remoteTypes:  ["1 Channel Somfy Remote", "5 Channel Somfy Remote", "16 Channel Somfy Remote"],
+// ─────────────────────────────────────────────────────────────
+// CHANGE 1: MOTOR CATALOG
+// Each motor has: id, name, priceAdjustment (+/- from base), compatibleProducts[]
+// priceAdjustment: 0 = included (no change), negative = credit/deduction
+// ─────────────────────────────────────────────────────────────
+const MOTOR_CATALOG = [
+  {
+    id: "somfy_lt50_535",
+    name: "Somfy LT50 Altus RTS 535A2-1038168",
+    displayName: "Somfy LT50 Altus RTS (535)",
+    brand: "Somfy",
+    priceAdjustment: 0, // included in base
+    includedInBase: true,
+    compatibleProducts: ["Motorized Power Screen 5in Cassette"],
+    notes: "Default for 5\" cassette — included in base price",
+  },
+  {
+    id: "somfy_lt50_550",
+    name: "Somfy LT50 Altus RTS 550R2-1038170",
+    displayName: "Somfy LT50 Altus RTS (550R2)",
+    brand: "Somfy",
+    priceAdjustment: 0, // included in base
+    includedInBase: true,
+    compatibleProducts: ["Motorized Power Screen 6in Cassette", "Motorized Power Screen open roll"],
+    notes: "Default for 6\" cassette & open roll — included in base price",
+  },
+  {
+    id: "dooya",
+    name: "Dooya Motor",
+    displayName: "Dooya Motor",
+    brand: "Dooya",
+    priceAdjustment: 0, // placeholder — set to negative for credit when pricing is confirmed
+    includedInBase: false,
+    compatibleProducts: [
+      "Motorized Power Screen 5in Cassette",
+      "Motorized Power Screen 6in Cassette",
+      "Motorized Power Screen open roll",
+    ],
+    notes: "Alternative motor — pricing TBD (may apply credit from base)",
+  },
+];
+
+// Get the default motor for a given product
+function getDefaultMotorId(productName) {
+  const motor = MOTOR_CATALOG.find(m => m.compatibleProducts.includes(productName) && m.includedInBase);
+  return motor?.id || null;
+}
+
+// Get compatible motors for a given product
+function getCompatibleMotors(productName) {
+  return MOTOR_CATALOG.filter(m => m.compatibleProducts.includes(productName));
+}
+
+// Get price adjustment for a selected motor vs the default
+function getMotorPriceAdjustment(motorId, productName) {
+  const motor = MOTOR_CATALOG.find(m => m.id === motorId);
+  if (!motor) return 0;
+  return motor.priceAdjustment;
+}
+
+// ─────────────────────────────────────────────────────────────
+// CHANGE 2: FABRIC CATALOG — Hierarchical Brand → Series → Openness → Color
+// ─────────────────────────────────────────────────────────────
+const FABRIC_CATALOG = {
+  Twitchell: {
+    "Nano": {
+      hasOpenness: true,
+      openness: {
+        "50": ["Black", "White"],
+        "55": ["Black", "White"],
+        "60": ["Black"],
+        "70": ["Black"],
+        "95": ["White", "Bone", "Sable", "Desert Sand", "Almond", "Café", "Stone Texture", "Shadow Texture", "Tumbleweed", "Espresso Texture", "Granite", "Tobacco", "Charcoal", "Flat Black"],
+        "97": ["White", "Bone", "Sable", "Desert Sand", "Almond", "Café", "Stone Texture", "Shadow Texture", "Tumbleweed", "Espresso Texture", "Granite", "Tobacco", "Charcoal", "Flat Black"],
+        "99": ["Flat Black", "Charcoal", "Espresso Texture", "Tobacco", "Granite"],
+      },
+    },
+    "Textilene (80/90)": {
+      hasOpenness: false,
+      colors: ["White", "Desert Sand", "Sandstone", "Dusk Grey", "Brown", "Black/Brown", "Black"],
+    },
+    "Blackout (Dimout)": {
+      hasOpenness: false,
+      colors: ["Light Grey", "Shadow Texture", "Grey", "Charcoal", "Espresso Texture", "Flat Black", "Tan", "Stone Texture", "Putty", "Tobacco"],
+    },
+  },
+  Phifer: {
+    "Suntex (Standard)": {
+      hasOpenness: true,
+      openness: {
+        "80": ["Black", "Brown", "Grey", "Beige", "Stucco", "Dark Bronze"],
+        "90": ["Black", "Brown", "Grey", "Beige", "Stucco", "Dark Bronze"],
+        "95": ["Dark Bronze", "White", "White/Grey", "Stucco", "Sand", "Alpaca", "Chestnut", "Mocha", "Carbon", "Black"],
+        "97": ["Dark Bronze", "White", "White/Grey", "Stucco", "Sand", "Alpaca", "Chestnut", "Mocha", "Carbon", "Black"],
+        "99": ["Dark Bronze", "White", "White/Grey", "Stucco", "Sand", "Alpaca", "Chestnut", "Mocha", "Carbon", "Black"],
+      },
+    },
+    "Suntex Matte": {
+      hasOpenness: true,
+      openness: {
+        "95": ["Matte Dark Bronze", "Matte Niko", "Matte Iron Grey", "Matte Black"],
+        "97": ["Matte Dark Bronze", "Matte Niko", "Matte Iron Grey", "Matte Black"],
+      },
+    },
+  },
 };
 
-// CHANGE 4: Exact wood buildout pricing per LF
+// Helper: get brand list
+function getFabricBrands() {
+  return Object.keys(FABRIC_CATALOG);
+}
+
+// Helper: get series for a brand
+function getFabricSeries(brand) {
+  if (!brand || !FABRIC_CATALOG[brand]) return [];
+  return Object.keys(FABRIC_CATALOG[brand]);
+}
+
+// Helper: get series data
+function getFabricSeriesData(brand, series) {
+  return FABRIC_CATALOG[brand]?.[series] || null;
+}
+
+// Helper: get openness options for brand+series
+function getFabricOpennessOptions(brand, series) {
+  const data = getFabricSeriesData(brand, series);
+  if (!data || !data.hasOpenness) return [];
+  return Object.keys(data.openness);
+}
+
+// Helper: get color options
+function getFabricColors(brand, series, openness) {
+  const data = getFabricSeriesData(brand, series);
+  if (!data) return [];
+  if (data.hasOpenness) {
+    if (!openness) return [];
+    return data.openness[openness] || [];
+  }
+  return data.colors || [];
+}
+
+// Build a display label for the full fabric selection
+function buildFabricLabel(fabricSelection) {
+  if (!fabricSelection?.brand) return "";
+  const parts = [fabricSelection.brand, fabricSelection.series];
+  if (fabricSelection.openness) parts.push(`${fabricSelection.openness}%`);
+  if (fabricSelection.color) parts.push(fabricSelection.color);
+  return parts.filter(Boolean).join(" › ");
+}
+
+// ─────────────────────────────────────────────────────────────
+// MPS DEFAULTS (updated — fabricTypes removed, handled by catalog)
+// ─────────────────────────────────────────────────────────────
+const MPS_DEFAULTS = {
+  mountTypes:    ["Surface", "Inside", "Soffit Mount"],
+  trackTypes:    ["Zipper", "Wire Guide", "Storm Rail"],
+  motorTypes:    ["Somfy (default)", "Somfy RTS", "Somfy WireFree", "Custom"],
+  lChannelSizes: ["1×1", "1×2", "Custom"],
+  lChannelLocs:  ["Left", "Right", "Top", "Bottom"],
+  buildoutTypes: ["Wood", "Alumitube"],
+  woodSizes:     ["2x4", "2x6", "2x8", "2x10", "4x4", "4x6", "4x8", "4x10"],
+  motorSides:    ["Left", "Right"],
+  weightBarTypes:["Sand", "White", "Black", "Bronze", "Custom"],
+  remoteTypes:   ["1 Channel Somfy Remote", "5 Channel Somfy Remote", "16 Channel Somfy Remote"],
+};
+
 const WOOD_BUILDOUT_RATES = {
   "2x4":  4,
   "2x6":  6,
@@ -41,15 +188,10 @@ const WOOD_BUILDOUT_RATES = {
   "4x10": 40,
 };
 
-// CHANGE 2: Storm Rail pricing per LF based on opening height
-const STORM_RAIL_RATE = 40;
-
-// CHANGE 5: Updated L-Channel rate to $25/LF
-const L_CHANNEL_RATE  = 25;
-// Old buildout rate kept for fallback reference but Alumitube default is $35
+const STORM_RAIL_RATE       = 40;
+const L_CHANNEL_RATE        = 25;
 const ALUMITUBE_DEFAULT_RATE = 35;
 
-// Remote pricing based on opening count
 const REMOTE_PRICING = {
   "1 Channel Somfy Remote":  125,
   "5 Channel Somfy Remote":  180,
@@ -162,7 +304,7 @@ function getMPSOpeningPrice(productName, widthRaw, heightRaw) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// PRODUCT ADD-ONS
+// PRODUCT ADD-ONS (unchanged from original)
 // ─────────────────────────────────────────────────────────────
 const PRODUCT_ADDONS = {
   "Hydra Retractable Patio Cover": [
@@ -457,7 +599,6 @@ function calcFieldAddonTotal(lineFieldValues, productName) {
 let _uid = 1;
 const uid = () => `id_${_uid++}`;
 
-// CHANGE 5: Updated L-Channel with manualPrice and photo
 function createLChannel() {
   return {
     id: uid(),
@@ -465,37 +606,41 @@ function createLChannel() {
     size: "1×1",
     customSize: "",
     lf: "",
-    manualPrice: "",  // CHANGE 5: manual price override
+    manualPrice: "",
     photo: null,
   };
 }
 
-// CHANGE 4: Updated Buildout with new types and pricing logic
 function createBuildout() {
   return {
     id: uid(),
     type: "Wood",
-    woodSize: "2x4",        // CHANGE 4: wood size selector
-    aluminubeSize: "1.5×1.5", // CHANGE 4: alumitube size
+    woodSize: "2x4",
+    aluminubeSize: "1.5×1.5",
     isCustomAlumitubeSize: false,
     customAlumitubeSize: "",
     dims: "",
     lf: "",
-    customRate: "",         // CHANGE 4: custom rate for custom alumitube
+    customRate: "",
     photo: null,
   };
 }
 
-function createOpening(areaDefaults = {}) {
+// CHANGE 1: Opening now has motorId (auto-set from product)
+// CHANGE 2: Opening now has fabricSelection object instead of fabricOverride string
+function createOpening(productName = "", areaDefaults = {}) {
   return {
     id: uid(), label: "", width: "", height: "",
     motorSide: areaDefaults.motorSide || "Left",
+    // CHANGE 1: motorId — will be set to default on first render
+    motorId: getDefaultMotorId(productName) || "",
+    // CHANGE 2: fabric now stored as object { brand, series, openness, color }
+    fabricSelection: { brand: "", series: "", openness: "", color: "" },
     lChannels: [],
     buildouts: [],
-    mountOverride: "", trackOverride: "", fabricOverride: "",
+    mountOverride: "", trackOverride: "",
     colorOverride: "", trackColorOverride: "", motorOverride: "",
     weightBarOverride: "", remoteOverride: "",
-    // CHANGE 3: Custom color pricing fields
     customTrackColorPrice: "",
     customCassetteColorPrice: "",
     customWeightBarColorPrice: "",
@@ -503,16 +648,17 @@ function createOpening(areaDefaults = {}) {
   };
 }
 
-function createArea() {
+function createArea(productName = "") {
   return {
-    id: uid(), name: "", mountType: "", trackType: "", fabricType: "",
+    id: uid(), name: "", mountType: "", trackType: "",
+    // CHANGE 2: area-level fabric stored as object too
+    fabricSelection: { brand: "", series: "", openness: "", color: "" },
     cassetteColor: "", trackColor: "", motorType: "Somfy (default)",
     weightBar: "", remote: "",
-    areaPhoto: null, openings: [createOpening()],
+    areaPhoto: null, openings: [createOpening(productName)],
   };
 }
 
-// CHANGE 2: Storm Rail cost for an opening — based on opening height, once per opening
 function calcStormRailCost(opening, effectiveTrackType) {
   if (effectiveTrackType !== "Storm Rail") return 0;
   const heightKey = toFeetKey(opening.height);
@@ -520,22 +666,17 @@ function calcStormRailCost(opening, effectiveTrackType) {
   return heightKey * STORM_RAIL_RATE;
 }
 
-// CHANGE 4: Buildout cost calculation
 function calcBuildoutCost(bo) {
   if (bo.type === "Wood") {
     const rate = WOOD_BUILDOUT_RATES[bo.woodSize] || 0;
     return (parseFloat(bo.lf) || 0) * rate;
   }
-  // Alumitube
   if (bo.isCustomAlumitubeSize) {
-    // Custom alumitube: requires manual pricing
     return parseFloat(bo.customRate) || 0;
   }
-  // Default 1.5×1.5 alumitube = $35/LF
   return (parseFloat(bo.lf) || 0) * ALUMITUBE_DEFAULT_RATE;
 }
 
-// CHANGE 5: L-Channel cost — $25/LF with optional manual override
 function calcLChannelCost(lc) {
   if (lc.manualPrice !== "" && !isNaN(parseFloat(lc.manualPrice))) {
     return parseFloat(lc.manualPrice);
@@ -543,46 +684,31 @@ function calcLChannelCost(lc) {
   return (parseFloat(lc.lf) || 0) * L_CHANNEL_RATE;
 }
 
-// CHANGE 3: Custom color pricing per opening
 function calcCustomColorCost(opening, effectiveTrackType, areaDefaults) {
-  // Resolve effective values for color fields
   const cassetteColor   = opening.colorOverride      || areaDefaults?.cassetteColor || "";
   const trackColor      = opening.trackColorOverride || areaDefaults?.trackColor    || "";
   const weightBarColor  = opening.weightBarOverride  || areaDefaults?.weightBar     || "";
-
   let total = 0;
-  if (cassetteColor.toLowerCase().includes("custom")) {
-    total += parseFloat(opening.customCassetteColorPrice) || 0;
-  }
-  if (trackColor.toLowerCase().includes("custom")) {
-    total += parseFloat(opening.customTrackColorPrice) || 0;
-  }
-  if (weightBarColor.toLowerCase() === "custom") {
-    total += parseFloat(opening.customWeightBarColorPrice) || 0;
-  }
+  if (cassetteColor.toLowerCase().includes("custom")) total += parseFloat(opening.customCassetteColorPrice) || 0;
+  if (trackColor.toLowerCase().includes("custom"))    total += parseFloat(opening.customTrackColorPrice) || 0;
+  if (weightBarColor.toLowerCase() === "custom")      total += parseFloat(opening.customWeightBarColorPrice) || 0;
   return total;
+}
+
+// CHANGE 1: Motor price adjustment per opening
+function calcMotorAdjustment(opening) {
+  return getMotorPriceAdjustment(opening.motorId);
 }
 
 function calcOpeningStructural(opening, areaDefaults) {
   let total = 0;
-
-  // L-Channels (CHANGE 5: use new calcLChannelCost)
-  (opening.lChannels || []).forEach(lc => {
-    total += calcLChannelCost(lc);
-  });
-
-  // Buildouts (CHANGE 4: use new calcBuildoutCost)
-  (opening.buildouts || []).forEach(bo => {
-    total += calcBuildoutCost(bo);
-  });
-
-  // CHANGE 2: Storm Rail
+  (opening.lChannels || []).forEach(lc => { total += calcLChannelCost(lc); });
+  (opening.buildouts || []).forEach(bo => { total += calcBuildoutCost(bo); });
   const effectiveTrackType = opening.trackOverride || areaDefaults?.trackType || "";
   total += calcStormRailCost(opening, effectiveTrackType);
-
-  // CHANGE 3: Custom color costs
   total += calcCustomColorCost(opening, effectiveTrackType, areaDefaults);
-
+  // CHANGE 1: motor adjustment (can be negative)
+  total += calcMotorAdjustment(opening);
   return total;
 }
 
@@ -607,7 +733,7 @@ function countTotalOpenings(areas) {
 // ─────────────────────────────────────────────────────────────
 // SESSION STORAGE PERSISTENCE
 // ─────────────────────────────────────────────────────────────
-const SESSION_KEY = "productSummaryState_v1";
+const SESSION_KEY = "productSummaryState_v2"; // bumped version for new schema
 
 function saveToSession(state) {
   try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(state)); } catch (e) {}
@@ -814,6 +940,125 @@ function Toggle({ label, checked, onChange }) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// CHANGE 1: MOTOR SELECTOR COMPONENT
+// Auto-selects default, shows compatibility, supports future motors
+// ─────────────────────────────────────────────────────────────
+function MotorSelector({ motorId, productName, onChange, isAreaLevel = false }) {
+  const compatibleMotors = getCompatibleMotors(productName);
+  const defaultMotorId   = getDefaultMotorId(productName);
+  const selectedMotor    = MOTOR_CATALOG.find(m => m.id === motorId);
+  const isDefault        = motorId === defaultMotorId || (!motorId && !!defaultMotorId);
+  const adjustment       = selectedMotor?.priceAdjustment || 0;
+
+  return (
+    <div className="motor-selector-field mps-field">
+      <label className="mps-label">
+        Motor
+        {isDefault && <span className="motor-badge motor-badge--included">✓ Included in base price</span>}
+        {!isDefault && adjustment < 0 && <span className="motor-badge motor-badge--credit">Credit: {fmt(adjustment)}</span>}
+        {!isDefault && adjustment > 0 && <span className="motor-badge motor-badge--extra">+{fmt(adjustment)}</span>}
+      </label>
+      <select
+        className="mps-select motor-select"
+        value={motorId || defaultMotorId || ""}
+        onChange={e => onChange(e.target.value)}
+      >
+        {compatibleMotors.map(motor => (
+          <option key={motor.id} value={motor.id}>
+            {motor.displayName}
+            {motor.includedInBase ? " (included)" : ""}
+            {motor.priceAdjustment < 0 ? ` (credit ${fmt(motor.priceAdjustment)})` : ""}
+            {motor.priceAdjustment > 0 ? ` (+${fmt(motor.priceAdjustment)})` : ""}
+          </option>
+        ))}
+      </select>
+      {selectedMotor?.notes && (
+        <div className="motor-notes">{selectedMotor.notes}</div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// CHANGE 2: FABRIC SELECTOR COMPONENT — Hierarchical cascade
+// Brand → Series → Openness (if applicable) → Color
+// ─────────────────────────────────────────────────────────────
+function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
+  const { brand = "", series = "", openness = "", color = "" } = fabricSelection;
+
+  const brands       = getFabricBrands();
+  const seriesList   = getFabricSeries(brand);
+  const seriesData   = getFabricSeriesData(brand, series);
+  const hasOpenness  = seriesData?.hasOpenness || false;
+  const opennessOpts = getFabricOpennessOptions(brand, series);
+  const colorOpts    = getFabricColors(brand, series, openness);
+  const fabricLabel  = buildFabricLabel(fabricSelection);
+
+  const update = (field, value) => {
+    const next = { ...fabricSelection, [field]: value };
+    // cascade reset downstream
+    if (field === "brand")    { next.series = ""; next.openness = ""; next.color = ""; }
+    if (field === "series")   { next.openness = ""; next.color = ""; }
+    if (field === "openness") { next.color = ""; }
+    onChange(next);
+  };
+
+  return (
+    <div className="fabric-selector">
+      <div className="fabric-selector-label">
+        <span className="mps-label">{label}</span>
+        {fabricLabel && (
+          <span className="fabric-label-badge">{fabricLabel}</span>
+        )}
+      </div>
+      <div className="fabric-cascade-grid">
+        {/* Brand */}
+        <div className="mps-field">
+          <label className="mps-label fabric-step-label"><span className="fabric-step-num">1</span> Brand</label>
+          <select className="mps-select" value={brand} onChange={e => update("brand", e.target.value)}>
+            <option value="">Select Brand</option>
+            {brands.map(b => <option key={b} value={b}>{b}</option>)}
+          </select>
+        </div>
+
+        {/* Series */}
+        <div className="mps-field">
+          <label className="mps-label fabric-step-label"><span className="fabric-step-num">2</span> Series</label>
+          <select className="mps-select" value={series} onChange={e => update("series", e.target.value)} disabled={!brand}>
+            <option value="">{brand ? "Select Series" : "— select brand first —"}</option>
+            {seriesList.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+
+        {/* Openness — only show if series has openness */}
+        {brand && series && hasOpenness && (
+          <div className="mps-field">
+            <label className="mps-label fabric-step-label"><span className="fabric-step-num">3</span> Openness %</label>
+            <select className="mps-select" value={openness} onChange={e => update("openness", e.target.value)}>
+              <option value="">Select Openness</option>
+              {opennessOpts.map(o => <option key={o} value={o}>{o}%</option>)}
+            </select>
+          </div>
+        )}
+
+        {/* Color */}
+        {brand && series && (!hasOpenness || openness) && (
+          <div className="mps-field">
+            <label className="mps-label fabric-step-label">
+              <span className="fabric-step-num">{hasOpenness ? "4" : "3"}</span> Color
+            </label>
+            <select className="mps-select" value={color} onChange={e => update("color", e.target.value)}>
+              <option value="">Select Color</option>
+              {colorOpts.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
 // OPENING PRICE BADGE
 // ─────────────────────────────────────────────────────────────
 function OpeningPriceBadge({ opening, productName }) {
@@ -831,7 +1076,7 @@ function OpeningPriceBadge({ opening, productName }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// CHANGE 5: L-CHANNEL ITEM EDITOR — $25/LF, manual override, custom size, photo
+// L-CHANNEL ITEM EDITOR
 // ─────────────────────────────────────────────────────────────
 function LChannelItem({ lc, index, onChange, onRemove, showRemove }) {
   const set  = (field, val) => onChange({ ...lc, [field]: val });
@@ -849,7 +1094,6 @@ function LChannelItem({ lc, index, onChange, onRemove, showRemove }) {
       <div className="structural-fields-grid">
         <Sel label="Location" value={lc.loc}  options={MPS_DEFAULTS.lChannelLocs}  onChange={v => set("loc", v)} />
         <Sel label="Size"     value={lc.size} options={MPS_DEFAULTS.lChannelSizes} onChange={v => set("size", v)} />
-        {/* CHANGE 5: Custom size input */}
         {lc.size === "Custom" && (
           <Field label="Custom Size" value={lc.customSize} onChange={v => set("customSize", v)} placeholder='e.g. 2"×3"' />
         )}
@@ -859,7 +1103,6 @@ function LChannelItem({ lc, index, onChange, onRemove, showRemove }) {
           onChange={v => set("lf", v)}
           placeholder="e.g. 8" min="0" step="0.5"
         />
-        {/* CHANGE 5: Manual price override */}
         <Field
           label="Manual Price Override ($)"
           type="number" value={lc.manualPrice}
@@ -876,19 +1119,17 @@ function LChannelItem({ lc, index, onChange, onRemove, showRemove }) {
           }
         </div>
       )}
-      {/* CHANGE 5: Photo upload */}
       <PhotoUpload label="L-Channel Photo (optional)" value={lc.photo} onChange={v => set("photo", v)} />
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────
-// CHANGE 4: BUILDOUT ITEM EDITOR — Wood with size rates + Alumitube with custom
+// BUILDOUT ITEM EDITOR
 // ─────────────────────────────────────────────────────────────
 function BuildoutItem({ bo, index, onChange, onRemove, showRemove }) {
   const set  = (field, val) => onChange({ ...bo, [field]: val });
   const cost = calcBuildoutCost(bo);
-
   const woodRate      = WOOD_BUILDOUT_RATES[bo.woodSize] || 0;
   const isAlumitube   = bo.type === "Alumitube";
   const isCustomAlumi = bo.isCustomAlumitubeSize;
@@ -902,10 +1143,7 @@ function BuildoutItem({ bo, index, onChange, onRemove, showRemove }) {
         )}
       </div>
       <div className="structural-fields-grid">
-        {/* CHANGE 4: Wood or Alumitube */}
         <Sel label="Type" value={bo.type} options={MPS_DEFAULTS.buildoutTypes} onChange={v => set("type", v)} />
-
-        {/* CHANGE 4: Wood size selector with per-LF rates */}
         {!isAlumitube && (
           <div className="mps-field">
             <label className="mps-label">Wood Size</label>
@@ -916,8 +1154,6 @@ function BuildoutItem({ bo, index, onChange, onRemove, showRemove }) {
             </select>
           </div>
         )}
-
-        {/* CHANGE 4: Alumitube size toggle */}
         {isAlumitube && (
           <div className="mps-field">
             <label className="mps-label">Alumitube Size</label>
@@ -933,39 +1169,20 @@ function BuildoutItem({ bo, index, onChange, onRemove, showRemove }) {
             </div>
           </div>
         )}
-
-        {/* Custom Alumitube size input */}
         {isAlumitube && isCustomAlumi && (
           <Field label="Custom Alumitube Size" value={bo.customAlumitubeSize} onChange={v => set("customAlumitubeSize", v)} placeholder='e.g. 2"×2"' />
         )}
-
-        {/* LF input — only for non-custom alumitube and wood */}
         {(!isAlumitube || !isCustomAlumi) && (
           <Field
-            label={isAlumitube
-              ? `Linear Feet (× $${ALUMITUBE_DEFAULT_RATE}/LF)`
-              : `Linear Feet (× $${woodRate}/LF for ${bo.woodSize})`
-            }
-            type="number" value={bo.lf}
-            onChange={v => set("lf", v)}
-            placeholder="e.g. 12" min="0" step="0.5"
+            label={isAlumitube ? `Linear Feet (× $${ALUMITUBE_DEFAULT_RATE}/LF)` : `Linear Feet (× $${woodRate}/LF for ${bo.woodSize})`}
+            type="number" value={bo.lf} onChange={v => set("lf", v)} placeholder="e.g. 12" min="0" step="0.5"
           />
         )}
-
-        {/* Custom price for custom alumitube */}
         {isAlumitube && isCustomAlumi && (
-          <Field
-            label="Manual Price ($)"
-            type="number" value={bo.customRate}
-            onChange={v => set("customRate", v)}
-            placeholder="Enter total price for custom alumitube"
-            min="0"
-          />
+          <Field label="Manual Price ($)" type="number" value={bo.customRate} onChange={v => set("customRate", v)} placeholder="Enter total price for custom alumitube" min="0" />
         )}
-
         <Field label="Dimensions (optional)" value={bo.dims} onChange={v => set("dims", v)} placeholder='e.g. 2"×4"×96"' />
       </div>
-
       {(bo.lf || bo.customRate) && (
         <div className="structural-calc">
           {isAlumitube && isCustomAlumi
@@ -990,29 +1207,32 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
   const openingTotal = openingPrice + structural;
   const set = (field, val) => onChange({ ...opening, [field]: val });
 
-  // Effective settings for display
   const effectiveMount      = opening.mountOverride      || areaDefaults.mountType      || "—";
   const effectiveTrack      = opening.trackOverride      || areaDefaults.trackType      || "—";
-  const effectiveFabric     = opening.fabricOverride     || areaDefaults.fabricType     || "—";
   const effectiveMotor      = opening.motorOverride      || areaDefaults.motorType      || "—";
   const effectiveWeightBar  = opening.weightBarOverride  || areaDefaults.weightBar      || "—";
   const effectiveCassette   = opening.colorOverride      || areaDefaults.cassetteColor  || "";
   const effectiveTrackColor = opening.trackColorOverride || areaDefaults.trackColor     || "";
 
-  // CHANGE 2: Storm Rail cost display
-  const stormRailCost = calcStormRailCost(opening, effectiveTrack);
+  // CHANGE 2: effective fabric — opening overrides area
+  const effectiveFabric = (opening.fabricSelection?.brand)
+    ? opening.fabricSelection
+    : (areaDefaults.fabricSelection?.brand ? areaDefaults.fabricSelection : null);
+  const effectiveFabricLabel = effectiveFabric ? buildFabricLabel(effectiveFabric) : "—";
 
-  // CHANGE 3: custom color flags
-  const cassIsCustom    = effectiveCassette.toLowerCase().includes("custom");
-  const trackColIsCustom = effectiveTrackColor.toLowerCase().includes("custom");
+  const stormRailCost     = calcStormRailCost(opening, effectiveTrack);
+  const cassIsCustom      = effectiveCassette.toLowerCase().includes("custom");
+  const trackColIsCustom  = effectiveTrackColor.toLowerCase().includes("custom");
   const weightBarIsCustom = effectiveWeightBar.toLowerCase() === "custom";
 
-  // L-channel helpers
+  // CHANGE 1: motor for this opening
+  const effectiveMotorId = opening.motorId || getDefaultMotorId(productName) || "";
+  const motorObj         = MOTOR_CATALOG.find(m => m.id === effectiveMotorId);
+  const motorAdj         = motorObj?.priceAdjustment || 0;
+
   const addLChannel    = () => set("lChannels", [...(opening.lChannels || []), createLChannel()]);
   const updateLChannel = (id, updated) => set("lChannels", (opening.lChannels || []).map(lc => lc.id === id ? updated : lc));
   const removeLChannel = (id) => set("lChannels", (opening.lChannels || []).filter(lc => lc.id !== id));
-
-  // Buildout helpers
   const addBuildout    = () => set("buildouts", [...(opening.buildouts || []), createBuildout()]);
   const updateBuildout = (id, updated) => set("buildouts", (opening.buildouts || []).map(bo => bo.id === id ? updated : bo));
   const removeBuildout = (id) => set("buildouts", (opening.buildouts || []).filter(bo => bo.id !== id));
@@ -1031,7 +1251,6 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
             value={opening.label} onChange={e => set("label", e.target.value)} />
         </div>
         {structural > 0 && <div className="opening-structural-badge">{fmt(structural)} structural</div>}
-        {/* CHANGE 1: Delete Opening button */}
         {showRemove && (
           <button type="button" className="opening-remove ctrl-btn-danger" onClick={onRemove} title="Delete this opening">
             🗑 Delete Opening
@@ -1048,7 +1267,25 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
 
       <OpeningPriceBadge opening={opening} productName={productName} />
 
-      {/* CHANGE 2: Storm Rail badge if applicable */}
+      {/* CHANGE 1: Motor Selector per opening */}
+      <div className="motor-selector-row">
+        <MotorSelector
+          motorId={effectiveMotorId}
+          productName={productName}
+          onChange={v => set("motorId", v)}
+        />
+        {motorAdj < 0 && (
+          <div className="motor-adjustment-badge motor-adjustment-badge--credit">
+            Motor credit applied: <strong>{fmt(motorAdj)}</strong> (deducted from total)
+          </div>
+        )}
+        {motorAdj > 0 && (
+          <div className="motor-adjustment-badge motor-adjustment-badge--extra">
+            Motor upcharge: <strong>+{fmt(motorAdj)}</strong>
+          </div>
+        )}
+      </div>
+
       {effectiveTrack === "Storm Rail" && (
         <div className="storm-rail-badge">
           ⚡ Storm Rail: {toFeetKey(opening.height) || "—"}ft height × ${STORM_RAIL_RATE}/LF = <strong>{fmt(stormRailCost)}</strong>
@@ -1056,16 +1293,34 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
         </div>
       )}
 
+      {/* CHANGE 2: Fabric Selector per opening */}
+      <details className="override-details" open>
+        <summary className="override-summary">
+          🧵 Fabric Selection
+          <span className="override-hint">
+            (Effective: <strong>{effectiveFabricLabel}</strong>)
+          </span>
+        </summary>
+        <div className="override-resolved-info">
+          Defaults to the Area fabric selection. Set here to override for this opening only.
+        </div>
+        <FabricSelector
+          fabricSelection={opening.fabricSelection}
+          onChange={v => set("fabricSelection", v)}
+          label="Opening Fabric Override"
+        />
+      </details>
+
       {/* Opening Settings */}
       <details className="override-details" open>
         <summary className="override-summary">
           ⚙ Opening Settings
           <span className="override-hint">
-            (Mount: <strong>{effectiveMount}</strong> · Track: <strong>{effectiveTrack}</strong> · Fabric: <strong>{effectiveFabric}</strong> · Motor: <strong>{effectiveMotor}</strong>)
+            (Mount: <strong>{effectiveMount}</strong> · Track: <strong>{effectiveTrack}</strong> · Motor: <strong>{effectiveMotor}</strong>)
           </span>
         </summary>
         <div className="override-resolved-info">
-          These settings default to the Area values above. Change any field here to override for this opening only. Clear back to "— area default —" to revert.
+          These settings default to the Area values above. Change any field here to override for this opening only.
         </div>
         <div className="override-resolved-grid">
 
@@ -1083,7 +1338,6 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
               onChange={e => set("mountOverride", e.target.value)}
             >
               <option value="">— area default ({areaDefaults.mountType || "not set"}) —</option>
-              {/* CHANGE 2: includes Soffit Mount */}
               {MPS_DEFAULTS.mountTypes.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
           </div>
@@ -1102,33 +1356,14 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
               onChange={e => set("trackOverride", e.target.value)}
             >
               <option value="">— area default ({areaDefaults.trackType || "not set"}) —</option>
-              {/* CHANGE 2: includes Storm Rail */}
               {MPS_DEFAULTS.trackTypes.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
           </div>
 
-          {/* Fabric Type */}
+          {/* Motor Type (legacy area-level field) */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
-              Fabric Type
-              {opening.fabricOverride
-                ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
-                : <span className="override-resolved-source">area default</span>}
-            </label>
-            <select
-              className={`override-resolved-select ${opening.fabricOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
-              value={opening.fabricOverride || ""}
-              onChange={e => set("fabricOverride", e.target.value)}
-            >
-              <option value="">— area default ({areaDefaults.fabricType || "not set"}) —</option>
-              {MPS_DEFAULTS.fabricTypes.map(o => <option key={o} value={o}>{o}</option>)}
-            </select>
-          </div>
-
-          {/* Motor Type */}
-          <div className="override-resolved-item">
-            <label className="override-resolved-label">
-              Motor Type
+              Motor Type (legacy)
               {opening.motorOverride
                 ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
                 : <span className="override-resolved-source">area default</span>}
@@ -1143,7 +1378,7 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
             </select>
           </div>
 
-          {/* Cassette Color — CHANGE 3: show price input when Custom */}
+          {/* Cassette Color */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Cassette Color
@@ -1158,13 +1393,10 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
               placeholder={`area default (${areaDefaults.cassetteColor || "not set"})`}
               onChange={e => set("colorOverride", e.target.value)}
             />
-            {/* CHANGE 3: Custom color pricing — cassette, based on width */}
             {cassIsCustom && (
               <div className="custom-color-price-row">
                 <span className="custom-color-price-label">Custom Cassette Color Price (based on width):</span>
-                <input
-                  className="custom-color-price-input"
-                  type="number" min="0"
+                <input className="custom-color-price-input" type="number" min="0"
                   value={opening.customCassetteColorPrice || ""}
                   placeholder="Enter $"
                   onChange={e => set("customCassetteColorPrice", e.target.value)}
@@ -1174,7 +1406,7 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
             )}
           </div>
 
-          {/* Track Color — CHANGE 3 */}
+          {/* Track Color */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Track Color
@@ -1189,13 +1421,10 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
               placeholder={`area default (${areaDefaults.trackColor || "not set"})`}
               onChange={e => set("trackColorOverride", e.target.value)}
             />
-            {/* CHANGE 3: Custom track color pricing */}
             {trackColIsCustom && (
               <div className="custom-color-price-row">
                 <span className="custom-color-price-label">Custom Track Color Price (based on width):</span>
-                <input
-                  className="custom-color-price-input"
-                  type="number" min="0"
+                <input className="custom-color-price-input" type="number" min="0"
                   value={opening.customTrackColorPrice || ""}
                   placeholder="Enter $"
                   onChange={e => set("customTrackColorPrice", e.target.value)}
@@ -1205,7 +1434,7 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
             )}
           </div>
 
-          {/* Weight Bar Color — CHANGE 3 */}
+          {/* Weight Bar Color */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Weight Bar Color
@@ -1221,13 +1450,10 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
               <option value="">— area default ({areaDefaults.weightBar || "not set"}) —</option>
               {MPS_DEFAULTS.weightBarTypes.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
-            {/* CHANGE 3: Custom weight bar pricing */}
             {weightBarIsCustom && (
               <div className="custom-color-price-row">
                 <span className="custom-color-price-label">Custom Weight Bar Price (based on width):</span>
-                <input
-                  className="custom-color-price-input"
-                  type="number" min="0"
+                <input className="custom-color-price-input" type="number" min="0"
                   value={opening.customWeightBarColorPrice || ""}
                   placeholder="Enter $"
                   onChange={e => set("customWeightBarColorPrice", e.target.value)}
@@ -1308,7 +1534,7 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
     onChange({ ...area, openings: area.openings.map(o => o.id === openingId ? updated : o) });
   }, [area, onChange]);
 
-  const addOpening    = () => onChange({ ...area, openings: [...area.openings, createOpening({ motorSide: "Left" })] });
+  const addOpening    = () => onChange({ ...area, openings: [...area.openings, createOpening(productName, { motorSide: "Left" })] });
   const removeOpening = (id) => onChange({ ...area, openings: area.openings.filter(o => o.id !== id) });
 
   return (
@@ -1329,7 +1555,6 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
               }
             </div>
           )}
-          {/* CHANGE 1: Delete Area button */}
           {showRemove && (
             <button type="button" className="area-remove ctrl-btn-danger" onClick={onRemove} title="Delete this area">
               🗑 Delete Area
@@ -1345,16 +1570,24 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
             <label className="mps-label">Product</label>
             <div className="mps-input mps-input--readonly">{productName}</div>
           </div>
-          {/* CHANGE 2: includes Soffit Mount */}
           <Sel label="Mount Type"  value={area.mountType}  options={MPS_DEFAULTS.mountTypes}  onChange={v=>setArea("mountType",v)} />
-          {/* CHANGE 2: includes Storm Rail */}
           <Sel label="Track Type"  value={area.trackType}  options={MPS_DEFAULTS.trackTypes}  onChange={v=>setArea("trackType",v)} />
-          <Sel label="Fabric Type" value={area.fabricType} options={MPS_DEFAULTS.fabricTypes} onChange={v=>setArea("fabricType",v)} />
           <Field label="Cassette Color" value={area.cassetteColor} onChange={v=>setArea("cassetteColor",v)} placeholder="e.g. White or Custom" />
           <Field label="Track Color"    value={area.trackColor}    onChange={v=>setArea("trackColor",v)}    placeholder="e.g. Beige or Custom" />
           <Sel label="Motor Type"  value={area.motorType}  options={MPS_DEFAULTS.motorTypes}  onChange={v=>setArea("motorType",v)} />
           <Sel label="Weight Bar Color" value={area.weightBar || ""} options={MPS_DEFAULTS.weightBarTypes} onChange={v=>setArea("weightBar",v)} placeholder="Select Weight Bar Color" />
         </div>
+
+        {/* CHANGE 2: Area-level fabric selection */}
+        <div className="area-fabric-section">
+          <div className="area-defaults-label" style={{marginTop: "12px"}}>Area Default Fabric (openings inherit this unless overridden)</div>
+          <FabricSelector
+            fabricSelection={area.fabricSelection || { brand: "", series: "", openness: "", color: "" }}
+            onChange={v => setArea("fabricSelection", v)}
+            label="Area Fabric Default"
+          />
+        </div>
+
         <PhotoUpload label="Area Photo (wide shot)" value={area.areaPhoto} onChange={v=>setArea("areaPhoto",v)} />
       </div>
 
@@ -1474,11 +1707,11 @@ function SignaturePad({ value, onChange }) {
 // ─────────────────────────────────────────────────────────────
 // MPS PRODUCT CARD
 // ─────────────────────────────────────────────────────────────
-function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSelections, onAddonToggle, productNotes, onProductNoteChange, onResetQuote }) {
+function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSelections, onAddonToggle, productNotes, onProductNoteChange }) {
   const qty   = parseInt(line.quantity, 10) || 1;
   const areas = mpsData[line.id] || [];
   const setAreas   = (a) => onMPSChange(line.id, a);
-  const addArea    = () => setAreas([...areas, createArea()]);
+  const addArea    = () => setAreas([...areas, createArea(line.product)]);
   const updateArea = (id, u) => setAreas(areas.map(a => a.id === id ? u : a));
   const removeArea = (id) => setAreas(areas.filter(a => a.id !== id));
 
@@ -1495,13 +1728,16 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
   const grandLineTotal        = effectiveProductTotal + structuralTotal + simpleAddonTotal;
   const hasUnpriced = areas.some(a => a.openings.some(o => (o.width || o.height) && !getMPSOpeningPrice(line.product, o.width, o.height).ok));
 
-  // CHANGE 1: Reset handler for this product's quote tool
   const handleReset = () => {
     if (window.confirm("Reset all areas, openings, and add-ons for this product? This cannot be undone.")) {
       onMPSChange(line.id, []);
       onAddonToggle(line.id, "__RESET__");
     }
   };
+
+  // CHANGE 1: Show default motor info for this product
+  const defaultMotorId = getDefaultMotorId(line.product);
+  const defaultMotor   = MOTOR_CATALOG.find(m => m.id === defaultMotorId);
 
   return (
     <div className="ps-product-card mps-product-card">
@@ -1511,13 +1747,23 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
         <div className="ps-product-price">{fmt(grandLineTotal)}</div>
       </div>
 
-      {/* CHANGE 1: Quote Tool Controls bar */}
       <div className="quote-tool-controls">
         <span className="quote-tool-controls-label">🛠 Quote Tool Controls</span>
         <button type="button" className="ctrl-btn ctrl-btn-reset" onClick={handleReset} title="Reset all areas and openings for this product">
           ↺ Reset Quote Tool
         </button>
       </div>
+
+      {/* CHANGE 1: Motor info banner */}
+      {defaultMotor && (
+        <div className="motor-info-banner">
+          <span className="motor-info-icon">⚡</span>
+          <div className="motor-info-content">
+            <span className="motor-info-title">Default Motor: <strong>{defaultMotor.displayName}</strong></span>
+            <span className="motor-info-sub">{defaultMotor.notes} — Override per opening below if needed</span>
+          </div>
+        </div>
+      )}
 
       <div className="ps-detail-grid">
         {[
@@ -1615,7 +1861,7 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
 }
 
 // ─────────────────────────────────────────────────────────────
-// STANDARD PRODUCT CARD
+// STANDARD PRODUCT CARD (unchanged)
 // ─────────────────────────────────────────────────────────────
 function StandardProductCard({ line, index, snapshot, addonSelections, onAddonToggle, fieldAddonValues, onFieldAddonChange, productNotes, onProductNoteChange }) {
   const enriched  = snapshot.productLines.find(l => l.id === line.id);
@@ -1780,7 +2026,6 @@ export default function ProductSummary() {
   const handleFieldAddonChange = (lineId, addonId, val) =>
     setFieldAddonValues(prev => ({...prev, [lineId]: {...(prev[lineId]||{}), [addonId]: val}}));
 
-  // CHANGE 1: Updated toggle handler to support __RESET__ sentinel for clearing all addons for a line
   const handleAddonToggle = (lineId, addonId) => {
     if (addonId === "__RESET__") {
       setAddonSelections(prev => ({ ...prev, [lineId]: {} }));
@@ -1792,7 +2037,6 @@ export default function ProductSummary() {
   const handleMPSChange = (lineId, areas) =>
     setMpsData(prev => ({...prev, [lineId]: areas}));
 
-  // CHANGE 1: Global reset for the entire quote tool
   const handleGlobalReset = () => {
     if (window.confirm("Reset ALL areas, openings, add-ons, and notes for the entire quote? This cannot be undone.")) {
       setAddonSelections({});
@@ -1870,7 +2114,6 @@ export default function ProductSummary() {
           <button className="ps-btn ps-btn-back" onClick={()=>navigate("/")}>← Back to Form</button>
           <div className="ps-nav-row-right">
             <span className="ps-last-updated">Last updated: {new Date(lastUpdated).toLocaleString()}</span>
-            {/* CHANGE 1: Global Reset Quote Tool button */}
             <button className="ps-btn ctrl-btn-reset ctrl-btn-global-reset" onClick={handleGlobalReset} title="Reset entire quote tool">
               ↺ Reset Quote Tool
             </button>

@@ -1338,7 +1338,196 @@ details[open] .override-summary::before { content:"▼"; }
 }
 
 /* ═══════════════════════════════════════════════════════════
-   CHANGE 5: L-Channel — updated rate label (already styled
-   via structural-calc) — no extra CSS needed beyond existing.
-   Manual price override field uses existing mps-field styles.
+   CHANGE 1: MOTOR SELECTOR STYLES
    ═══════════════════════════════════════════════════════════ */
+
+/* Info banner shown at the product card level */
+.motor-info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+  border-left: 4px solid #0284c7;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 10px 0 14px;
+}
+
+.motor-info-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.motor-info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.motor-info-title {
+  font-size: 13px;
+  color: #0c4a6e;
+}
+
+.motor-info-sub {
+  font-size: 11.5px;
+  color: #0369a1;
+  opacity: 0.85;
+}
+
+/* Motor selector row inside an opening card */
+.motor-selector-row {
+  padding: 10px 0 6px;
+  border-top: 1px dashed #e2e8f0;
+  margin-top: 10px;
+}
+
+.motor-selector-field {
+  max-width: 520px;
+}
+
+.motor-select {
+  font-size: 13px !important;
+}
+
+/* Inline badge on the motor label */
+.motor-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+}
+
+.motor-badge--included {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.motor-badge--credit {
+  background: #fef9c3;
+  color: #854d0e;
+  border: 1px solid #fde68a;
+}
+
+.motor-badge--extra {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+/* Notes text under motor dropdown */
+.motor-notes {
+  margin-top: 5px;
+  font-size: 11.5px;
+  color: #64748b;
+  font-style: italic;
+}
+
+/* Adjustment badge below motor selector */
+.motor-adjustment-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.motor-adjustment-badge--credit {
+  background: #fef9c3;
+  color: #713f12;
+  border: 1px solid #fde68a;
+}
+
+.motor-adjustment-badge--extra {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CHANGE 2: FABRIC SELECTOR (HIERARCHICAL CASCADE) STYLES
+   ═══════════════════════════════════════════════════════════ */
+
+.fabric-selector {
+  margin-top: 10px;
+}
+
+.fabric-selector-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+/* Small pill showing the full resolved fabric path */
+.fabric-label-badge {
+  display: inline-block;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  max-width: 340px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Grid for the cascade steps */
+.fabric-cascade-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+  gap: 10px;
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+/* Step label with numbered circle */
+.fabric-step-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fabric-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #3b82f6;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Disabled select — grayed out visually */
+.mps-select:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+  border-color: #e2e8f0;
+}
+
+/* Area-level fabric section */
+.area-fabric-section {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed #e2e8f0;
+}
