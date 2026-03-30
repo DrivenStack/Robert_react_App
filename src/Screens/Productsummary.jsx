@@ -11,10 +11,37 @@ const MPS_PRODUCTS = [
   "Motorized Power Screen open roll",
 ];
 
+// CHANGE 3: Skylight Plus MRA (renamed from "Motor B Retractable Awning")
+// AWNING products list — used for transmitter auto-assignment logic
+const AWNING_PRODUCTS = [
+  "Skylight Plus MRA",
+  "Motor A QIP-Square box Retractable Awning",
+  "Motor B QIP-Square box Retractable Awning",
+  "Motor A Open Roll Retractable Awning",
+  "Motor B Open Roll Retractable Awning",
+];
+
+// CHANGE 3: Skylight Plus MRA projection options (locked dropdown — no free text)
+const SKYLIGHT_MRA_PROJECTIONS = [
+  "4'11\"",
+  "6'6\"",
+  "8'2\"",
+  "9'10\"",
+  "11'2\"",
+  "13'1\"",
+];
+
+// CHANGE 3: Skylight Plus MRA fabric catalog
+const SKYLIGHT_FABRIC_BRANDS = ["Sunbrella", "Recacril", "Dickson", "Tempotest"];
+const SKYLIGHT_FABRIC_TYPES = {
+  Sunbrella:  ["Stripe", "Solid", "Jacquard", "Canvas"],
+  Recacril:   ["Standard", "Premium"],
+  Dickson:    ["Orchestra", "Fantasy", "Tweed"],
+  Tempotest:  ["Base", "Para", "Uni"],
+};
+
 // ─────────────────────────────────────────────────────────────
-// CHANGE 1: MOTOR CATALOG
-// Each motor has: id, name, priceAdjustment (+/- from base), compatibleProducts[]
-// priceAdjustment: 0 = included (no change), negative = credit/deduction
+// MOTOR CATALOG
 // ─────────────────────────────────────────────────────────────
 const MOTOR_CATALOG = [
   {
@@ -22,7 +49,7 @@ const MOTOR_CATALOG = [
     name: "Somfy LT50 Altus RTS 535A2-1038168",
     displayName: "Somfy LT50 Altus RTS (535)",
     brand: "Somfy",
-    priceAdjustment: 0, // included in base
+    priceAdjustment: 0,
     includedInBase: true,
     compatibleProducts: ["Motorized Power Screen 5in Cassette"],
     notes: "Default for 5\" cassette — included in base price",
@@ -32,7 +59,7 @@ const MOTOR_CATALOG = [
     name: "Somfy LT50 Altus RTS 550R2-1038170",
     displayName: "Somfy LT50 Altus RTS (550R2)",
     brand: "Somfy",
-    priceAdjustment: 0, // included in base
+    priceAdjustment: 0,
     includedInBase: true,
     compatibleProducts: ["Motorized Power Screen 6in Cassette", "Motorized Power Screen open roll"],
     notes: "Default for 6\" cassette & open roll — included in base price",
@@ -42,7 +69,7 @@ const MOTOR_CATALOG = [
     name: "Dooya Motor",
     displayName: "Dooya Motor",
     brand: "Dooya",
-    priceAdjustment: 0, // placeholder — set to negative for credit when pricing is confirmed
+    priceAdjustment: 0,
     includedInBase: false,
     compatibleProducts: [
       "Motorized Power Screen 5in Cassette",
@@ -53,26 +80,23 @@ const MOTOR_CATALOG = [
   },
 ];
 
-// Get the default motor for a given product
 function getDefaultMotorId(productName) {
   const motor = MOTOR_CATALOG.find(m => m.compatibleProducts.includes(productName) && m.includedInBase);
   return motor?.id || null;
 }
 
-// Get compatible motors for a given product
 function getCompatibleMotors(productName) {
   return MOTOR_CATALOG.filter(m => m.compatibleProducts.includes(productName));
 }
 
-// Get price adjustment for a selected motor vs the default
-function getMotorPriceAdjustment(motorId, productName) {
+function getMotorPriceAdjustment(motorId) {
   const motor = MOTOR_CATALOG.find(m => m.id === motorId);
   if (!motor) return 0;
   return motor.priceAdjustment;
 }
 
 // ─────────────────────────────────────────────────────────────
-// CHANGE 2: FABRIC CATALOG — Hierarchical Brand → Series → Openness → Color
+// FABRIC CATALOG — Hierarchical Brand → Series → Openness → Color
 // ─────────────────────────────────────────────────────────────
 const FABRIC_CATALOG = {
   Twitchell: {
@@ -118,41 +142,20 @@ const FABRIC_CATALOG = {
   },
 };
 
-// Helper: get brand list
-function getFabricBrands() {
-  return Object.keys(FABRIC_CATALOG);
-}
-
-// Helper: get series for a brand
-function getFabricSeries(brand) {
-  if (!brand || !FABRIC_CATALOG[brand]) return [];
-  return Object.keys(FABRIC_CATALOG[brand]);
-}
-
-// Helper: get series data
-function getFabricSeriesData(brand, series) {
-  return FABRIC_CATALOG[brand]?.[series] || null;
-}
-
-// Helper: get openness options for brand+series
+function getFabricBrands() { return Object.keys(FABRIC_CATALOG); }
+function getFabricSeries(brand) { if (!brand || !FABRIC_CATALOG[brand]) return []; return Object.keys(FABRIC_CATALOG[brand]); }
+function getFabricSeriesData(brand, series) { return FABRIC_CATALOG[brand]?.[series] || null; }
 function getFabricOpennessOptions(brand, series) {
   const data = getFabricSeriesData(brand, series);
   if (!data || !data.hasOpenness) return [];
   return Object.keys(data.openness);
 }
-
-// Helper: get color options
 function getFabricColors(brand, series, openness) {
   const data = getFabricSeriesData(brand, series);
   if (!data) return [];
-  if (data.hasOpenness) {
-    if (!openness) return [];
-    return data.openness[openness] || [];
-  }
+  if (data.hasOpenness) { if (!openness) return []; return data.openness[openness] || []; }
   return data.colors || [];
 }
-
-// Build a display label for the full fabric selection
 function buildFabricLabel(fabricSelection) {
   if (!fabricSelection?.brand) return "";
   const parts = [fabricSelection.brand, fabricSelection.series];
@@ -162,7 +165,7 @@ function buildFabricLabel(fabricSelection) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// MPS DEFAULTS (updated — fabricTypes removed, handled by catalog)
+// MPS DEFAULTS
 // ─────────────────────────────────────────────────────────────
 const MPS_DEFAULTS = {
   mountTypes:    ["Surface", "Inside", "Soffit Mount"],
@@ -178,18 +181,12 @@ const MPS_DEFAULTS = {
 };
 
 const WOOD_BUILDOUT_RATES = {
-  "2x4":  4,
-  "2x6":  6,
-  "2x8":  8,
-  "2x10": 10,
-  "4x4":  10,
-  "4x6":  25,
-  "4x8":  30,
-  "4x10": 40,
+  "2x4":  4,  "2x6":  6,  "2x8":  8,  "2x10": 10,
+  "4x4":  10, "4x6":  25, "4x8":  30, "4x10": 40,
 };
 
-const STORM_RAIL_RATE       = 40;
-const L_CHANNEL_RATE        = 25;
+const STORM_RAIL_RATE        = 40;
+const L_CHANNEL_RATE         = 25;
 const ALUMITUBE_DEFAULT_RATE = 35;
 
 const REMOTE_PRICING = {
@@ -204,12 +201,49 @@ function getAutoRemote(openingCount) {
   return "16 Channel Somfy Remote";
 }
 
+// ─────────────────────────────────────────────────────────────
+// CHANGE 1 & 2: WIND SENSOR ADD-ONS
+// Renamed from Whirly/Shaker to correct Somfy product names.
+// Wireless (Eolis 3D) = per-opening (1:1) — NOT available for 5in/6in cassette
+// Wired (Eolis RTS 24V) = shared/global (1:many) — available for all MPS products
+// ─────────────────────────────────────────────────────────────
+const WIND_SENSOR_WIRED = {
+  id: "wind_sensor_wired",
+  name: "Somfy Eolis RTS 24V Wired Wind Sensor Kit",
+  shortName: "Eolis RTS 24V (Wired)",
+  price: 290,
+  type: "global",   // one per project, shared across openings
+  description: "Shared sensor — selected once, applies across all openings",
+};
+
+const WIND_SENSOR_WIRELESS = {
+  id: "wind_sensor_wireless",
+  name: "Somfy Eolis 3D Wirefree RTS Wind Sensor",
+  shortName: "Eolis 3D Wirefree (Wireless)",
+  price: 290,
+  type: "per_opening",   // one per opening
+  description: "Per-opening sensor — quantity scales with number of openings",
+};
+
+// Returns which wind sensors are available for a given product
+function getAvailableWindSensors(productName) {
+  const isCassette = productName === "Motorized Power Screen 5in Cassette" ||
+                     productName === "Motorized Power Screen 6in Cassette";
+  if (isCassette) {
+    // CHANGE 2: Cassette products only allow wired sensor
+    return [WIND_SENSOR_WIRED];
+  }
+  // Open roll and all other MPS products get both options
+  return [WIND_SENSOR_WIRED, WIND_SENSOR_WIRELESS];
+}
+
+// CHANGE 1: Updated MPS_SIMPLE_ADDONS — wind sensors removed from here,
+// now handled separately with proper per-opening / global logic
 const MPS_SIMPLE_ADDONS = [
-  { id: "remote_1ch",   name: "1 Channel Somfy Remote",         price: 125 },
-  { id: "remote_5ch",   name: "5 Channel Somfy Remote",         price: 180 },
-  { id: "wind_sensor",  name: "Wind Sensor (Shaker or Whirly)", price: 290 },
-  { id: "tahoma",       name: "Somfy Tahoma",                   price: 420 },
-  { id: "remote_16ch",  name: "16 Channel Somfy Remote",        price: 320 },
+  { id: "remote_1ch",  name: "1 Channel Somfy Remote",  price: 125 },
+  { id: "remote_5ch",  name: "5 Channel Somfy Remote",  price: 180 },
+  { id: "remote_16ch", name: "16 Channel Somfy Remote", price: 320 },
+  { id: "tahoma",      name: "Somfy Tahoma",             price: 420 },
 ];
 
 const fmt = (n) =>
@@ -255,6 +289,7 @@ const MPS_PRICE_DATA = {
     pricingModel: "matrix",
     prices: {
       4:  {3:1935,4:2040,5:2145,6:2250,7:2355,8:2460,9:2565,10:2670,11:2775,12:2880,13:2985,14:3090,15:3195,16:3300,17:3405,18:3510,19:3615,20:3720,21:3825,22:3930,23:4035,24:4140,25:4245,26:4350},
+      5:  {3:2040,4:2145,5:2250,6:2355,7:2460,8:2565,9:2670,10:2775,11:2880,12:2985,13:3090,14:3195,15:3300,16:3405,17:3510,18:3615,19:3720,20:3825,21:3930,22:4035,23:4140,24:4245,25:4350,26:4455},
       5:  {3:2040,4:2145,5:2250,6:2355,7:2460,8:2565,9:2670,10:2775,11:2880,12:2985,13:3090,14:3195,15:3300,16:3405,17:3510,18:3615,19:3720,20:3825,21:3930,22:4035,23:4140,24:4245,25:4350,26:4455},
       6:  {3:2145,4:2250,5:2355,6:2460,7:2565,8:2670,9:2775,10:2880,11:2985,12:3090,13:3195,14:3300,15:3405,16:3510,17:3615,18:3720,19:3825,20:3930,21:4035,22:4140,23:4245,24:4350,25:4455,26:4560},
       7:  {3:2250,4:2355,5:2460,6:2565,7:2670,8:2775,9:2880,10:2985,11:3090,12:3195,13:3300,14:3405,15:3510,16:3615,17:3720,18:3825,19:3930,20:4035,21:4140,22:4245,23:4350,24:4455,25:4560,26:4665},
@@ -304,7 +339,7 @@ function getMPSOpeningPrice(productName, widthRaw, heightRaw) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// PRODUCT ADD-ONS (unchanged from original)
+// PRODUCT ADD-ONS
 // ─────────────────────────────────────────────────────────────
 const PRODUCT_ADDONS = {
   "Hydra Retractable Patio Cover": [
@@ -358,7 +393,8 @@ const PRODUCT_ADDONS = {
   ],
   "Clearview Retractable Screen Doors": [],
   "Clearview Oversized Doors": [],
-  "Motor B Retractable Awning": [],
+  // CHANGE 3: "Motor B Retractable Awning" renamed to "Skylight Plus MRA"
+  // The old "Motor B Retractable Awning" key is removed; "Skylight Plus MRA" handled in SkylightMRACard
   "Motor A QIP-Square box Retractable Awning": [
     { id:"wind_sensor",  name:"Wind Sensor",            price:195 },
     { id:"led_lighting", name:"LED Lighting Kit",       price:350 },
@@ -502,6 +538,15 @@ const PRODUCT_FIELD_ADDONS = {
     { id:"part_gold_deco_s",     name:"Gold Extra Parts Deco / Sq Sill etc (single)",pricingType:"per_unit",rate:70,   unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
     { id:"part_gold_deco_d",     name:"Gold Extra Parts Deco / Sq Sill etc (double)",pricingType:"per_unit",rate:140,  unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
   ],
+  // CHANGE 3: Skylight Plus MRA — field addons (Somfy RTS accessories only; transmitter/LED auto-included)
+  "Skylight Plus MRA": [
+    { id:"somfy_wind_sensor", name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"somfy_sun_wind",    name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
+    { id:"power_cord_24ft",   name:"24\u2019 Motor Power Cord (upgrade)", pricingType:"per_unit", rate:80,  unit:"units", unitShort:"ea", placeholder:"1", group:"Power Cable Options" },
+    { id:"bracket_12in",      name:"Roof Mount Bracket 12\u2033 Tall",   pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+    { id:"bracket_16in",      name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+    { id:"bracket_24in",      name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+  ],
   "Motor B Retractable Awning": [
     { id:"somfy_1ch_tx",      name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_5ch_tx",      name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
@@ -600,41 +645,21 @@ let _uid = 1;
 const uid = () => `id_${_uid++}`;
 
 function createLChannel() {
-  return {
-    id: uid(),
-    loc: "Left",
-    size: "1×1",
-    customSize: "",
-    lf: "",
-    manualPrice: "",
-    photo: null,
-  };
+  return { id: uid(), loc: "Left", size: "1×1", customSize: "", lf: "", manualPrice: "", photo: null };
 }
 
 function createBuildout() {
   return {
-    id: uid(),
-    type: "Wood",
-    woodSize: "2x4",
-    aluminubeSize: "1.5×1.5",
-    isCustomAlumitubeSize: false,
-    customAlumitubeSize: "",
-    dims: "",
-    lf: "",
-    customRate: "",
-    photo: null,
+    id: uid(), type: "Wood", woodSize: "2x4", aluminubeSize: "1.5×1.5",
+    isCustomAlumitubeSize: false, customAlumitubeSize: "", dims: "", lf: "", customRate: "", photo: null,
   };
 }
 
-// CHANGE 1: Opening now has motorId (auto-set from product)
-// CHANGE 2: Opening now has fabricSelection object instead of fabricOverride string
 function createOpening(productName = "", areaDefaults = {}) {
   return {
     id: uid(), label: "", width: "", height: "",
     motorSide: areaDefaults.motorSide || "Left",
-    // CHANGE 1: motorId — will be set to default on first render
     motorId: getDefaultMotorId(productName) || "",
-    // CHANGE 2: fabric now stored as object { brand, series, openness, color }
     fabricSelection: { brand: "", series: "", openness: "", color: "" },
     lChannels: [],
     buildouts: [],
@@ -651,11 +676,24 @@ function createOpening(productName = "", areaDefaults = {}) {
 function createArea(productName = "") {
   return {
     id: uid(), name: "", mountType: "", trackType: "",
-    // CHANGE 2: area-level fabric stored as object too
     fabricSelection: { brand: "", series: "", openness: "", color: "" },
     cassetteColor: "", trackColor: "", motorType: "Somfy (default)",
     weightBar: "", remote: "",
     areaPhoto: null, openings: [createOpening(productName)],
+  };
+}
+
+// CHANGE 3: Skylight Plus MRA default config
+function createSkylightMRAConfig() {
+  return {
+    width: "",
+    widthFt: "",
+    widthIn: "",
+    projection: "",
+    fabricBrand: "",
+    fabricType: "",
+    fabricColor: "",
+    quantity: 1,
   };
 }
 
@@ -671,16 +709,12 @@ function calcBuildoutCost(bo) {
     const rate = WOOD_BUILDOUT_RATES[bo.woodSize] || 0;
     return (parseFloat(bo.lf) || 0) * rate;
   }
-  if (bo.isCustomAlumitubeSize) {
-    return parseFloat(bo.customRate) || 0;
-  }
+  if (bo.isCustomAlumitubeSize) return parseFloat(bo.customRate) || 0;
   return (parseFloat(bo.lf) || 0) * ALUMITUBE_DEFAULT_RATE;
 }
 
 function calcLChannelCost(lc) {
-  if (lc.manualPrice !== "" && !isNaN(parseFloat(lc.manualPrice))) {
-    return parseFloat(lc.manualPrice);
-  }
+  if (lc.manualPrice !== "" && !isNaN(parseFloat(lc.manualPrice))) return parseFloat(lc.manualPrice);
   return (parseFloat(lc.lf) || 0) * L_CHANNEL_RATE;
 }
 
@@ -695,7 +729,6 @@ function calcCustomColorCost(opening, effectiveTrackType, areaDefaults) {
   return total;
 }
 
-// CHANGE 1: Motor price adjustment per opening
 function calcMotorAdjustment(opening) {
   return getMotorPriceAdjustment(opening.motorId);
 }
@@ -703,11 +736,10 @@ function calcMotorAdjustment(opening) {
 function calcOpeningStructural(opening, areaDefaults) {
   let total = 0;
   (opening.lChannels || []).forEach(lc => { total += calcLChannelCost(lc); });
-  (opening.buildouts || []).forEach(bo => { total += calcBuildoutCost(bo); });
+  (opening.buildouts  || []).forEach(bo => { total += calcBuildoutCost(bo); });
   const effectiveTrackType = opening.trackOverride || areaDefaults?.trackType || "";
   total += calcStormRailCost(opening, effectiveTrackType);
   total += calcCustomColorCost(opening, effectiveTrackType, areaDefaults);
-  // CHANGE 1: motor adjustment (can be negative)
   total += calcMotorAdjustment(opening);
   return total;
 }
@@ -730,20 +762,30 @@ function countTotalOpenings(areas) {
   return areas.reduce((sum, a) => sum + a.openings.length, 0);
 }
 
+// CHANGE 1: Wind sensor total calculators
+function calcWindSensorTotal(windSensorSelections, totalOpenings) {
+  let total = 0;
+  if (windSensorSelections?.wired)    total += WIND_SENSOR_WIRED.price;     // global — always 1
+  if (windSensorSelections?.wireless) total += WIND_SENSOR_WIRELESS.price * Math.max(1, totalOpenings); // per opening
+  return total;
+}
+
+// CHANGE 3: Auto-assign transmitter based on total awning qty in order
+function getAutoTransmitter(totalAwningQty) {
+  if (totalAwningQty <= 2) return "5-Channel Somfy Transmitter";
+  return "16-Channel Somfy Transmitter";
+}
+
 // ─────────────────────────────────────────────────────────────
 // SESSION STORAGE PERSISTENCE
 // ─────────────────────────────────────────────────────────────
-const SESSION_KEY = "productSummaryState_v2"; // bumped version for new schema
+const SESSION_KEY = "productSummaryState_v3"; // bumped version for new schema
 
 function saveToSession(state) {
   try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(state)); } catch (e) {}
 }
-
 function loadFromSession() {
-  try {
-    const raw = sessionStorage.getItem(SESSION_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch (e) { return null; }
+  try { const raw = sessionStorage.getItem(SESSION_KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -758,20 +800,14 @@ function CameraModal({ onCapture, onClose }) {
   const [facingMode, setFacingMode] = useState("user");
 
   const stopStream = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop());
-      streamRef.current = null;
-    }
+    if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
   };
 
   const startStream = useCallback(async (mode) => {
-    stopStream();
-    setReady(false);
-    setError(null);
+    stopStream(); setReady(false); setError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: mode }, width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false,
+        video: { facingMode: { ideal: mode }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false,
       });
       streamRef.current = stream;
       if (videoRef.current) {
@@ -794,24 +830,16 @@ function CameraModal({ onCapture, onClose }) {
 
   useEffect(() => { startStream(facingMode); return stopStream; }, []); // eslint-disable-line
 
-  const flipCamera = () => {
-    const next = facingMode === "user" ? "environment" : "user";
-    setFacingMode(next);
-    startStream(next);
-  };
+  const flipCamera = () => { const next = facingMode === "user" ? "environment" : "user"; setFacingMode(next); startStream(next); };
 
   const capture = () => {
-    const video  = videoRef.current;
-    const canvas = canvasRef.current;
+    const video = videoRef.current; const canvas = canvasRef.current;
     if (!video || !canvas) return;
-    canvas.width  = video.videoWidth  || 640;
-    canvas.height = video.videoHeight || 480;
+    canvas.width = video.videoWidth || 640; canvas.height = video.videoHeight || 480;
     const ctx = canvas.getContext("2d");
     if (facingMode === "user") { ctx.translate(canvas.width, 0); ctx.scale(-1, 1); }
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-    stopStream();
-    onCapture(dataUrl);
+    stopStream(); onCapture(canvas.toDataURL("image/jpeg", 0.92));
   };
 
   return (
@@ -832,9 +860,7 @@ function CameraModal({ onCapture, onClose }) {
             <>
               <video ref={videoRef} className={`camera-video ${facingMode === "user" ? "camera-video--mirror" : ""}`}
                 autoPlay playsInline muted style={{ opacity: ready ? 1 : 0, transition: "opacity 0.3s" }} />
-              {!ready && (
-                <div className="camera-loading"><div className="camera-spinner" /><p>Starting camera…</p></div>
-              )}
+              {!ready && <div className="camera-loading"><div className="camera-spinner" /><p>Starting camera…</p></div>}
             </>
           )}
           <canvas ref={canvasRef} style={{ display: "none" }} />
@@ -863,10 +889,8 @@ function PhotoUpload({ label, value, onChange }) {
     const file = e.target.files?.[0];
     if (!file) return;
     onChange(URL.createObjectURL(file));
-    setShowPicker(false);
-    e.target.value = "";
+    setShowPicker(false); e.target.value = "";
   };
-
   const handleCapture = (dataUrl) => { onChange(dataUrl); setShowCamera(false); };
 
   return (
@@ -940,10 +964,9 @@ function Toggle({ label, checked, onChange }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// CHANGE 1: MOTOR SELECTOR COMPONENT
-// Auto-selects default, shows compatibility, supports future motors
+// MOTOR SELECTOR COMPONENT
 // ─────────────────────────────────────────────────────────────
-function MotorSelector({ motorId, productName, onChange, isAreaLevel = false }) {
+function MotorSelector({ motorId, productName, onChange }) {
   const compatibleMotors = getCompatibleMotors(productName);
   const defaultMotorId   = getDefaultMotorId(productName);
   const selectedMotor    = MOTOR_CATALOG.find(m => m.id === motorId);
@@ -958,11 +981,7 @@ function MotorSelector({ motorId, productName, onChange, isAreaLevel = false }) 
         {!isDefault && adjustment < 0 && <span className="motor-badge motor-badge--credit">Credit: {fmt(adjustment)}</span>}
         {!isDefault && adjustment > 0 && <span className="motor-badge motor-badge--extra">+{fmt(adjustment)}</span>}
       </label>
-      <select
-        className="mps-select motor-select"
-        value={motorId || defaultMotorId || ""}
-        onChange={e => onChange(e.target.value)}
-      >
+      <select className="mps-select motor-select" value={motorId || defaultMotorId || ""} onChange={e => onChange(e.target.value)}>
         {compatibleMotors.map(motor => (
           <option key={motor.id} value={motor.id}>
             {motor.displayName}
@@ -972,20 +991,16 @@ function MotorSelector({ motorId, productName, onChange, isAreaLevel = false }) 
           </option>
         ))}
       </select>
-      {selectedMotor?.notes && (
-        <div className="motor-notes">{selectedMotor.notes}</div>
-      )}
+      {selectedMotor?.notes && <div className="motor-notes">{selectedMotor.notes}</div>}
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────
-// CHANGE 2: FABRIC SELECTOR COMPONENT — Hierarchical cascade
-// Brand → Series → Openness (if applicable) → Color
+// FABRIC SELECTOR COMPONENT — Hierarchical cascade
 // ─────────────────────────────────────────────────────────────
 function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
   const { brand = "", series = "", openness = "", color = "" } = fabricSelection;
-
   const brands       = getFabricBrands();
   const seriesList   = getFabricSeries(brand);
   const seriesData   = getFabricSeriesData(brand, series);
@@ -996,7 +1011,6 @@ function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
 
   const update = (field, value) => {
     const next = { ...fabricSelection, [field]: value };
-    // cascade reset downstream
     if (field === "brand")    { next.series = ""; next.openness = ""; next.color = ""; }
     if (field === "series")   { next.openness = ""; next.color = ""; }
     if (field === "openness") { next.color = ""; }
@@ -1007,12 +1021,9 @@ function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
     <div className="fabric-selector">
       <div className="fabric-selector-label">
         <span className="mps-label">{label}</span>
-        {fabricLabel && (
-          <span className="fabric-label-badge">{fabricLabel}</span>
-        )}
+        {fabricLabel && <span className="fabric-label-badge">{fabricLabel}</span>}
       </div>
       <div className="fabric-cascade-grid">
-        {/* Brand */}
         <div className="mps-field">
           <label className="mps-label fabric-step-label"><span className="fabric-step-num">1</span> Brand</label>
           <select className="mps-select" value={brand} onChange={e => update("brand", e.target.value)}>
@@ -1020,8 +1031,6 @@ function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
             {brands.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
         </div>
-
-        {/* Series */}
         <div className="mps-field">
           <label className="mps-label fabric-step-label"><span className="fabric-step-num">2</span> Series</label>
           <select className="mps-select" value={series} onChange={e => update("series", e.target.value)} disabled={!brand}>
@@ -1029,8 +1038,6 @@ function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
             {seriesList.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
-
-        {/* Openness — only show if series has openness */}
         {brand && series && hasOpenness && (
           <div className="mps-field">
             <label className="mps-label fabric-step-label"><span className="fabric-step-num">3</span> Openness %</label>
@@ -1040,8 +1047,6 @@ function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
             </select>
           </div>
         )}
-
-        {/* Color */}
         {brand && series && (!hasOpenness || openness) && (
           <div className="mps-field">
             <label className="mps-label fabric-step-label">
@@ -1051,6 +1056,62 @@ function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
               <option value="">Select Color</option>
               {colorOpts.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// CHANGE 3: SKYLIGHT MRA FABRIC SELECTOR — Brand → Type → Color
+// ─────────────────────────────────────────────────────────────
+function SkylightFabricSelector({ fabricBrand, fabricType, fabricColor, onChange }) {
+  const brands    = SKYLIGHT_FABRIC_BRANDS;
+  const types     = fabricBrand ? (SKYLIGHT_FABRIC_TYPES[fabricBrand] || []) : [];
+
+  const update = (field, value) => {
+    const next = { fabricBrand, fabricType, fabricColor, [field]: value };
+    if (field === "fabricBrand") { next.fabricType = ""; next.fabricColor = ""; }
+    if (field === "fabricType")  { next.fabricColor = ""; }
+    onChange(next);
+  };
+
+  return (
+    <div className="fabric-selector">
+      <div className="fabric-selector-label">
+        <span className="mps-label">Fabric</span>
+        {fabricBrand && fabricType && (
+          <span className="fabric-label-badge">
+            {[fabricBrand, fabricType, fabricColor].filter(Boolean).join(" › ")}
+          </span>
+        )}
+      </div>
+      <div className="fabric-cascade-grid">
+        <div className="mps-field">
+          <label className="mps-label fabric-step-label"><span className="fabric-step-num">1</span> Fabric Brand</label>
+          <select className="mps-select" value={fabricBrand} onChange={e => update("fabricBrand", e.target.value)}>
+            <option value="">Select Brand</option>
+            {brands.map(b => <option key={b} value={b}>{b}</option>)}
+          </select>
+        </div>
+        <div className="mps-field">
+          <label className="mps-label fabric-step-label"><span className="fabric-step-num">2</span> Fabric Type</label>
+          <select className="mps-select" value={fabricType} onChange={e => update("fabricType", e.target.value)} disabled={!fabricBrand}>
+            <option value="">{fabricBrand ? "Select Type" : "— select brand first —"}</option>
+            {types.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </div>
+        {fabricBrand && fabricType && (
+          <div className="mps-field">
+            <label className="mps-label fabric-step-label"><span className="fabric-step-num">3</span> Fabric Color</label>
+            <input
+              className="mps-input"
+              type="text"
+              value={fabricColor}
+              onChange={e => update("fabricColor", e.target.value)}
+              placeholder="Enter fabric color / pattern name"
+            />
           </div>
         )}
       </div>
@@ -1082,34 +1143,18 @@ function LChannelItem({ lc, index, onChange, onRemove, showRemove }) {
   const set  = (field, val) => onChange({ ...lc, [field]: val });
   const cost = calcLChannelCost(lc);
   const isManualOverride = lc.manualPrice !== "" && !isNaN(parseFloat(lc.manualPrice));
-
   return (
     <div className="structural-item-card">
       <div className="structural-item-header">
         <span className="structural-item-label">L-Channel #{index + 1}</span>
-        {showRemove && (
-          <button type="button" className="structural-item-remove" onClick={onRemove}>✕ Remove</button>
-        )}
+        {showRemove && <button type="button" className="structural-item-remove" onClick={onRemove}>✕ Remove</button>}
       </div>
       <div className="structural-fields-grid">
         <Sel label="Location" value={lc.loc}  options={MPS_DEFAULTS.lChannelLocs}  onChange={v => set("loc", v)} />
         <Sel label="Size"     value={lc.size} options={MPS_DEFAULTS.lChannelSizes} onChange={v => set("size", v)} />
-        {lc.size === "Custom" && (
-          <Field label="Custom Size" value={lc.customSize} onChange={v => set("customSize", v)} placeholder='e.g. 2"×3"' />
-        )}
-        <Field
-          label={`Linear Feet (× $${L_CHANNEL_RATE}/LF)`}
-          type="number" value={lc.lf}
-          onChange={v => set("lf", v)}
-          placeholder="e.g. 8" min="0" step="0.5"
-        />
-        <Field
-          label="Manual Price Override ($)"
-          type="number" value={lc.manualPrice}
-          onChange={v => set("manualPrice", v)}
-          placeholder="Leave blank to use LF rate"
-          min="0"
-        />
+        {lc.size === "Custom" && <Field label="Custom Size" value={lc.customSize} onChange={v => set("customSize", v)} placeholder='e.g. 2"×3"' />}
+        <Field label={`Linear Feet (× $${L_CHANNEL_RATE}/LF)`} type="number" value={lc.lf} onChange={v => set("lf", v)} placeholder="e.g. 8" min="0" step="0.5" />
+        <Field label="Manual Price Override ($)" type="number" value={lc.manualPrice} onChange={v => set("manualPrice", v)} placeholder="Leave blank to use LF rate" min="0" />
       </div>
       {(lc.lf || isManualOverride) && (
         <div className="structural-calc">
@@ -1130,17 +1175,14 @@ function LChannelItem({ lc, index, onChange, onRemove, showRemove }) {
 function BuildoutItem({ bo, index, onChange, onRemove, showRemove }) {
   const set  = (field, val) => onChange({ ...bo, [field]: val });
   const cost = calcBuildoutCost(bo);
-  const woodRate      = WOOD_BUILDOUT_RATES[bo.woodSize] || 0;
-  const isAlumitube   = bo.type === "Alumitube";
+  const woodRate     = WOOD_BUILDOUT_RATES[bo.woodSize] || 0;
+  const isAlumitube  = bo.type === "Alumitube";
   const isCustomAlumi = bo.isCustomAlumitubeSize;
-
   return (
     <div className="structural-item-card">
       <div className="structural-item-header">
         <span className="structural-item-label">Buildout #{index + 1}</span>
-        {showRemove && (
-          <button type="button" className="structural-item-remove" onClick={onRemove}>✕ Remove</button>
-        )}
+        {showRemove && <button type="button" className="structural-item-remove" onClick={onRemove}>✕ Remove</button>}
       </div>
       <div className="structural-fields-grid">
         <Sel label="Type" value={bo.type} options={MPS_DEFAULTS.buildoutTypes} onChange={v => set("type", v)} />
@@ -1148,9 +1190,7 @@ function BuildoutItem({ bo, index, onChange, onRemove, showRemove }) {
           <div className="mps-field">
             <label className="mps-label">Wood Size</label>
             <select className="mps-select" value={bo.woodSize} onChange={e => set("woodSize", e.target.value)}>
-              {MPS_DEFAULTS.woodSizes.map(s => (
-                <option key={s} value={s}>{s} — ${WOOD_BUILDOUT_RATES[s]}/LF</option>
-              ))}
+              {MPS_DEFAULTS.woodSizes.map(s => <option key={s} value={s}>{s} — ${WOOD_BUILDOUT_RATES[s]}/LF</option>)}
             </select>
           </div>
         )}
@@ -1169,27 +1209,22 @@ function BuildoutItem({ bo, index, onChange, onRemove, showRemove }) {
             </div>
           </div>
         )}
-        {isAlumitube && isCustomAlumi && (
-          <Field label="Custom Alumitube Size" value={bo.customAlumitubeSize} onChange={v => set("customAlumitubeSize", v)} placeholder='e.g. 2"×2"' />
-        )}
+        {isAlumitube && isCustomAlumi && <Field label="Custom Alumitube Size" value={bo.customAlumitubeSize} onChange={v => set("customAlumitubeSize", v)} placeholder='e.g. 2"×2"' />}
         {(!isAlumitube || !isCustomAlumi) && (
           <Field
             label={isAlumitube ? `Linear Feet (× $${ALUMITUBE_DEFAULT_RATE}/LF)` : `Linear Feet (× $${woodRate}/LF for ${bo.woodSize})`}
             type="number" value={bo.lf} onChange={v => set("lf", v)} placeholder="e.g. 12" min="0" step="0.5"
           />
         )}
-        {isAlumitube && isCustomAlumi && (
-          <Field label="Manual Price ($)" type="number" value={bo.customRate} onChange={v => set("customRate", v)} placeholder="Enter total price for custom alumitube" min="0" />
-        )}
+        {isAlumitube && isCustomAlumi && <Field label="Manual Price ($)" type="number" value={bo.customRate} onChange={v => set("customRate", v)} placeholder="Enter total price for custom alumitube" min="0" />}
         <Field label="Dimensions (optional)" value={bo.dims} onChange={v => set("dims", v)} placeholder='e.g. 2"×4"×96"' />
       </div>
       {(bo.lf || bo.customRate) && (
         <div className="structural-calc">
           {isAlumitube && isCustomAlumi
             ? <>Alumitube (custom size, manual price): <strong>{fmt(cost)}</strong></>
-            : isAlumitube
-              ? <>Alumitube: {bo.lf} LF × ${ALUMITUBE_DEFAULT_RATE} = <strong>{fmt(cost)}</strong></>
-              : <>Wood ({bo.woodSize}): {bo.lf} LF × ${woodRate} = <strong>{fmt(cost)}</strong></>
+            : isAlumitube ? <>Alumitube: {bo.lf} LF × ${ALUMITUBE_DEFAULT_RATE} = <strong>{fmt(cost)}</strong></>
+            : <>Wood ({bo.woodSize}): {bo.lf} LF × ${woodRate} = <strong>{fmt(cost)}</strong></>
           }
         </div>
       )}
@@ -1214,7 +1249,6 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
   const effectiveCassette   = opening.colorOverride      || areaDefaults.cassetteColor  || "";
   const effectiveTrackColor = opening.trackColorOverride || areaDefaults.trackColor     || "";
 
-  // CHANGE 2: effective fabric — opening overrides area
   const effectiveFabric = (opening.fabricSelection?.brand)
     ? opening.fabricSelection
     : (areaDefaults.fabricSelection?.brand ? areaDefaults.fabricSelection : null);
@@ -1222,13 +1256,12 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
 
   const stormRailCost     = calcStormRailCost(opening, effectiveTrack);
   const cassIsCustom      = effectiveCassette.toLowerCase().includes("custom");
-  const trackColIsCustom  = effectiveTrackColor.toLowerCase().includes("custom");
-  const weightBarIsCustom = effectiveWeightBar.toLowerCase() === "custom";
+  const effectiveMotorId  = opening.motorId || getDefaultMotorId(productName) || "";
+  const motorObj          = MOTOR_CATALOG.find(m => m.id === effectiveMotorId);
+  const motorAdj          = motorObj?.priceAdjustment || 0;
 
-  // CHANGE 1: motor for this opening
-  const effectiveMotorId = opening.motorId || getDefaultMotorId(productName) || "";
-  const motorObj         = MOTOR_CATALOG.find(m => m.id === effectiveMotorId);
-  const motorAdj         = motorObj?.priceAdjustment || 0;
+  // CHANGE 2: Track color visibility — hidden for Wire Guide
+  const showTrackColor = effectiveTrack !== "Wire Guide";
 
   const addLChannel    = () => set("lChannels", [...(opening.lChannels || []), createLChannel()]);
   const updateLChannel = (id, updated) => set("lChannels", (opening.lChannels || []).map(lc => lc.id === id ? updated : lc));
@@ -1258,7 +1291,6 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
         )}
       </div>
 
-      {/* Dimensions + Motor Side */}
       <div className="opening-grid-3">
         <Field label="Width (ft or inches)" type="number" value={opening.width} onChange={v => set("width", v)} placeholder='e.g. 10 (ft) or 120 (in)' min="0" required />
         <Field label="Height (ft or inches)" type="number" value={opening.height} onChange={v => set("height", v)} placeholder='e.g. 8 (ft) or 96 (in)' min="0" required />
@@ -1267,13 +1299,8 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
 
       <OpeningPriceBadge opening={opening} productName={productName} />
 
-      {/* CHANGE 1: Motor Selector per opening */}
       <div className="motor-selector-row">
-        <MotorSelector
-          motorId={effectiveMotorId}
-          productName={productName}
-          onChange={v => set("motorId", v)}
-        />
+        <MotorSelector motorId={effectiveMotorId} productName={productName} onChange={v => set("motorId", v)} />
         {motorAdj < 0 && (
           <div className="motor-adjustment-badge motor-adjustment-badge--credit">
             Motor credit applied: <strong>{fmt(motorAdj)}</strong> (deducted from total)
@@ -1293,50 +1320,32 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
         </div>
       )}
 
-      {/* CHANGE 2: Fabric Selector per opening */}
       <details className="override-details" open>
         <summary className="override-summary">
           🧵 Fabric Selection
-          <span className="override-hint">
-            (Effective: <strong>{effectiveFabricLabel}</strong>)
-          </span>
+          <span className="override-hint">(Effective: <strong>{effectiveFabricLabel}</strong>)</span>
         </summary>
-        <div className="override-resolved-info">
-          Defaults to the Area fabric selection. Set here to override for this opening only.
-        </div>
-        <FabricSelector
-          fabricSelection={opening.fabricSelection}
-          onChange={v => set("fabricSelection", v)}
-          label="Opening Fabric Override"
-        />
+        <div className="override-resolved-info">Defaults to the Area fabric selection. Set here to override for this opening only.</div>
+        <FabricSelector fabricSelection={opening.fabricSelection} onChange={v => set("fabricSelection", v)} label="Opening Fabric Override" />
       </details>
 
-      {/* Opening Settings */}
       <details className="override-details" open>
         <summary className="override-summary">
           ⚙ Opening Settings
-          <span className="override-hint">
-            (Mount: <strong>{effectiveMount}</strong> · Track: <strong>{effectiveTrack}</strong> · Motor: <strong>{effectiveMotor}</strong>)
-          </span>
+          <span className="override-hint">(Mount: <strong>{effectiveMount}</strong> · Track: <strong>{effectiveTrack}</strong> · Motor: <strong>{effectiveMotor}</strong>)</span>
         </summary>
-        <div className="override-resolved-info">
-          These settings default to the Area values above. Change any field here to override for this opening only.
-        </div>
+        <div className="override-resolved-info">These settings default to the Area values above. Change any field here to override for this opening only.</div>
         <div className="override-resolved-grid">
 
           {/* Mount Type */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Mount Type
-              {opening.mountOverride
-                ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
+              {opening.mountOverride ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
                 : <span className="override-resolved-source">area default</span>}
             </label>
-            <select
-              className={`override-resolved-select ${opening.mountOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
-              value={opening.mountOverride || ""}
-              onChange={e => set("mountOverride", e.target.value)}
-            >
+            <select className={`override-resolved-select ${opening.mountOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
+              value={opening.mountOverride || ""} onChange={e => set("mountOverride", e.target.value)}>
               <option value="">— area default ({areaDefaults.mountType || "not set"}) —</option>
               {MPS_DEFAULTS.mountTypes.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
@@ -1346,33 +1355,25 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Track Type
-              {opening.trackOverride
-                ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
+              {opening.trackOverride ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
                 : <span className="override-resolved-source">area default</span>}
             </label>
-            <select
-              className={`override-resolved-select ${opening.trackOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
-              value={opening.trackOverride || ""}
-              onChange={e => set("trackOverride", e.target.value)}
-            >
+            <select className={`override-resolved-select ${opening.trackOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
+              value={opening.trackOverride || ""} onChange={e => set("trackOverride", e.target.value)}>
               <option value="">— area default ({areaDefaults.trackType || "not set"}) —</option>
               {MPS_DEFAULTS.trackTypes.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
           </div>
 
-          {/* Motor Type (legacy area-level field) */}
+          {/* Motor Type (legacy) */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Motor Type (legacy)
-              {opening.motorOverride
-                ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
+              {opening.motorOverride ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
                 : <span className="override-resolved-source">area default</span>}
             </label>
-            <select
-              className={`override-resolved-select ${opening.motorOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
-              value={opening.motorOverride || ""}
-              onChange={e => set("motorOverride", e.target.value)}
-            >
+            <select className={`override-resolved-select ${opening.motorOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
+              value={opening.motorOverride || ""} onChange={e => set("motorOverride", e.target.value)}>
               <option value="">— area default ({areaDefaults.motorType || "not set"}) —</option>
               {MPS_DEFAULTS.motorTypes.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
@@ -1382,14 +1383,12 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Cassette Color
-              {opening.colorOverride
-                ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
+              {opening.colorOverride ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
                 : <span className="override-resolved-source">area default</span>}
             </label>
             <input
               className={`override-resolved-input ${opening.colorOverride ? "override-resolved-input--set" : "override-resolved-input--default"}`}
-              type="text"
-              value={opening.colorOverride || ""}
+              type="text" value={opening.colorOverride || ""}
               placeholder={`area default (${areaDefaults.cassetteColor || "not set"})`}
               onChange={e => set("colorOverride", e.target.value)}
             />
@@ -1397,67 +1396,67 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
               <div className="custom-color-price-row">
                 <span className="custom-color-price-label">Custom Cassette Color Price (based on width):</span>
                 <input className="custom-color-price-input" type="number" min="0"
-                  value={opening.customCassetteColorPrice || ""}
-                  placeholder="Enter $"
-                  onChange={e => set("customCassetteColorPrice", e.target.value)}
-                />
+                  value={opening.customCassetteColorPrice || ""} placeholder="Enter $"
+                  onChange={e => set("customCassetteColorPrice", e.target.value)} />
                 {opening.customCassetteColorPrice && <span className="custom-color-price-value">{fmt(opening.customCassetteColorPrice)}</span>}
               </div>
             )}
           </div>
 
-          {/* Track Color */}
-          <div className="override-resolved-item">
-            <label className="override-resolved-label">
-              Track Color
-              {opening.trackColorOverride
-                ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
-                : <span className="override-resolved-source">area default</span>}
-            </label>
-            <input
-              className={`override-resolved-input ${opening.trackColorOverride ? "override-resolved-input--set" : "override-resolved-input--default"}`}
-              type="text"
-              value={opening.trackColorOverride || ""}
-              placeholder={`area default (${areaDefaults.trackColor || "not set"})`}
-              onChange={e => set("trackColorOverride", e.target.value)}
-            />
-            {trackColIsCustom && (
-              <div className="custom-color-price-row">
-                <span className="custom-color-price-label">Custom Track Color Price (based on width):</span>
-                <input className="custom-color-price-input" type="number" min="0"
-                  value={opening.customTrackColorPrice || ""}
-                  placeholder="Enter $"
-                  onChange={e => set("customTrackColorPrice", e.target.value)}
-                />
-                {opening.customTrackColorPrice && <span className="custom-color-price-value">{fmt(opening.customTrackColorPrice)}</span>}
-              </div>
-            )}
-          </div>
+          {/* CHANGE 2: Track Color — hidden for Wire Guide */}
+          {showTrackColor && (
+            <div className="override-resolved-item">
+              <label className="override-resolved-label">
+                Track Color
+                {opening.trackColorOverride ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
+                  : <span className="override-resolved-source">area default</span>}
+              </label>
+              <input
+                className={`override-resolved-input ${opening.trackColorOverride ? "override-resolved-input--set" : "override-resolved-input--default"}`}
+                type="text" value={opening.trackColorOverride || ""}
+                placeholder={`area default (${areaDefaults.trackColor || "not set"})`}
+                onChange={e => set("trackColorOverride", e.target.value)}
+              />
+              {(opening.trackColorOverride || areaDefaults.trackColor || "").toLowerCase().includes("custom") && (
+                <div className="custom-color-price-row">
+                  <span className="custom-color-price-label">Custom Track Color Price (based on width):</span>
+                  <input className="custom-color-price-input" type="number" min="0"
+                    value={opening.customTrackColorPrice || ""} placeholder="Enter $"
+                    onChange={e => set("customTrackColorPrice", e.target.value)} />
+                  {opening.customTrackColorPrice && <span className="custom-color-price-value">{fmt(opening.customTrackColorPrice)}</span>}
+                </div>
+              )}
+            </div>
+          )}
 
-          {/* Weight Bar Color */}
+          {/* CHANGE 2: Wire Guide notice when track color hidden */}
+          {!showTrackColor && (
+            <div className="override-resolved-item">
+              <div className="wire-guide-notice">
+                <span className="wire-guide-notice-icon">ℹ️</span>
+                Track Color is not applicable for <strong>Wire Guide</strong> track type.
+              </div>
+            </div>
+          )}
+
+          {/* Weight Bar Color — shown for ALL track types */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Weight Bar Color
-              {opening.weightBarOverride
-                ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
+              {opening.weightBarOverride ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
                 : <span className="override-resolved-source">area default</span>}
             </label>
-            <select
-              className={`override-resolved-select ${opening.weightBarOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
-              value={opening.weightBarOverride || ""}
-              onChange={e => set("weightBarOverride", e.target.value)}
-            >
+            <select className={`override-resolved-select ${opening.weightBarOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
+              value={opening.weightBarOverride || ""} onChange={e => set("weightBarOverride", e.target.value)}>
               <option value="">— area default ({areaDefaults.weightBar || "not set"}) —</option>
               {MPS_DEFAULTS.weightBarTypes.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
-            {weightBarIsCustom && (
+            {(opening.weightBarOverride || areaDefaults.weightBar || "").toLowerCase() === "custom" && (
               <div className="custom-color-price-row">
                 <span className="custom-color-price-label">Custom Weight Bar Price (based on width):</span>
                 <input className="custom-color-price-input" type="number" min="0"
-                  value={opening.customWeightBarColorPrice || ""}
-                  placeholder="Enter $"
-                  onChange={e => set("customWeightBarColorPrice", e.target.value)}
-                />
+                  value={opening.customWeightBarColorPrice || ""} placeholder="Enter $"
+                  onChange={e => set("customWeightBarColorPrice", e.target.value)} />
                 {opening.customWeightBarColorPrice && <span className="custom-color-price-value">{fmt(opening.customWeightBarColorPrice)}</span>}
               </div>
             )}
@@ -1466,41 +1465,33 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
         </div>
       </details>
 
-      {/* Multiple L-Channels */}
+      {/* L-Channels */}
       <div className="structural-section">
         <div className="structural-section-header">
           <span className="mps-label">L-Channels</span>
           {lChannelTotal > 0 && <span className="structural-section-total">{fmt(lChannelTotal)} total</span>}
           <button type="button" className="structural-add-btn" onClick={addLChannel}>+ Add L-Channel</button>
         </div>
-        {lChannels.length === 0 && (
-          <div className="structural-empty">No L-channels added. Click "Add L-Channel" if required.</div>
-        )}
+        {lChannels.length === 0 && <div className="structural-empty">No L-channels added. Click "Add L-Channel" if required.</div>}
         {lChannels.map((lc, idx) => (
           <LChannelItem key={lc.id} lc={lc} index={idx}
             onChange={updated => updateLChannel(lc.id, updated)}
-            onRemove={() => removeLChannel(lc.id)}
-            showRemove={true}
-          />
+            onRemove={() => removeLChannel(lc.id)} showRemove={true} />
         ))}
       </div>
 
-      {/* Multiple Buildouts */}
+      {/* Buildouts */}
       <div className="structural-section">
         <div className="structural-section-header">
           <span className="mps-label">Buildouts</span>
           {buildoutTotal > 0 && <span className="structural-section-total">{fmt(buildoutTotal)} total</span>}
           <button type="button" className="structural-add-btn" onClick={addBuildout}>+ Add Buildout</button>
         </div>
-        {buildouts.length === 0 && (
-          <div className="structural-empty">No buildouts added. Click "Add Buildout" if required.</div>
-        )}
+        {buildouts.length === 0 && <div className="structural-empty">No buildouts added. Click "Add Buildout" if required.</div>}
         {buildouts.map((bo, idx) => (
           <BuildoutItem key={bo.id} bo={bo} index={idx}
             onChange={updated => updateBuildout(bo.id, updated)}
-            onRemove={() => removeBuildout(bo.id)}
-            showRemove={true}
-          />
+            onRemove={() => removeBuildout(bo.id)} showRemove={true} />
         ))}
       </div>
 
@@ -1536,6 +1527,10 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
 
   const addOpening    = () => onChange({ ...area, openings: [...area.openings, createOpening(productName, { motorSide: "Left" })] });
   const removeOpening = (id) => onChange({ ...area, openings: area.openings.filter(o => o.id !== id) });
+
+  // CHANGE 2: effective track for this area — determines track color visibility at area level
+  const areaEffectiveTrack = area.trackType || "";
+  const showAreaTrackColor = areaEffectiveTrack !== "Wire Guide";
 
   return (
     <div className="area-card">
@@ -1573,12 +1568,22 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
           <Sel label="Mount Type"  value={area.mountType}  options={MPS_DEFAULTS.mountTypes}  onChange={v=>setArea("mountType",v)} />
           <Sel label="Track Type"  value={area.trackType}  options={MPS_DEFAULTS.trackTypes}  onChange={v=>setArea("trackType",v)} />
           <Field label="Cassette Color" value={area.cassetteColor} onChange={v=>setArea("cassetteColor",v)} placeholder="e.g. White or Custom" />
-          <Field label="Track Color"    value={area.trackColor}    onChange={v=>setArea("trackColor",v)}    placeholder="e.g. Beige or Custom" />
+
+          {/* CHANGE 2: Track Color hidden for Wire Guide at area level */}
+          {showAreaTrackColor ? (
+            <Field label="Track Color" value={area.trackColor} onChange={v=>setArea("trackColor",v)} placeholder="e.g. Beige or Custom" />
+          ) : (
+            <div className="mps-field">
+              <label className="mps-label">Track Color</label>
+              <div className="wire-guide-notice-inline">N/A — Wire Guide selected</div>
+            </div>
+          )}
+
           <Sel label="Motor Type"  value={area.motorType}  options={MPS_DEFAULTS.motorTypes}  onChange={v=>setArea("motorType",v)} />
+          {/* CHANGE 2: Weight Bar always shown for all track types */}
           <Sel label="Weight Bar Color" value={area.weightBar || ""} options={MPS_DEFAULTS.weightBarTypes} onChange={v=>setArea("weightBar",v)} placeholder="Select Weight Bar Color" />
         </div>
 
-        {/* CHANGE 2: Area-level fabric selection */}
         <div className="area-fabric-section">
           <div className="area-defaults-label" style={{marginTop: "12px"}}>Area Default Fabric (openings inherit this unless overridden)</div>
           <FabricSelector
@@ -1612,6 +1617,66 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
 }
 
 // ─────────────────────────────────────────────────────────────
+// CHANGE 1 & 2: WIND SENSOR SECTION COMPONENT
+// Renders available wind sensors with correct per-opening / global logic
+// productName determines which sensors are available
+// ─────────────────────────────────────────────────────────────
+function WindSensorSection({ productName, windSensorSelections, onWindSensorChange, totalOpenings }) {
+  const availableSensors = getAvailableWindSensors(productName);
+  const totalCost = calcWindSensorTotal(windSensorSelections, totalOpenings);
+
+  const toggle = (sensorType) => {
+    onWindSensorChange({ ...windSensorSelections, [sensorType]: !windSensorSelections?.[sensorType] });
+  };
+
+  return (
+    <div className="wind-sensor-section">
+      <div className="wind-sensor-section-title">
+        <span className="ps-addons-icon">💨</span> Wind Sensors
+        {totalCost > 0 && <span className="ps-addons-running-total">+{fmt(totalCost)} selected</span>}
+      </div>
+
+      {availableSensors.map(sensor => {
+        const isWired    = sensor.id === WIND_SENSOR_WIRED.id;
+        const isWireless = sensor.id === WIND_SENSOR_WIRELESS.id;
+        const sensorKey  = isWired ? "wired" : "wireless";
+        const isChecked  = !!windSensorSelections?.[sensorKey];
+        const qty        = isWireless ? Math.max(1, totalOpenings) : 1;
+        const linePrice  = sensor.price * qty;
+
+        return (
+          <label key={sensor.id} className={`ps-addon-item wind-sensor-item ${isChecked ? "ps-addon-checked" : ""}`}>
+            <input type="checkbox" className="ps-addon-checkbox" checked={isChecked} onChange={() => toggle(sensorKey)} />
+            <div className="ps-addon-content">
+              <span className="ps-addon-name">{sensor.name}</span>
+              <span className="wind-sensor-type-badge wind-sensor-type-badge--{sensorKey}">
+                {isWired ? "🔌 Wired — Global (shared)" : "📡 Wireless — Per Opening"}
+              </span>
+              <span className="ps-addon-price">
+                {isWireless && totalOpenings > 1
+                  ? <>{fmt(sensor.price)} × {qty} openings = <strong>{fmt(linePrice)}</strong></>
+                  : fmt(linePrice)
+                }
+              </span>
+              <span className="wind-sensor-desc">{sensor.description}</span>
+            </div>
+            {isChecked && <span className="ps-addon-check-mark">✓</span>}
+          </label>
+        );
+      })}
+
+      {availableSensors.length === 1 && availableSensors[0].id === WIND_SENSOR_WIRED.id && (
+        <div className="wind-sensor-cassette-note">
+          <span className="wind-sensor-cassette-note-icon">ℹ️</span>
+          Only the <strong>Wired Wind Sensor (Eolis RTS 24V)</strong> is compatible with cassette products.
+          The wireless Eolis 3D sensor is not available for this configuration.
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
 // SIGNATURE PAD COMPONENT
 // ─────────────────────────────────────────────────────────────
 function SignaturePad({ value, onChange }) {
@@ -1627,62 +1692,40 @@ function SignaturePad({ value, onChange }) {
     if (value) {
       const img = new Image();
       img.onload = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0); };
-      img.src = value;
-      setIsEmpty(false);
+      img.src = value; setIsEmpty(false);
     } else {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      setIsEmpty(true);
+      ctx.clearRect(0, 0, canvas.width, canvas.height); setIsEmpty(true);
     }
   }, [value]);
 
   const getPos = (e, canvas) => {
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width  / rect.width;
-    const scaleY = canvas.height / rect.height;
-    if (e.touches) {
-      return { x: (e.touches[0].clientX - rect.left) * scaleX, y: (e.touches[0].clientY - rect.top) * scaleY };
-    }
+    const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height;
+    if (e.touches) return { x: (e.touches[0].clientX - rect.left) * scaleX, y: (e.touches[0].clientY - rect.top) * scaleY };
     return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
   };
 
   const startDraw = (e) => {
-    e.preventDefault();
-    isDrawing.current = true;
-    const canvas = canvasRef.current;
-    lastPos.current = getPos(e, canvas);
-    const ctx = canvas.getContext("2d");
-    ctx.beginPath();
-    ctx.moveTo(lastPos.current.x, lastPos.current.y);
+    e.preventDefault(); isDrawing.current = true;
+    const canvas = canvasRef.current; lastPos.current = getPos(e, canvas);
+    const ctx = canvas.getContext("2d"); ctx.beginPath(); ctx.moveTo(lastPos.current.x, lastPos.current.y);
   };
 
   const draw = (e) => {
-    e.preventDefault();
-    if (!isDrawing.current) return;
-    const canvas = canvasRef.current;
-    const ctx    = canvas.getContext("2d");
-    const pos    = getPos(e, canvas);
-    ctx.strokeStyle = "#1a1a2e";
-    ctx.lineWidth   = 2;
-    ctx.lineCap     = "round";
-    ctx.lineJoin    = "round";
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
-    lastPos.current = pos;
-    setIsEmpty(false);
+    e.preventDefault(); if (!isDrawing.current) return;
+    const canvas = canvasRef.current; const ctx = canvas.getContext("2d"); const pos = getPos(e, canvas);
+    ctx.strokeStyle = "#1a1a2e"; ctx.lineWidth = 2; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.lineTo(pos.x, pos.y); ctx.stroke(); lastPos.current = pos; setIsEmpty(false);
   };
 
   const endDraw = () => {
-    if (!isDrawing.current) return;
-    isDrawing.current = false;
-    const canvas = canvasRef.current;
-    onChange(canvas.toDataURL("image/png"));
+    if (!isDrawing.current) return; isDrawing.current = false;
+    onChange(canvasRef.current.toDataURL("image/png"));
   };
 
   const clearSig = () => {
-    const canvas = canvasRef.current;
-    canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
-    onChange(null);
-    setIsEmpty(true);
+    canvasRef.current.getContext("2d").clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    onChange(null); setIsEmpty(true);
   };
 
   return (
@@ -1695,8 +1738,7 @@ function SignaturePad({ value, onChange }) {
         <canvas ref={canvasRef} width={600} height={160}
           className={`signature-canvas ${isEmpty ? "signature-canvas--empty" : "signature-canvas--signed"}`}
           onMouseDown={startDraw} onMouseMove={draw} onMouseUp={endDraw} onMouseLeave={endDraw}
-          onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={endDraw}
-        />
+          onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={endDraw} />
         {isEmpty && <div className="signature-placeholder">Sign here</div>}
       </div>
       <p className="signature-pad-hint">Draw your signature above using mouse or touch</p>
@@ -1707,7 +1749,12 @@ function SignaturePad({ value, onChange }) {
 // ─────────────────────────────────────────────────────────────
 // MPS PRODUCT CARD
 // ─────────────────────────────────────────────────────────────
-function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSelections, onAddonToggle, productNotes, onProductNoteChange }) {
+function MPSProductCard({
+  line, index, snapshot, mpsData, onMPSChange,
+  addonSelections, onAddonToggle,
+  windSensorSelections, onWindSensorChange,
+  productNotes, onProductNoteChange,
+}) {
   const qty   = parseInt(line.quantity, 10) || 1;
   const areas = mpsData[line.id] || [];
   const setAreas   = (a) => onMPSChange(line.id, a);
@@ -1721,21 +1768,25 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
   const totalOpenings        = countTotalOpenings(areas);
   const autoRemoteName       = getAutoRemote(totalOpenings > 0 ? totalOpenings : 1);
 
-  const simpleAddonTotal      = MPS_SIMPLE_ADDONS.reduce((s, a) => selected[a.id] ? s + a.price * qty : s, 0);
+  const simpleAddonTotal = MPS_SIMPLE_ADDONS.reduce((s, a) => selected[a.id] ? s + a.price * qty : s, 0);
+
+  // CHANGE 1: wind sensor total for this line
+  const windTotal = calcWindSensorTotal(windSensorSelections[line.id], totalOpenings);
+
   const enriched              = snapshot.productLines.find(l => l.id === line.id);
   const appBaseTotal          = enriched?.pricing?.lineSubtotal || 0;
   const effectiveProductTotal = openingsProductTotal > 0 ? openingsProductTotal : appBaseTotal;
-  const grandLineTotal        = effectiveProductTotal + structuralTotal + simpleAddonTotal;
+  const grandLineTotal        = effectiveProductTotal + structuralTotal + simpleAddonTotal + windTotal;
   const hasUnpriced = areas.some(a => a.openings.some(o => (o.width || o.height) && !getMPSOpeningPrice(line.product, o.width, o.height).ok));
 
   const handleReset = () => {
     if (window.confirm("Reset all areas, openings, and add-ons for this product? This cannot be undone.")) {
       onMPSChange(line.id, []);
       onAddonToggle(line.id, "__RESET__");
+      onWindSensorChange(line.id, {});
     }
   };
 
-  // CHANGE 1: Show default motor info for this product
   const defaultMotorId = getDefaultMotorId(line.product);
   const defaultMotor   = MOTOR_CATALOG.find(m => m.id === defaultMotorId);
 
@@ -1754,7 +1805,6 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
         </button>
       </div>
 
-      {/* CHANGE 1: Motor info banner */}
       {defaultMotor && (
         <div className="motor-info-banner">
           <span className="motor-info-icon">⚡</span>
@@ -1782,13 +1832,9 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
 
       <div className="product-note-section">
         <label className="mps-label">📝 Product Notes</label>
-        <textarea
-          className="product-note-textarea"
+        <textarea className="product-note-textarea"
           placeholder="Add any important notes about this product (e.g. special instructions, site conditions, client preferences)…"
-          value={productNotes || ""}
-          onChange={e => onProductNoteChange(line.id, e.target.value)}
-          rows={3}
-        />
+          value={productNotes || ""} onChange={e => onProductNoteChange(line.id, e.target.value)} rows={3} />
       </div>
 
       {enriched?.pricing?.priceNote && <div className="ps-price-note">💡 Reference (from intake form): {enriched.pricing.priceNote}</div>}
@@ -1827,6 +1873,14 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
         <button type="button" className="add-area-btn" onClick={addArea}>+ Add Area</button>
       </div>
 
+      {/* CHANGE 1 & 2: Wind Sensor Section with corrected product-aware logic */}
+      <WindSensorSection
+        productName={line.product}
+        windSensorSelections={windSensorSelections[line.id] || {}}
+        onWindSensorChange={(updated) => onWindSensorChange(line.id, updated)}
+        totalOpenings={totalOpenings}
+      />
+
       <div className="mps-simple-addons">
         <div className="mps-simple-addons-title">
           <span className="ps-addons-icon">✦</span> Accessories &amp; Add-ons
@@ -1852,8 +1906,237 @@ function MPSProductCard({ line, index, snapshot, mpsData, onMPSChange, addonSele
       <div className="mps-line-total">
         {openingsProductTotal > 0 ? <span>Openings Price: {fmt(openingsProductTotal)}</span> : <span>Base Price (from form): {fmt(appBaseTotal)}</span>}
         {simpleAddonTotal > 0 && <span>+ Add-ons: {fmt(simpleAddonTotal)}</span>}
+        {windTotal        > 0 && <span>+ Wind Sensor(s): {fmt(windTotal)}</span>}
         {structuralTotal  > 0 && <span>+ Structural: {fmt(structuralTotal)}</span>}
         {totalOpenings > 0 && <span className="mps-remote-info-line">Remote included: {autoRemoteName}</span>}
+        <span className="mps-line-grand">Line Total: {fmt(grandLineTotal)}</span>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// CHANGE 3: SKYLIGHT PLUS MRA CARD
+// Renamed from "Motor B Retractable Awning"
+// Locked projection dropdown, feet+inches width, fabric fields,
+// auto-transmitter, auto-LED, no user-selectable transmitter/LED checkboxes
+// ─────────────────────────────────────────────────────────────
+function SkylightMRACard({
+  line, index, snapshot,
+  skylightConfig, onSkylightConfigChange,
+  fieldAddonValues, onFieldAddonChange,
+  productNotes, onProductNoteChange,
+  totalAwningQty,
+}) {
+  const cfg = skylightConfig[line.id] || createSkylightMRAConfig();
+  const setConfig = (updates) => onSkylightConfigChange(line.id, { ...cfg, ...updates });
+
+  const qty = parseInt(line.quantity, 10) || 1;
+
+  // CHANGE 3: Auto-assigned transmitter based on total awning qty in order
+  const autoTransmitter = getAutoTransmitter(totalAwningQty);
+
+  // Field addons for Skylight Plus MRA (Somfy RTS, brackets, etc.)
+  const fieldAddonDefs = getFieldAddonsForProduct("Skylight Plus MRA");
+  const fieldTotal     = calcFieldAddonTotal(fieldAddonValues, "Skylight Plus MRA");
+
+  const enriched  = snapshot.productLines.find(l => l.id === line.id);
+  const baseTotal = enriched?.pricing?.lineSubtotal || 0;
+  const grandLineTotal = baseTotal + fieldTotal;
+
+  return (
+    <div className="ps-product-card skylight-mra-card">
+      <div className="ps-product-header">
+        <div className="ps-product-number">#{index + 1}</div>
+        <div className="ps-product-name">
+          Skylight Plus MRA
+          <span className="skylight-mra-badge">Motorized Retractable Awning</span>
+        </div>
+        <div className="ps-product-price">{fmt(grandLineTotal)}</div>
+      </div>
+
+      {/* Auto-included items banner */}
+      <div className="skylight-included-banner">
+        <div className="skylight-included-title">✅ Standard Included Items (Auto-Assigned)</div>
+        <div className="skylight-included-grid">
+          <div className="skylight-included-item">
+            <span className="skylight-included-icon">🎛</span>
+            <div className="skylight-included-content">
+              <span className="skylight-included-name">Transmitter</span>
+              <span className="skylight-included-value">{autoTransmitter}</span>
+              <span className="skylight-included-hint">
+                Auto-assigned based on {totalAwningQty} total awning{totalAwningQty !== 1 ? "s" : ""} in order
+                {totalAwningQty <= 2 ? " (1–2 units → 5-channel)" : " (3–7 units → 16-channel)"}
+              </span>
+            </div>
+          </div>
+          <div className="skylight-included-item">
+            <span className="skylight-included-icon">💡</span>
+            <div className="skylight-included-content">
+              <span className="skylight-included-name">LED Lighting</span>
+              <span className="skylight-included-value">Built-in LED — Included</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Dimensions */}
+      <div className="ps-detail-grid">
+        <div className="ps-detail-item"><span className="ps-detail-label">Product</span><span className="ps-detail-value">Skylight Plus MRA</span></div>
+        <div className="ps-detail-item"><span className="ps-detail-label">Category</span><span className="ps-detail-value">{line.category}</span></div>
+        <div className="ps-detail-item"><span className="ps-detail-label">Quantity</span><span className="ps-detail-value">{line.quantity}</span></div>
+        <div className="ps-detail-item"><span className="ps-detail-label">Operation</span><span className="ps-detail-value" style={{textTransform:"capitalize"}}>{line.operation}</span></div>
+      </div>
+
+      <div className="skylight-config-section">
+        <div className="skylight-config-title">📐 Awning Configuration</div>
+        <div className="skylight-config-grid">
+
+          {/* CHANGE 3: Projection — locked dropdown, no free text */}
+          <div className="mps-field">
+            <label className="mps-label">
+              Projection <span className="mps-req">*</span>
+              <span className="skylight-field-hint">— select exact projection size</span>
+            </label>
+            <select
+              className="mps-select skylight-projection-select"
+              value={cfg.projection}
+              onChange={e => setConfig({ projection: e.target.value })}
+            >
+              <option value="">Select Projection</option>
+              {SKYLIGHT_MRA_PROJECTIONS.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+            {cfg.projection && (
+              <div className="skylight-projection-note">
+                ✓ Projection locked to <strong>{cfg.projection}</strong> — pricing tier confirmed
+              </div>
+            )}
+          </div>
+
+          {/* CHANGE 3: Width — feet + inches format, same as MPS */}
+          <div className="mps-field skylight-width-field">
+            <label className="mps-label">
+              Width <span className="mps-req">*</span>
+              <span className="skylight-field-hint">— enter feet and inches</span>
+            </label>
+            <div className="skylight-width-inputs">
+              <div className="skylight-width-input-wrap">
+                <input
+                  className="mps-input skylight-dim-input"
+                  type="number"
+                  value={cfg.widthFt}
+                  onChange={e => setConfig({ widthFt: e.target.value })}
+                  placeholder="0"
+                  min="0"
+                />
+                <span className="skylight-dim-unit">ft</span>
+              </div>
+              <div className="skylight-width-input-wrap">
+                <input
+                  className="mps-input skylight-dim-input"
+                  type="number"
+                  value={cfg.widthIn}
+                  onChange={e => setConfig({ widthIn: e.target.value })}
+                  placeholder="0"
+                  min="0"
+                  max="11"
+                />
+                <span className="skylight-dim-unit">in</span>
+              </div>
+            </div>
+            {(cfg.widthFt || cfg.widthIn) && (
+              <div className="skylight-width-display">
+                Width: <strong>{cfg.widthFt || 0}' {cfg.widthIn || 0}"</strong>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* CHANGE 3: Fabric selection */}
+        <div className="skylight-fabric-section">
+          <div className="skylight-config-title" style={{marginTop:"16px"}}>🧵 Fabric Selection</div>
+          <SkylightFabricSelector
+            fabricBrand={cfg.fabricBrand}
+            fabricType={cfg.fabricType}
+            fabricColor={cfg.fabricColor}
+            onChange={({ fabricBrand, fabricType, fabricColor }) =>
+              setConfig({ fabricBrand, fabricType, fabricColor })
+            }
+          />
+        </div>
+      </div>
+
+      <div className="product-note-section">
+        <label className="mps-label">📝 Product Notes</label>
+        <textarea className="product-note-textarea"
+          placeholder="Add any important notes about this awning (e.g. mounting location, special instructions, site conditions)…"
+          value={productNotes || ""} onChange={e => onProductNoteChange(line.id, e.target.value)} rows={3} />
+      </div>
+
+      {enriched?.pricing?.priceNote && <div className="ps-price-note">💡 {enriched.pricing.priceNote}</div>}
+
+      {/* Field Add-ons (Somfy RTS accessories, brackets — transmitter/LED excluded) */}
+      {fieldAddonDefs.length > 0 && (
+        <div className="ps-addons-section field-addons-section">
+          <div className="ps-addons-title">
+            <span className="ps-addons-icon">◆</span> Optional Accessories
+            {fieldTotal > 0 && <span className="ps-addons-running-total">+{fmt(fieldTotal)} selected</span>}
+          </div>
+          <div className="field-addons-grid">
+            {(() => {
+              const groupMap = {};
+              fieldAddonDefs.forEach(def => { const g = def.group||"Add-ons"; if (!groupMap[g]) groupMap[g]=[]; groupMap[g].push(def); });
+              const groupOrder = [...new Set(fieldAddonDefs.map(d=>d.group||"Add-ons"))];
+              return groupOrder.map(groupLabel => (
+                <div key={groupLabel} className="field-addon-group">
+                  <div className="field-addon-group-header">{groupLabel}</div>
+                  {groupMap[groupLabel].map(def => {
+                    const val = fieldAddonValues?.[def.id] || {};
+                    const enabled = !!val.enabled;
+                    const qtyVal = val.qty || "";
+                    const customPrice = val.customPrice || "";
+                    const isCustom = def.pricingType === "custom";
+                    const lineAmt = enabled ? (isCustom ? (parseFloat(customPrice)||0) : def.rate*(parseFloat(qtyVal)||0)) : 0;
+                    return (
+                      <div key={def.id} className={`field-addon-row ${enabled?"field-addon-active":""}`}>
+                        <label className="field-addon-check-label">
+                          <input type="checkbox" className="ps-addon-checkbox" checked={enabled}
+                            onChange={() => onFieldAddonChange(line.id, def.id, {...val, enabled: !enabled})} />
+                          <span className="field-addon-name">{def.name}</span>
+                        </label>
+                        <div className="field-addon-right">
+                          {!isCustom && <div className="field-addon-rate">{fmt(def.rate)} / {def.unitShort}</div>}
+                          {enabled && (
+                            <div className="field-addon-input-wrap">
+                              {isCustom ? (
+                                <><span className="field-addon-unit-label">$</span>
+                                  <input type="number" className="field-addon-qty-input" value={customPrice} min="0" step="1" placeholder={def.placeholder}
+                                    onChange={e => onFieldAddonChange(line.id, def.id, {...val, enabled:true, customPrice:e.target.value})} />
+                                  {lineAmt > 0 && <span className="field-addon-line-total">{fmt(lineAmt)}</span>}
+                                </>
+                              ) : (
+                                <><input type="number" className="field-addon-qty-input" value={qtyVal} min="0" step="1" placeholder={def.placeholder}
+                                    onChange={e => onFieldAddonChange(line.id, def.id, {...val, enabled:true, qty:e.target.value})} />
+                                  <span className="field-addon-unit-label">{def.unit}</span>
+                                  {lineAmt > 0 && <span className="field-addon-line-total">{fmt(lineAmt)}</span>}
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ));
+            })()}
+          </div>
+        </div>
+      )}
+
+      <div className="mps-line-total">
+        <span>Base Price (from form): {fmt(baseTotal)}</span>
+        {fieldTotal > 0 && <span>+ Accessories: {fmt(fieldTotal)}</span>}
         <span className="mps-line-grand">Line Total: {fmt(grandLineTotal)}</span>
       </div>
     </div>
@@ -1905,13 +2188,8 @@ function StandardProductCard({ line, index, snapshot, addonSelections, onAddonTo
 
       <div className="product-note-section">
         <label className="mps-label">📝 Product Notes</label>
-        <textarea
-          className="product-note-textarea"
-          placeholder="Add any important notes about this product…"
-          value={productNotes || ""}
-          onChange={e => onProductNoteChange(line.id, e.target.value)}
-          rows={3}
-        />
+        <textarea className="product-note-textarea" placeholder="Add any important notes about this product…"
+          value={productNotes || ""} onChange={e => onProductNoteChange(line.id, e.target.value)} rows={3} />
       </div>
 
       {priceNote && <div className="ps-price-note">💡 {priceNote}</div>}
@@ -1964,7 +2242,8 @@ function StandardProductCard({ line, index, snapshot, addonSelections, onAddonTo
                     return (
                       <div key={def.id} className={`field-addon-row ${enabled?"field-addon-active":""}`}>
                         <label className="field-addon-check-label">
-                          <input type="checkbox" className="ps-addon-checkbox" checked={enabled} onChange={() => onFieldAddonChange(line.id, def.id, {...val, enabled: !enabled})} />
+                          <input type="checkbox" className="ps-addon-checkbox" checked={enabled}
+                            onChange={() => onFieldAddonChange(line.id, def.id, {...val, enabled: !enabled})} />
                           <span className="field-addon-name">{def.name}</span>
                         </label>
                         <div className="field-addon-right">
@@ -2010,32 +2289,39 @@ export default function ProductSummary() {
   const navigate = useNavigate();
   const snapshot = location.state?.snapshot;
 
-  const [addonSelections,  setAddonSelections]  = useState(() => loadFromSession()?.addonSelections  || {});
-  const [mpsData,          setMpsData]          = useState(() => loadFromSession()?.mpsData          || {});
-  const [fieldAddonValues, setFieldAddonValues] = useState(() => loadFromSession()?.fieldAddonValues || {});
-  const [productNotes,     setProductNotes]     = useState(() => loadFromSession()?.productNotes     || {});
-  const [signature,        setSignature]        = useState(() => loadFromSession()?.signature        || null);
+  const [addonSelections,   setAddonSelections]   = useState(() => loadFromSession()?.addonSelections   || {});
+  const [mpsData,           setMpsData]           = useState(() => loadFromSession()?.mpsData           || {});
+  const [fieldAddonValues,  setFieldAddonValues]  = useState(() => loadFromSession()?.fieldAddonValues  || {});
+  const [productNotes,      setProductNotes]      = useState(() => loadFromSession()?.productNotes      || {});
+  const [signature,         setSignature]         = useState(() => loadFromSession()?.signature         || null);
+  // CHANGE 1: wind sensor selections — per line { wired: bool, wireless: bool }
+  const [windSensorSelections, setWindSensorSelections] = useState(() => loadFromSession()?.windSensorSelections || {});
+  // CHANGE 3: Skylight MRA config — per line { width, widthFt, widthIn, projection, fabricBrand, fabricType, fabricColor }
+  const [skylightConfig, setSkylightConfig] = useState(() => loadFromSession()?.skylightConfig || {});
 
   useEffect(() => {
-    saveToSession({ addonSelections, mpsData, fieldAddonValues, productNotes, signature });
-  }, [addonSelections, mpsData, fieldAddonValues, productNotes, signature]);
+    saveToSession({ addonSelections, mpsData, fieldAddonValues, productNotes, signature, windSensorSelections, skylightConfig });
+  }, [addonSelections, mpsData, fieldAddonValues, productNotes, signature, windSensorSelections, skylightConfig]);
 
-  const handleProductNoteChange = (lineId, note) =>
-    setProductNotes(prev => ({ ...prev, [lineId]: note }));
+  const handleProductNoteChange = (lineId, note) => setProductNotes(prev => ({ ...prev, [lineId]: note }));
 
   const handleFieldAddonChange = (lineId, addonId, val) =>
     setFieldAddonValues(prev => ({...prev, [lineId]: {...(prev[lineId]||{}), [addonId]: val}}));
 
   const handleAddonToggle = (lineId, addonId) => {
-    if (addonId === "__RESET__") {
-      setAddonSelections(prev => ({ ...prev, [lineId]: {} }));
-      return;
-    }
+    if (addonId === "__RESET__") { setAddonSelections(prev => ({ ...prev, [lineId]: {} })); return; }
     setAddonSelections(prev => ({...prev, [lineId]: {...(prev[lineId]||{}), [addonId]: !(prev[lineId]?.[addonId])}}));
   };
 
-  const handleMPSChange = (lineId, areas) =>
-    setMpsData(prev => ({...prev, [lineId]: areas}));
+  const handleMPSChange = (lineId, areas) => setMpsData(prev => ({...prev, [lineId]: areas}));
+
+  // CHANGE 1: Wind sensor handler
+  const handleWindSensorChange = (lineId, selections) =>
+    setWindSensorSelections(prev => ({ ...prev, [lineId]: selections }));
+
+  // CHANGE 3: Skylight config handler
+  const handleSkylightConfigChange = (lineId, cfg) =>
+    setSkylightConfig(prev => ({ ...prev, [lineId]: cfg }));
 
   const handleGlobalReset = () => {
     if (window.confirm("Reset ALL areas, openings, add-ons, and notes for the entire quote? This cannot be undone.")) {
@@ -2044,48 +2330,10 @@ export default function ProductSummary() {
       setFieldAddonValues({});
       setProductNotes({});
       setSignature(null);
+      setWindSensorSelections({});
+      setSkylightConfig({});
     }
   };
-
-  const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand } = useMemo(() => {
-    if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0, mpsOpeningsProductGrand:0 };
-    const configuredLines = snapshot.productLines.filter(l => l.category && l.product);
-    let addonGrand=0, structuralGrand=0, openingsGrand=0, appBaseMPSGrand=0;
-
-    configuredLines.forEach(line => {
-      if (MPS_PRODUCTS.includes(line.product)) {
-        const areas = mpsData[line.id] || [];
-        const openingsTotal = calcMPSOpeningsTotal(areas, line.product);
-        structuralGrand += areas.reduce((s,a) => s + calcAreaStructuralOnly(a), 0);
-        const qty = parseInt(line.quantity,10)||1;
-        const sel = addonSelections[line.id]||{};
-        MPS_SIMPLE_ADDONS.forEach(a => { if(sel[a.id]) addonGrand += a.price*qty; });
-        if (openingsTotal > 0) openingsGrand += openingsTotal;
-        else { const e = snapshot.productLines.find(l2=>l2.id===line.id); appBaseMPSGrand += e?.pricing?.lineSubtotal||0; }
-      } else {
-        const qty = parseInt(line.quantity,10)||1;
-        const addons = getAddonsForProduct(line.product);
-        const sel = addonSelections[line.id]||{};
-        addons.forEach(a => { if(sel[a.id]) addonGrand += a.price*qty; });
-        addonGrand += calcFieldAddonTotal(fieldAddonValues[line.id], line.product);
-      }
-    });
-
-    const nonMPSOriginal = (snapshot.pricingSummary?.subtotal||0) -
-      snapshot.productLines.filter(l=>l.category&&l.product&&MPS_PRODUCTS.includes(l.product))
-        .reduce((s,l)=>{ const e=snapshot.productLines.find(l2=>l2.id===l.id); return s+(e?.pricing?.lineSubtotal||0); },0);
-
-    return {
-      summaryAddonGrandTotal:  addonGrand,
-      mpsStructuralGrand:      structuralGrand,
-      mpsOpeningsProductGrand: openingsGrand,
-      subtotalWithAddons: nonMPSOriginal + openingsGrand + appBaseMPSGrand + addonGrand + structuralGrand,
-    };
-  }, [snapshot, addonSelections, mpsData, fieldAddonValues]);
-
-  const discountPercent = snapshot?.pricingSummary?.discountPercent || 0;
-  const discountAmount  = subtotalWithAddons * (discountPercent / 100);
-  const grandTotal      = subtotalWithAddons - discountAmount;
 
   if (!snapshot) {
     return (
@@ -2098,6 +2346,56 @@ export default function ProductSummary() {
 
   const { customer, productLines, discount, orderNotes, lastUpdated } = snapshot;
   const configuredLines = productLines.filter(l => l.category && l.product);
+
+  // CHANGE 3: Count total awning quantity across all awning-type lines for transmitter auto-assignment
+  const totalAwningQty = configuredLines
+    .filter(l => AWNING_PRODUCTS.includes(l.product) || l.product === "Skylight Plus MRA")
+    .reduce((sum, l) => sum + (parseInt(l.quantity, 10) || 1), 0);
+
+  const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand, windSensorGrand } = useMemo(() => {
+    if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0, mpsOpeningsProductGrand:0, windSensorGrand:0 };
+    const configured = snapshot.productLines.filter(l => l.category && l.product);
+    let addonGrand=0, structuralGrand=0, openingsGrand=0, appBaseMPSGrand=0, windGrand=0;
+
+    configured.forEach(line => {
+      if (MPS_PRODUCTS.includes(line.product)) {
+        const areas = mpsData[line.id] || [];
+        const openingsTotal = calcMPSOpeningsTotal(areas, line.product);
+        structuralGrand += areas.reduce((s,a) => s + calcAreaStructuralOnly(a), 0);
+        const qty = parseInt(line.quantity,10)||1;
+        const sel = addonSelections[line.id]||{};
+        MPS_SIMPLE_ADDONS.forEach(a => { if(sel[a.id]) addonGrand += a.price*qty; });
+        // CHANGE 1: wind sensor totals
+        const totalOpenings = countTotalOpenings(areas);
+        windGrand += calcWindSensorTotal(windSensorSelections[line.id], totalOpenings);
+        if (openingsTotal > 0) openingsGrand += openingsTotal;
+        else { const e = snapshot.productLines.find(l2=>l2.id===line.id); appBaseMPSGrand += e?.pricing?.lineSubtotal||0; }
+      } else if (line.product !== "Skylight Plus MRA") {
+        const qty = parseInt(line.quantity,10)||1;
+        const addons = getAddonsForProduct(line.product);
+        const sel = addonSelections[line.id]||{};
+        addons.forEach(a => { if(sel[a.id]) addonGrand += a.price*qty; });
+        addonGrand += calcFieldAddonTotal(fieldAddonValues[line.id], line.product);
+      }
+      // Skylight MRA: field addons included in base calc inside SkylightMRACard
+    });
+
+    const nonMPSOriginal = (snapshot.pricingSummary?.subtotal||0) -
+      snapshot.productLines.filter(l=>l.category&&l.product&&MPS_PRODUCTS.includes(l.product))
+        .reduce((s,l)=>{ const e=snapshot.productLines.find(l2=>l2.id===l.id); return s+(e?.pricing?.lineSubtotal||0); },0);
+
+    return {
+      summaryAddonGrandTotal:  addonGrand,
+      mpsStructuralGrand:      structuralGrand,
+      mpsOpeningsProductGrand: openingsGrand,
+      windSensorGrand:         windGrand,
+      subtotalWithAddons: nonMPSOriginal + openingsGrand + appBaseMPSGrand + addonGrand + structuralGrand + windGrand,
+    };
+  }, [snapshot, addonSelections, mpsData, fieldAddonValues, windSensorSelections]);
+
+  const discountPercent = snapshot?.pricingSummary?.discountPercent || 0;
+  const discountAmount  = subtotalWithAddons * (discountPercent / 100);
+  const grandTotal      = subtotalWithAddons - discountAmount;
 
   return (
     <div className="ps-page">
@@ -2137,19 +2435,62 @@ export default function ProductSummary() {
           <div className="ps-card-heading"><span className="ps-card-icon">📦</span><h2>Products <span className="ps-badge">{configuredLines.length}</span></h2></div>
           {configuredLines.length === 0 ? <p className="ps-empty">No products configured yet.</p> : (
             <div className="ps-products-list">
-              {configuredLines.map((line, idx) =>
-                MPS_PRODUCTS.includes(line.product) ? (
-                  <MPSProductCard key={line.id} line={line} index={idx} snapshot={snapshot}
-                    mpsData={mpsData} onMPSChange={handleMPSChange}
-                    addonSelections={addonSelections} onAddonToggle={handleAddonToggle}
-                    productNotes={productNotes[line.id]} onProductNoteChange={handleProductNoteChange} />
-                ) : (
-                  <StandardProductCard key={line.id} line={line} index={idx} snapshot={snapshot}
-                    addonSelections={addonSelections} onAddonToggle={handleAddonToggle}
-                    fieldAddonValues={fieldAddonValues[line.id]||{}} onFieldAddonChange={handleFieldAddonChange}
-                    productNotes={productNotes[line.id]} onProductNoteChange={handleProductNoteChange} />
-                )
-              )}
+              {configuredLines.map((line, idx) => {
+                // CHANGE 3: Route "Skylight Plus MRA" (and legacy "Motor B Retractable Awning") to SkylightMRACard
+                const isSkylightMRA = line.product === "Skylight Plus MRA" || line.product === "Motor B Retractable Awning";
+
+                if (isSkylightMRA) {
+                  return (
+                    <SkylightMRACard
+                      key={line.id}
+                      line={{ ...line, product: "Skylight Plus MRA" }} // normalize name
+                      index={idx}
+                      snapshot={snapshot}
+                      skylightConfig={skylightConfig}
+                      onSkylightConfigChange={handleSkylightConfigChange}
+                      fieldAddonValues={fieldAddonValues[line.id] || {}}
+                      onFieldAddonChange={handleFieldAddonChange}
+                      productNotes={productNotes[line.id]}
+                      onProductNoteChange={handleProductNoteChange}
+                      totalAwningQty={totalAwningQty}
+                    />
+                  );
+                }
+
+                if (MPS_PRODUCTS.includes(line.product)) {
+                  return (
+                    <MPSProductCard
+                      key={line.id}
+                      line={line}
+                      index={idx}
+                      snapshot={snapshot}
+                      mpsData={mpsData}
+                      onMPSChange={handleMPSChange}
+                      addonSelections={addonSelections}
+                      onAddonToggle={handleAddonToggle}
+                      windSensorSelections={windSensorSelections}
+                      onWindSensorChange={handleWindSensorChange}
+                      productNotes={productNotes[line.id]}
+                      onProductNoteChange={handleProductNoteChange}
+                    />
+                  );
+                }
+
+                return (
+                  <StandardProductCard
+                    key={line.id}
+                    line={line}
+                    index={idx}
+                    snapshot={snapshot}
+                    addonSelections={addonSelections}
+                    onAddonToggle={handleAddonToggle}
+                    fieldAddonValues={fieldAddonValues[line.id]||{}}
+                    onFieldAddonChange={handleFieldAddonChange}
+                    productNotes={productNotes[line.id]}
+                    onProductNoteChange={handleProductNoteChange}
+                  />
+                );
+              })}
             </div>
           )}
         </section>
@@ -2160,6 +2501,7 @@ export default function ProductSummary() {
             <div className="ps-pricing-row"><span>Product Subtotal</span><span>{fmt(snapshot.pricingSummary?.subtotal)}</span></div>
             {mpsOpeningsProductGrand > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>MPS Opening-Based Pricing (replaces base)</span><span className="ps-addon-highlight">{fmt(mpsOpeningsProductGrand)}</span></div>}
             {summaryAddonGrandTotal  > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Selected Add-ons</span><span className="ps-addon-highlight">+{fmt(summaryAddonGrandTotal)}</span></div>}
+            {windSensorGrand         > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Wind Sensor(s)</span><span className="ps-addon-highlight">+{fmt(windSensorGrand)}</span></div>}
             {mpsStructuralGrand      > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Structural Adjustments (L-Channel / Buildout / Storm Rail / Custom Color)</span><span className="ps-addon-highlight">+{fmt(mpsStructuralGrand)}</span></div>}
             <div className="ps-pricing-row ps-subtotal-addons-row"><span>Subtotal (incl. all adjustments)</span><span>{fmt(subtotalWithAddons)}</span></div>
             <div className="ps-pricing-row"><span>Discount ({discountPercent}%)</span><span className="ps-discount-value">−{fmt(discountAmount)}</span></div>

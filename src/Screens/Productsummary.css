@@ -1531,3 +1531,281 @@ details[open] .override-summary::before { content:"▼"; }
   padding-top: 14px;
   border-top: 1px dashed #e2e8f0;
 }
+
+/* ============================================================
+   ADDITIONS TO ProductSummary.css
+   Append these rules to the bottom of your existing CSS file.
+   Covers: Wind Sensor Section, Skylight Plus MRA Card,
+           Wire Guide track color hiding, Weight Bar always visible
+   ============================================================ */
+
+/* ─── WIND SENSOR SECTION ─── */
+.wind-sensor-section {
+  margin: 16px 0;
+  padding: 16px;
+  background: rgba(30, 50, 100, 0.06);
+  border: 1px solid rgba(30, 90, 200, 0.15);
+  border-radius: 10px;
+}
+
+.wind-sensor-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary, #1a1a2e);
+  margin-bottom: 12px;
+}
+
+.wind-sensor-item {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+
+.wind-sensor-type-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 2px;
+  background: rgba(30, 80, 180, 0.1);
+  color: rgba(30, 80, 180, 0.85);
+}
+
+.wind-sensor-desc {
+  font-size: 0.77rem;
+  color: var(--text-muted, #888);
+  font-style: italic;
+  margin-top: 2px;
+}
+
+.wind-sensor-cassette-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 200, 0, 0.08);
+  border: 1px solid rgba(200, 160, 0, 0.2);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: #7a6000;
+}
+
+.wind-sensor-cassette-note-icon {
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+
+/* ─── WIRE GUIDE / TRACK COLOR VISIBILITY ─── */
+.wire-guide-notice {
+  padding: 10px 12px;
+  background: rgba(100, 120, 160, 0.08);
+  border: 1px dashed rgba(100, 120, 160, 0.25);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: #6a7090;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wire-guide-notice-inline {
+  padding: 9px 12px;
+  background: rgba(100, 120, 160, 0.07);
+  border: 1px dashed rgba(100, 120, 160, 0.2);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: #888;
+  font-style: italic;
+  margin-top: 4px;
+}
+
+/* ─── SKYLIGHT PLUS MRA CARD ─── */
+.skylight-mra-card {
+  border-top: 3px solid #2563eb;
+}
+
+.skylight-mra-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(37, 99, 235, 0.12);
+  color: #2563eb;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+/* Auto-included banner */
+.skylight-included-banner {
+  margin: 14px 0;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.06), rgba(37, 99, 235, 0.04));
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 10px;
+}
+
+.skylight-included-title {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #047857;
+  margin-bottom: 12px;
+}
+
+.skylight-included-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 600px) {
+  .skylight-included-grid { grid-template-columns: 1fr; }
+}
+
+.skylight-included-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  border: 1px solid rgba(16, 185, 129, 0.12);
+}
+
+.skylight-included-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.skylight-included-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.skylight-included-name {
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.skylight-included-value {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #047857;
+}
+
+.skylight-included-hint {
+  font-size: 0.72rem;
+  color: #888;
+  font-style: italic;
+  margin-top: 2px;
+}
+
+/* Skylight config section */
+.skylight-config-section {
+  margin: 16px 0;
+  padding: 16px;
+  background: rgba(37, 99, 235, 0.03);
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  border-radius: 10px;
+}
+
+.skylight-config-title {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #1e3a8a;
+  margin-bottom: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.skylight-config-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  .skylight-config-grid { grid-template-columns: 1fr; }
+}
+
+/* Projection dropdown */
+.skylight-projection-select {
+  font-weight: 600;
+}
+
+.skylight-projection-note {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: #047857;
+  background: rgba(16, 185, 129, 0.07);
+  padding: 5px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+
+/* Width feet + inches inputs */
+.skylight-width-field { grid-column: 1; }
+
+.skylight-width-inputs {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.skylight-width-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.skylight-dim-input {
+  width: 100%;
+  min-width: 0;
+}
+
+.skylight-dim-unit {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.skylight-width-display {
+  margin-top: 6px;
+  font-size: 0.82rem;
+  color: #2563eb;
+  font-weight: 500;
+}
+
+/* Fabric section inside Skylight MRA config */
+.skylight-fabric-section {
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(37, 99, 235, 0.1);
+}
+
+/* Skylight field hint label */
+.skylight-field-hint {
+  font-weight: 400;
+  font-size: 0.72rem;
+  color: #9ca3af;
+  margin-left: 6px;
+  font-style: italic;
+}
