@@ -170,85 +170,22 @@ const products = [
       {minSqft:43, maxSqft:60, rate:125}
     ]
   },
+  // ── CHANGE 1: Skyline MRA — combined Motor A + Motor B QIP Square Box ──
+  // Pricing is the full merged table (Motor A rows 7–12, Motor B rows 13–20)
   {
-    name: "Motor B Retractable Awning",
-    pricingModel: "matrix_axes",
-    axes: {
-      projection: {unit:"in", label:"Projection", values:[59,78,98,118,140,157]},
-      width: {unit:"ft", label:"Width", values:[7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36]}
-    },
-    prices: {
-      59:  {7:5680,8:5880,9:6080,10:6280,11:6480,12:6680,13:6880,14:7080,15:7280,16:7580,17:7880,18:8180,19:8480,20:8780,21:9280,22:9780,23:10280,24:10780,25:11280,26:11780,27:12280,28:12780,29:13280,30:13780,31:14280,32:14780,33:15280,34:15780,35:16280,36:16780},
-      78:  {9:6280,10:6480,11:6680,12:6880,13:7080,14:7280,15:7480,16:7780,17:8080,18:8380,19:8680,20:8980,21:9480,22:9980,23:10480,24:10980,25:11480,26:11980,27:12480,28:12980,29:13480,30:13980,31:14480,32:14980,33:15480,34:15980,35:16480,36:16980},
-      98:  {10:6680,11:6880,12:7080,13:7280,14:7480,15:7680,16:7980,17:8280,18:8580,19:8880,20:9180,21:9680,22:10180,23:10680,24:11180,25:11680,26:12180,27:12680,28:13180,29:13680,30:14180,31:14680,32:15180,33:15680,34:16180,35:16680,36:17180},
-      118: {12:7280,13:7480,14:7680,15:7880,16:8180,17:8480,18:8780,19:9080,20:9380,21:9880,22:10380,23:10880,24:11380,25:11880,26:12380,27:12880,28:13380,29:13880,30:14380,31:14880,32:15380,33:15880,34:16380,35:16880,36:17380},
-      140: {14:7680,15:7880,16:8080,17:8380,18:8680,19:8980,20:9280,21:9580,22:10580,23:11080,24:11580,25:12080,26:12580,27:13080,28:13580,29:14080,30:14580,31:15080,32:15580,33:16080,34:16580,35:17080,36:17580},
-      157: {15:8080,16:8280,17:8580,18:8880,19:9180,20:9480,21:9780,22:10780,23:11280,24:11780,25:12280,26:12780,27:13280,28:13780,29:14280,30:14780,31:15280,32:15780,33:16280,34:16780,35:17280,36:17780}
-    }
+    name: "Skyline Motorized Retractable Awning",
+    pricingModel: "mra_configured",  // handled in ProductSummary like MPS
   },
+  // ── CHANGE 2: Open Roll MRA — combined Motor A + Motor B Open Roll ──
   {
-    name: "Motor A QIP-Square box Retractable Awning",
-    pricingModel: "matrix_axes",
-    axes: {
-      projection: {unit:"in", label:"Projection", values:[59,78,98,118,140,157]},
-      width: {unit:"ft", label:"Width", values:[7,8,9,10,11,12]}
-    },
-    prices: {
-      59:  {7:5380,8:5580,9:5780,10:5980,11:6180,12:6380},
-      78:  {9:5980,10:6180,11:6380,12:6580},
-      98:  {10:6380,11:6580,12:6780},
-      118: {12:7050},
-      140: {}, 157: {}
-    }
+    name: "Open Roll Motorized Retractable Awning",
+    pricingModel: "mra_configured",  // handled in ProductSummary like MPS
   },
+  // Keep Skylight Plus MRA (Motor B Retractable Awning) as before
   {
-    name: "Motor B QIP-Square box Retractable Awning",
-    pricingModel: "matrix_axes",
-    axes: {
-      projection: {unit:"in", label:"Projection", values:[59,78,98,118,140,157]},
-      width: {unit:"ft", label:"Width", values:[13,14,15,16,17,18,19,20]}
-    },
-    prices: {
-      59:  {13:6580,14:6780,15:6980,16:7180,17:7380,18:7580,19:7780,20:7980},
-      78:  {13:6780,14:6980,15:7180,16:7380,17:7580,18:7780,19:7980,20:8180},
-      98:  {13:6980,14:7180,15:7380,16:7580,17:7780,18:7980,19:8180,20:8380},
-      118: {13:7180,14:7380,15:7580,16:7780,17:7980,18:8180,19:8380,20:8580},
-      140: {13:7380,14:7580,15:7780,16:7980,17:8180,18:8380,19:8580,20:8780},
-      157: {15:7980,16:8180,17:8380,18:8580,19:8780,20:8980}
-    }
+    name: "Skylight Plus MRA",
+    pricingModel: "mra_configured",
   },
-  {
-    name: "Motor A Open Roll Retractable Awning",
-    pricingModel: "matrix_axes",
-    axes: {
-      projection: {unit:"in", label:"Projection", values:[59,78,98,118,140,157]},
-      width: {unit:"ft", label:"Width", values:[7,8,9,10,11,12,13,14,15,16,17,18,19]}
-    },
-    prices: {
-      59:  {7:3470,8:3670,9:3870,10:4070,11:4270,12:4470,13:4670,14:4870,15:5070,16:5270,17:5470,18:5670,19:5870},
-      78:  {9:4070,10:4270,11:4470,12:4670,13:4870,14:5070,15:5270,16:5470,17:5670,18:5870,19:6070},
-      98:  {10:4470,11:4670,12:4870,13:5070,14:5270,15:5470,16:5670,17:5870,18:6070,19:6270},
-      118: {12:5070,13:5270,14:5470,15:5670,16:5870,17:6070,18:6270,19:6470},
-      140: {13:5470,14:5670,15:5870,16:6070,17:6270,18:6470,19:6670},
-      157: {14:5870,15:6070,16:6270,17:6470,18:6670,19:6870}
-    }
-  },
-  {
-    name: "Motor B Open Roll Retractable Awning",
-    pricingModel: "matrix_axes",
-    axes: {
-      projection: {unit:"in", label:"Projection", values:[59,78,98,118,140,157]},
-      width: {unit:"ft", label:"Width", values:[20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36]}
-    },
-    prices: {
-      59:  {20:6070,21:6470,22:6870,23:7270,24:7670,25:8070,26:8470,27:8870,28:9270,29:9670,30:10070,31:10470,32:10870,33:11270,34:11670,35:12070,36:12470},
-      78:  {20:6270,21:6670,22:7070,23:7470,24:7870,25:8270,26:8670,27:9070,28:9470,29:9870,30:10270,31:10670,32:11070,33:11470,34:11870,35:12270,36:12670},
-      98:  {20:6470,21:6870,22:7270,23:7670,24:8070,25:8470,26:8870,27:9270,28:9670,29:10070,30:10470,31:10870,32:11270,33:11670,34:12070,35:12470,36:12870},
-      118: {20:6670,21:7070,22:7470,23:7870,24:8270,25:7050,26:7050,27:7050,28:7050,29:7050,30:11070,31:11470,32:11870,33:12270,34:12670,35:13070,36:13070},
-      140: {20:6870,21:7270,22:7670,23:8070,24:8470,25:8870,26:9270,27:9670,28:10070,29:10470,30:10870,31:11270,32:11670,33:12070,34:12470,35:12870,36:13270},
-      157: {20:7070,21:7470,22:7870,23:8270,24:8670,25:9070,26:9470,27:9870,28:10270,29:10670,30:11070,31:11470,32:11870,33:12270,34:12670,35:13070,36:13470}
-    }
-  }
 ];
 
 const productCatalog = {
@@ -262,17 +199,30 @@ const productCatalog = {
     "Single Horizon View Retractable Screens","Clearview Retractable Screen Doors","Clearview Oversized Doors"
   ],
   "Retractable Awnings": [
-    "Motor B Retractable Awning","Motor A QIP-Square box Retractable Awning",
-    "Motor B QIP-Square box Retractable Awning","Motor A Open Roll Retractable Awning",
-    "Motor B Open Roll Retractable Awning"
+    // CHANGE 1 & 2: Replaced separate Motor A/B products with unified products
+    "Skylight Plus MRA",
+    "Skyline Motorized Retractable Awning",
+    "Open Roll Motorized Retractable Awning",
   ]
 };
 
+// ── Products that are configured per-opening in ProductSummary (no width/height on intake form) ──
 const MPS_PRODUCTS = [
   "Motorized Power Screen 5in Cassette",
   "Motorized Power Screen 6in Cassette",
   "Motorized Power Screen open roll",
 ];
+
+// ── Awning products that are fully configured in ProductSummary (like MPS — no width/height on intake) ──
+// CHANGE 3: Skyline MRA and Open Roll MRA skip width/projection on intake form
+const MRA_CONFIGURED_PRODUCTS = [
+  "Skylight Plus MRA",
+  "Skyline Motorized Retractable Awning",
+  "Open Roll Motorized Retractable Awning",
+];
+
+// Combined: all products that skip width/height on intake form
+const SUMMARY_CONFIGURED_PRODUCTS = [...MPS_PRODUCTS, ...MRA_CONFIGURED_PRODUCTS];
 
 const mountTypes = ['Inside Mount','Outside Mount','Ceiling Mount','Wall Mount'];
 const fabrics = ['Light Filtering','Room Darkening','Blackout','Sheer','Solar Screen','Canvas','Wood','Faux Wood'];
@@ -335,6 +285,11 @@ function getBasePriceUnified(line) {
   const p = findProduct(line.product);
   if (!p) return {ok:false, price:0, message:"Select a product."};
 
+  // MRA configured products are priced in ProductSummary — not here
+  if (p.pricingModel === "mra_configured") {
+    return {ok:true, price:0, message:"Configured in Product Summary screen."};
+  }
+
   if (p.pricingModel === "matrix") {
     let widthKey, projectionKey, unitLabel;
     if (p.dimensionUnit === "in") {
@@ -388,7 +343,8 @@ function getBasePriceUnified(line) {
 
 function calcLineTotal(line) {
   if (!line.category || !line.product) return 0;
-  if (MPS_PRODUCTS.includes(line.product)) return 0;
+  // Summary-configured products are priced on the next screen
+  if (SUMMARY_CONFIGURED_PRODUCTS.includes(line.product)) return 0;
   const base = getBasePriceUnified(line);
   if (!base.ok) return 0;
   let total = base.price * (parseInt(line.quantity, 10) || 1);
@@ -404,17 +360,17 @@ function calcLineTotal(line) {
 // ============================================================
 function ProductLine({ line, lineNumber, onUpdate, onRemove, showRemove }) {
   const p = findProduct(line.product);
-  const isMPS = MPS_PRODUCTS.includes(line.product);
+  const isSummaryConfigure = SUMMARY_CONFIGURED_PRODUCTS.includes(line.product);
 
-  const baseResult = (line.category && line.product && !isMPS) ? getBasePriceUnified(line) : null;
+  const baseResult = (line.category && line.product && !isSummaryConfigure) ? getBasePriceUnified(line) : null;
   const lineTotal  = line.category && line.product ? calcLineTotal(line) : 0;
 
   let badgeClass = '';
   let badgeText  = 'Not Configured';
   if (line.category && line.product) {
-    if (isMPS) {
+    if (isSummaryConfigure) {
       badgeClass = 'configured';
-      badgeText  = 'Configured (priced per opening)';
+      badgeText  = 'Configured on next screen';
     } else if (baseResult && baseResult.ok) {
       badgeClass = 'configured';
       badgeText  = 'Configured';
@@ -465,18 +421,24 @@ function ProductLine({ line, lineNumber, onUpdate, onRemove, showRemove }) {
         </div>
       </div>
 
-      {isMPS && (
+      {/* CHANGE 3: Show "configured on next screen" notice for all summary-configured products */}
+      {isSummaryConfigure && (
         <div className="alert alert-info mps-intake-notice">
           <span>ℹ️</span>
           <div>
-            <strong>Dimensions &amp; pricing are configured per opening</strong><br />
-            Width, height, quantity, and notes for this product are entered on the
-            next screen where you can add multiple areas and openings.
+            <strong>
+              {MPS_PRODUCTS.includes(line.product)
+                ? "Dimensions & pricing are configured per opening"
+                : "Dimensions, projection & pricing are configured on the next screen"}
+            </strong><br />
+            {MPS_PRODUCTS.includes(line.product)
+              ? "Width, height, quantity, and notes for this product are entered on the next screen where you can add multiple areas and openings."
+              : "Width, projection, fabric, and all configuration details for this product are entered on the next screen."}
           </div>
         </div>
       )}
 
-      {!isMPS && (
+      {!isSummaryConfigure && (
         <>
           <div className="dim-row">
             <div className="form-group">
@@ -534,7 +496,7 @@ function ProductLine({ line, lineNumber, onUpdate, onRemove, showRemove }) {
         </>
       )}
 
-      {isMPS && (
+      {isSummaryConfigure && (
         <div className="product-subtotal">
           <div className="product-subtotal-row">
             <span>Product Subtotal:</span>
@@ -580,7 +542,6 @@ function createInitialOrderData() {
   };
 }
 
-// ── Load from sessionStorage, or fall back to fresh state ──
 function loadInitialState() {
   try {
     const saved = sessionStorage.getItem(SESSION_KEY);
@@ -631,14 +592,14 @@ export default function App() {
       ...orderData,
       productLines: productLines.map(line => {
         const p = findProduct(line.product);
-        const isMPS = MPS_PRODUCTS.includes(line.product);
-        const priceResult = (line.category && line.product && !isMPS) ? getBasePriceUnified(line) : null;
+        const isSummaryConfigure = SUMMARY_CONFIGURED_PRODUCTS.includes(line.product);
+        const priceResult = (line.category && line.product && !isSummaryConfigure) ? getBasePriceUnified(line) : null;
         return {
           ...line,
           productMeta: { pricingModel: p?.pricingModel || null, dimensionUnit: p?.dimensionUnit || 'ft' },
           pricing: {
             basePrice:    priceResult?.ok ? priceResult.price : 0,
-            priceNote:    priceResult?.message || (isMPS ? 'Priced per opening on Order Summary' : ''),
+            priceNote:    priceResult?.message || (isSummaryConfigure ? 'Priced on Product Summary screen' : ''),
             lineSubtotal: calcLineTotal(line),
           },
         };
@@ -657,7 +618,7 @@ export default function App() {
     }
     const hasValid = productLines.some(line => {
       if (!line.category || !line.product) return false;
-      if (MPS_PRODUCTS.includes(line.product)) return true;
+      if (SUMMARY_CONFIGURED_PRODUCTS.includes(line.product)) return true;
       return getBasePriceUnified(line).ok;
     });
     if (!hasValid) {
