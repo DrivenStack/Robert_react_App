@@ -11,18 +11,18 @@ const MPS_PRODUCTS = [
   "Motorized Power Screen open roll",
 ];
 
-// CHANGE 3: Skylight Plus MRA (renamed from "Motor B Retractable Awning")
-// AWNING products list — used for transmitter auto-assignment logic
 const AWNING_PRODUCTS = [
   "Skylight Plus MRA",
+  "Skyline Motorized Retractable Awning",
+  "Open Roll Motorized Retractable Awning",
   "Motor A QIP-Square box Retractable Awning",
   "Motor B QIP-Square box Retractable Awning",
   "Motor A Open Roll Retractable Awning",
   "Motor B Open Roll Retractable Awning",
 ];
 
-// CHANGE 3: Skylight Plus MRA projection options (locked dropdown — no free text)
-const SKYLIGHT_MRA_PROJECTIONS = [
+// Projection options shared by all MRA products
+const MRA_PROJECTION_OPTIONS = [
   "4'11\"",
   "6'6\"",
   "8'2\"",
@@ -31,7 +31,71 @@ const SKYLIGHT_MRA_PROJECTIONS = [
   "13'1\"",
 ];
 
-// CHANGE 3: Skylight Plus MRA fabric catalog
+// ─────────────────────────────────────────────────────────────
+// FIX 1: MRA PRICING MATRICES
+// Skylight Plus MRA  = Motor B QIP-Square Box (widths 13–20 ft)
+// Skyline MRA        = Motor A + Motor B QIP-Square Box (widths 7–20 ft merged)
+// Open Roll MRA      = Motor A + Motor B Open Roll (widths 7–20 ft merged)
+//
+// Keys: projection string → width (ft) → price
+// ─────────────────────────────────────────────────────────────
+const SKYLIGHT_MRA_PRICE_DATA = {
+  // Motor B QIP Square Box — widths 13–20 ft
+  "4'11\"": { 13:4550,14:4745,15:4940,16:5135,17:5330,18:5525,19:5720,20:5915 },
+  "6'6\"":  { 13:5060,14:5280,15:5500,16:5720,17:5940,18:6160,19:6380,20:6600 },
+  "8'2\"":  { 13:5720,14:5975,15:6230,16:6485,17:6740,18:6995,19:7250,20:7505 },
+  "9'10\"": { 13:6270,14:6555,15:6840,16:7125,17:7410,18:7695,19:7980,20:8265 },
+  "11'2\"": { 13:6820,14:7150,15:7480,16:7810,17:8140,18:8470,19:8800,20:9130 },
+  "13'1\"": { 13:7590,14:7975,15:8360,16:8745,17:9130,18:9515,19:9900,20:10285 },
+};
+
+const SKYLINE_MRA_PRICE_DATA = {
+  // Motor A QIP (widths 7–12) + Motor B QIP (widths 13–20) merged
+  "4'11\"": { 7:2860,8:3025,9:3190,10:3355,11:3520,12:3685,13:4550,14:4745,15:4940,16:5135,17:5330,18:5525,19:5720,20:5915 },
+  "6'6\"":  { 7:3190,8:3380,9:3570,10:3760,11:3950,12:4140,13:5060,14:5280,15:5500,16:5720,17:5940,18:6160,19:6380,20:6600 },
+  "8'2\"":  { 7:3575,8:3795,9:4015,10:4235,11:4455,12:4675,13:5720,14:5975,15:6230,16:6485,17:6740,18:6995,19:7250,20:7505 },
+  "9'10\"": { 7:3960,8:4180,9:4400,10:4620,11:4840,12:5060,13:6270,14:6555,15:6840,16:7125,17:7410,18:7695,19:7980,20:8265 },
+  "11'2\"": { 7:4345,8:4565,9:4785,10:5005,11:5225,12:5445,13:6820,14:7150,15:7480,16:7810,17:8140,18:8470,19:8800,20:9130 },
+  "13'1\"": { 7:4840,8:5115,9:5390,10:5665,11:5940,12:6215,13:7590,14:7975,15:8360,16:8745,17:9130,18:9515,19:9900,20:10285 },
+};
+
+const OPEN_ROLL_MRA_PRICE_DATA = {
+  // Motor A Open Roll (widths 7–12) + Motor B Open Roll (widths 13–20) merged
+  "4'11\"": { 7:2310,8:2445,9:2580,10:2715,11:2850,12:2985,13:3685,14:3850,15:4015,16:4180,17:4345,18:4510,19:4675,20:4840 },
+  "6'6\"":  { 7:2585,8:2740,9:2895,10:3050,11:3205,12:3360,13:4125,14:4315,15:4505,16:4695,17:4885,18:5075,19:5265,20:5455 },
+  "8'2\"":  { 7:2915,8:3090,9:3265,10:3440,11:3615,12:3790,13:4675,14:4895,15:5115,16:5335,17:5555,18:5775,19:5995,20:6215 },
+  "9'10\"": { 7:3245,8:3420,9:3595,10:3770,11:3945,12:4120,13:5170,14:5390,15:5610,16:5830,17:6050,18:6270,19:6490,20:6710 },
+  "11'2\"": { 7:3575,8:3750,9:3925,10:4100,11:4275,12:4450,13:5610,14:5830,15:6050,16:6270,17:6490,18:6710,19:6930,20:7150 },
+  "13'1\"": { 7:3960,8:4180,9:4400,10:4620,11:4840,12:5060,13:6215,14:6490,15:6765,16:7040,17:7315,18:7590,19:7865,20:8140 },
+};
+
+function getMRAPrice(productName, projection, widthFt) {
+  let matrix;
+  if (productName === "Skylight Plus MRA" || productName === "Motor B Retractable Awning") {
+    matrix = SKYLIGHT_MRA_PRICE_DATA;
+  } else if (productName === "Skyline Motorized Retractable Awning") {
+    matrix = SKYLINE_MRA_PRICE_DATA;
+  } else if (productName === "Open Roll Motorized Retractable Awning") {
+    matrix = OPEN_ROLL_MRA_PRICE_DATA;
+  } else {
+    return { ok: false, price: 0, message: "Unknown MRA product." };
+  }
+  if (!projection) return { ok: false, price: 0, message: "Select a projection." };
+  const row = matrix[projection];
+  if (!row) return { ok: false, price: 0, message: `No pricing for projection ${projection}.` };
+  const wKey = parseInt(widthFt, 10);
+  if (!wKey || isNaN(wKey)) return { ok: false, price: 0, message: "Enter a valid width." };
+  const price = row[wKey] ?? null;
+  if (price == null) {
+    const keys = Object.keys(row).map(Number).sort((a,b)=>a-b);
+    return { ok: false, price: 0, message: `No price for width ${wKey}ft at projection ${projection}. Valid widths: ${keys[0]}–${keys[keys.length-1]}ft.` };
+  }
+  return { ok: true, price: Number(price), message: `Matrix price: ${fmt(price)} (Width=${wKey}ft × Projection=${projection})` };
+}
+
+// ─────────────────────────────────────────────────────────────
+// SKYLIGHT PLUS MRA fabric catalog
+// ─────────────────────────────────────────────────────────────
 const SKYLIGHT_FABRIC_BRANDS = ["Sunbrella", "Recacril", "Dickson", "Tempotest"];
 const SKYLIGHT_FABRIC_TYPES = {
   Sunbrella:  ["Stripe", "Solid", "Jacquard", "Canvas"],
@@ -95,8 +159,17 @@ function getMotorPriceAdjustment(motorId) {
   return motor.priceAdjustment;
 }
 
+// FIX 4: Get the display name for the default motor of a product
+function getDefaultMotorDisplayName(productName) {
+  const motorId = getDefaultMotorId(productName);
+  if (!motorId) return null;
+  const motor = MOTOR_CATALOG.find(m => m.id === motorId);
+  return motor?.displayName || null;
+}
+
 // ─────────────────────────────────────────────────────────────
-// FABRIC CATALOG — Hierarchical Brand → Series → Openness → Color
+// FIX 3: FABRIC CATALOG — Corrected Twitchell Textilene openness flow
+// Textilene is now a series with hasOpenness:true and openness options 80/90
 // ─────────────────────────────────────────────────────────────
 const FABRIC_CATALOG = {
   Twitchell: {
@@ -112,9 +185,13 @@ const FABRIC_CATALOG = {
         "99": ["Flat Black", "Charcoal", "Espresso Texture", "Tobacco", "Granite"],
       },
     },
-    "Textilene (80/90)": {
-      hasOpenness: false,
-      colors: ["White", "Desert Sand", "Sandstone", "Dusk Grey", "Brown", "Black/Brown", "Black"],
+    // FIX 3: Textilene is now a series with openness 80/90 → then color
+    "Textilene": {
+      hasOpenness: true,
+      openness: {
+        "80": ["White", "Desert Sand", "Sandstone", "Dusk Grey", "Brown", "Black/Brown", "Black"],
+        "90": ["White", "Desert Sand", "Sandstone", "Dusk Grey", "Brown", "Black/Brown", "Black"],
+      },
     },
     "Blackout (Dimout)": {
       hasOpenness: false,
@@ -166,18 +243,22 @@ function buildFabricLabel(fabricSelection) {
 
 // ─────────────────────────────────────────────────────────────
 // MPS DEFAULTS
+// FIX 2: Added color options for cassette/track dropdowns (including Bronze)
 // ─────────────────────────────────────────────────────────────
 const MPS_DEFAULTS = {
-  mountTypes:    ["Surface", "Inside", "Soffit Mount"],
-  trackTypes:    ["Zipper", "Wire Guide", "Storm Rail"],
-  motorTypes:    ["Somfy (default)", "Somfy RTS", "Somfy WireFree", "Custom"],
-  lChannelSizes: ["1×1", "1×2", "Custom"],
-  lChannelLocs:  ["Left", "Right", "Top", "Bottom"],
-  buildoutTypes: ["Wood", "Alumitube"],
-  woodSizes:     ["2x4", "2x6", "2x8", "2x10", "4x4", "4x6", "4x8", "4x10"],
-  motorSides:    ["Left", "Right"],
-  weightBarTypes:["Sand", "White", "Black", "Bronze", "Custom"],
-  remoteTypes:   ["1 Channel Somfy Remote", "5 Channel Somfy Remote", "16 Channel Somfy Remote"],
+  mountTypes:       ["Surface", "Inside", "Soffit Mount"],
+  trackTypes:       ["Zipper", "Wire Guide", "Storm Rail"],
+  motorTypes:       ["Somfy (default)", "Somfy RTS", "Somfy WireFree", "Custom"],
+  lChannelSizes:    ["1×1", "1×2", "Custom"],
+  lChannelLocs:     ["Left", "Right", "Top", "Bottom"],
+  buildoutTypes:    ["Wood", "Alumitube"],
+  woodSizes:        ["2x4", "2x6", "2x8", "2x10", "4x4", "4x6", "4x8", "4x10"],
+  motorSides:       ["Left", "Right"],
+  weightBarTypes:   ["Sand", "White", "Black", "Brown", "Custom"],
+  // FIX 2: cassette and track color options with Bronze
+  cassetteColors:   ["White", "Beige", "Ivory", "Brown", "Black", "Tan", "Grey", "Custom"],
+  trackColors:      ["White", "Beige", "Ivory", "Brown", "Black", "Tan", "Grey", "Custom"],
+  remoteTypes:      ["1 Channel Somfy Remote", "5 Channel Somfy Remote", "16 Channel Somfy Remote"],
 };
 
 const WOOD_BUILDOUT_RATES = {
@@ -202,17 +283,14 @@ function getAutoRemote(openingCount) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// CHANGE 1 & 2: WIND SENSOR ADD-ONS
-// Renamed from Whirly/Shaker to correct Somfy product names.
-// Wireless (Eolis 3D) = per-opening (1:1) — NOT available for 5in/6in cassette
-// Wired (Eolis RTS 24V) = shared/global (1:many) — available for all MPS products
+// WIND SENSOR ADD-ONS
 // ─────────────────────────────────────────────────────────────
 const WIND_SENSOR_WIRED = {
   id: "wind_sensor_wired",
   name: "Somfy Eolis RTS 24V Wired Wind Sensor Kit",
   shortName: "Eolis RTS 24V (Wired)",
   price: 290,
-  type: "global",   // one per project, shared across openings
+  type: "global",
   description: "Shared sensor — selected once, applies across all openings",
 };
 
@@ -221,24 +299,17 @@ const WIND_SENSOR_WIRELESS = {
   name: "Somfy Eolis 3D Wirefree RTS Wind Sensor",
   shortName: "Eolis 3D Wirefree (Wireless)",
   price: 290,
-  type: "per_opening",   // one per opening
+  type: "per_opening",
   description: "Per-opening sensor — quantity scales with number of openings",
 };
 
-// Returns which wind sensors are available for a given product
 function getAvailableWindSensors(productName) {
   const isCassette = productName === "Motorized Power Screen 5in Cassette" ||
                      productName === "Motorized Power Screen 6in Cassette";
-  if (isCassette) {
-    // CHANGE 2: Cassette products only allow wired sensor
-    return [WIND_SENSOR_WIRED];
-  }
-  // Open roll and all other MPS products get both options
+  if (isCassette) return [WIND_SENSOR_WIRED];
   return [WIND_SENSOR_WIRED, WIND_SENSOR_WIRELESS];
 }
 
-// CHANGE 1: Updated MPS_SIMPLE_ADDONS — wind sensors removed from here,
-// now handled separately with proper per-opening / global logic
 const MPS_SIMPLE_ADDONS = [
   { id: "remote_1ch",  name: "1 Channel Somfy Remote",  price: 125 },
   { id: "remote_5ch",  name: "5 Channel Somfy Remote",  price: 180 },
@@ -290,7 +361,6 @@ const MPS_PRICE_DATA = {
     prices: {
       4:  {3:1935,4:2040,5:2145,6:2250,7:2355,8:2460,9:2565,10:2670,11:2775,12:2880,13:2985,14:3090,15:3195,16:3300,17:3405,18:3510,19:3615,20:3720,21:3825,22:3930,23:4035,24:4140,25:4245,26:4350},
       5:  {3:2040,4:2145,5:2250,6:2355,7:2460,8:2565,9:2670,10:2775,11:2880,12:2985,13:3090,14:3195,15:3300,16:3405,17:3510,18:3615,19:3720,20:3825,21:3930,22:4035,23:4140,24:4245,25:4350,26:4455},
-      5:  {3:2040,4:2145,5:2250,6:2355,7:2460,8:2565,9:2670,10:2775,11:2880,12:2985,13:3090,14:3195,15:3300,16:3405,17:3510,18:3615,19:3720,20:3825,21:3930,22:4035,23:4140,24:4245,25:4350,26:4455},
       6:  {3:2145,4:2250,5:2355,6:2460,7:2565,8:2670,9:2775,10:2880,11:2985,12:3090,13:3195,14:3300,15:3405,16:3510,17:3615,18:3720,19:3825,20:3930,21:4035,22:4140,23:4245,24:4350,25:4455,26:4560},
       7:  {3:2250,4:2355,5:2460,6:2565,7:2670,8:2775,9:2880,10:2985,11:3090,12:3195,13:3300,14:3405,15:3510,16:3615,17:3720,18:3825,19:3930,20:4035,21:4140,22:4245,23:4350,24:4455,25:4560,26:4665},
       8:  {3:2355,4:2460,5:2565,6:2670,7:2775,8:2880,9:2985,10:3090,11:3195,12:3300,13:3405,14:3510,15:3615,16:3720,17:3825,18:3930,19:4035,20:4140,21:4245,22:4350,23:4455,24:4560,25:4665,26:4770},
@@ -332,7 +402,7 @@ function getMPSOpeningPrice(productName, widthRaw, heightRaw) {
     const colKeys = rowKeys.length > 0 ? Object.keys(productData.prices[rowKeys[0]]).map(Number).sort((a,b)=>a-b) : [];
     return {
       ok: false, price: 0,
-      message: `No price found for Width=${widthKey}ft × Height=${heightKey}ft. Valid height: ${rowKeys[0]}–${rowKeys[rowKeys.length-1]}ft, Width: ${colKeys[0]}–${colKeys[colKeys.length-1]}ft.`
+      message: `No price for Width=${widthKey}ft × Height=${heightKey}ft. Valid height: ${rowKeys[0]}–${rowKeys[rowKeys.length-1]}ft, Width: ${colKeys[0]}–${colKeys[colKeys.length-1]}ft.`
     };
   }
   return { ok: true, price: Number(price), message: `Matrix price: ${fmt(price)} (Width=${widthKey}ft × Height=${heightKey}ft)` };
@@ -393,37 +463,6 @@ const PRODUCT_ADDONS = {
   ],
   "Clearview Retractable Screen Doors": [],
   "Clearview Oversized Doors": [],
-  // CHANGE 3: "Motor B Retractable Awning" renamed to "Skylight Plus MRA"
-  // The old "Motor B Retractable Awning" key is removed; "Skylight Plus MRA" handled in SkylightMRACard
-  "Motor A QIP-Square box Retractable Awning": [
-    { id:"wind_sensor",  name:"Wind Sensor",            price:195 },
-    { id:"led_lighting", name:"LED Lighting Kit",       price:350 },
-    { id:"smart_home",   name:"Smart Home Integration", price:150 },
-    { id:"remote",       name:"Additional Remote",      price:75  },
-    { id:"valance",      name:"Decorative Valance",     price:100 },
-  ],
-  "Motor B QIP-Square box Retractable Awning": [
-    { id:"wind_sensor",  name:"Wind Sensor",            price:195 },
-    { id:"led_lighting", name:"LED Lighting Kit",       price:350 },
-    { id:"smart_home",   name:"Smart Home Integration", price:150 },
-    { id:"remote",       name:"Additional Remote",      price:75  },
-    { id:"pitch_kit",    name:"Adjustable Pitch Kit",   price:110 },
-    { id:"valance",      name:"Decorative Valance",     price:100 },
-  ],
-  "Motor A Open Roll Retractable Awning": [
-    { id:"wind_sensor",    name:"Wind Sensor",            price:195 },
-    { id:"smart_home",     name:"Smart Home Integration", price:150 },
-    { id:"remote",         name:"Additional Remote",      price:75  },
-    { id:"fabric_upgrade", name:"Premium Fabric Upgrade", price:125 },
-  ],
-  "Motor B Open Roll Retractable Awning": [
-    { id:"wind_sensor",    name:"Wind Sensor",            price:195 },
-    { id:"led_lighting",   name:"LED Lighting Kit",       price:350 },
-    { id:"smart_home",     name:"Smart Home Integration", price:150 },
-    { id:"remote",         name:"Additional Remote",      price:75  },
-    { id:"fabric_upgrade", name:"Premium Fabric Upgrade", price:125 },
-    { id:"pitch_kit",      name:"Adjustable Pitch Kit",   price:110 },
-  ],
   default: [
     { id:"motorization",   name:"Motorization",           price:250 },
     { id:"remote",         name:"Remote Control",         price:75  },
@@ -538,7 +577,7 @@ const PRODUCT_FIELD_ADDONS = {
     { id:"part_gold_deco_s",     name:"Gold Extra Parts Deco / Sq Sill etc (single)",pricingType:"per_unit",rate:70,   unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
     { id:"part_gold_deco_d",     name:"Gold Extra Parts Deco / Sq Sill etc (double)",pricingType:"per_unit",rate:140,  unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
   ],
-  // CHANGE 3: Skylight Plus MRA — field addons (Somfy RTS accessories only; transmitter/LED auto-included)
+  // Skylight Plus MRA — Somfy RTS accessories, brackets (no transmitter/LED — auto-included)
   "Skylight Plus MRA": [
     { id:"somfy_wind_sensor", name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_sun_wind",    name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
@@ -547,7 +586,8 @@ const PRODUCT_FIELD_ADDONS = {
     { id:"bracket_16in",      name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
     { id:"bracket_24in",      name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
   ],
-  "Motor B Retractable Awning": [
+  // Shared field addons for Skyline MRA and Open Roll MRA
+  "Skyline Motorized Retractable Awning": [
     { id:"somfy_1ch_tx",      name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_5ch_tx",      name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_1ch_patio",   name:"1 Channel Patio Transmitter",         pricingType:"per_unit", rate:200, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
@@ -562,52 +602,7 @@ const PRODUCT_FIELD_ADDONS = {
     { id:"bracket_16in",      name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
     { id:"bracket_24in",      name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
   ],
-  "Motor A Open Roll Retractable Awning": [
-    { id:"somfy_1ch_tx",      name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_tx",      name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_1ch_patio",   name:"1 Channel Patio Transmitter",         pricingType:"per_unit", rate:200, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_patio",   name:"5 Channel Patio Transmitter",         pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_1ch_wall",    name:"1 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_wall",    name:"5 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:400, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_wind_sensor", name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_sun_wind",    name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_16ch_telis",  name:"16 Channel Telis RTS",                pricingType:"per_unit", rate:500, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"power_cord_24ft",   name:"24\u2019 Motor Power Cord (upgrade)", pricingType:"per_unit", rate:80,  unit:"units", unitShort:"ea", placeholder:"1", group:"Power Cable Options" },
-    { id:"bracket_12in",      name:"Roof Mount Bracket 12\u2033 Tall",   pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-    { id:"bracket_16in",      name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-    { id:"bracket_24in",      name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-  ],
-  "Motor B Open Roll Retractable Awning": [
-    { id:"somfy_1ch_tx",      name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_tx",      name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_1ch_patio",   name:"1 Channel Patio Transmitter",         pricingType:"per_unit", rate:200, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_patio",   name:"5 Channel Patio Transmitter",         pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_1ch_wall",    name:"1 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_wall",    name:"5 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:400, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_wind_sensor", name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_sun_wind",    name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_16ch_telis",  name:"16 Channel Telis RTS",                pricingType:"per_unit", rate:500, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"power_cord_24ft",   name:"24\u2019 Motor Power Cord (upgrade)", pricingType:"per_unit", rate:80,  unit:"units", unitShort:"ea", placeholder:"1", group:"Power Cable Options" },
-    { id:"bracket_12in",      name:"Roof Mount Bracket 12\u2033 Tall",   pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-    { id:"bracket_16in",      name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-    { id:"bracket_24in",      name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-  ],
-  "Motor A QIP-Square box Retractable Awning": [
-    { id:"somfy_1ch_tx",      name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_tx",      name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_1ch_patio",   name:"1 Channel Patio Transmitter",         pricingType:"per_unit", rate:200, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_patio",   name:"5 Channel Patio Transmitter",         pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_1ch_wall",    name:"1 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_wall",    name:"5 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:400, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_wind_sensor", name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_sun_wind",    name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_16ch_telis",  name:"16 Channel Telis RTS",                pricingType:"per_unit", rate:500, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"power_cord_24ft",   name:"24\u2019 Motor Power Cord (upgrade)", pricingType:"per_unit", rate:80,  unit:"units", unitShort:"ea", placeholder:"1", group:"Power Cable Options" },
-    { id:"bracket_12in",      name:"Roof Mount Bracket 12\u2033 Tall",   pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-    { id:"bracket_16in",      name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-    { id:"bracket_24in",      name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-  ],
-  "Motor B QIP-Square box Retractable Awning": [
+  "Open Roll Motorized Retractable Awning": [
     { id:"somfy_1ch_tx",      name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_5ch_tx",      name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_1ch_patio",   name:"1 Channel Patio Transmitter",         pricingType:"per_unit", rate:200, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
@@ -664,7 +659,9 @@ function createOpening(productName = "", areaDefaults = {}) {
     lChannels: [],
     buildouts: [],
     mountOverride: "", trackOverride: "",
-    colorOverride: "", trackColorOverride: "", motorOverride: "",
+    // FIX 2: Changed from free-text to empty string (dropdown value)
+    colorOverride: "", trackColorOverride: "",
+    motorOverride: "",
     weightBarOverride: "", remoteOverride: "",
     customTrackColorPrice: "",
     customCassetteColorPrice: "",
@@ -677,16 +674,17 @@ function createArea(productName = "") {
   return {
     id: uid(), name: "", mountType: "", trackType: "",
     fabricSelection: { brand: "", series: "", openness: "", color: "" },
-    cassetteColor: "", trackColor: "", motorType: "Somfy (default)",
+    // FIX 2: area-level cassette/track as empty string (dropdown)
+    cassetteColor: "", trackColor: "",
+    motorType: "Somfy (default)",
     weightBar: "", remote: "",
     areaPhoto: null, openings: [createOpening(productName)],
   };
 }
 
-// CHANGE 3: Skylight Plus MRA default config
-function createSkylightMRAConfig() {
+// MRA config (shared by Skylight Plus, Skyline, Open Roll)
+function createMRAConfig() {
   return {
-    width: "",
     widthFt: "",
     widthIn: "",
     projection: "",
@@ -762,15 +760,13 @@ function countTotalOpenings(areas) {
   return areas.reduce((sum, a) => sum + a.openings.length, 0);
 }
 
-// CHANGE 1: Wind sensor total calculators
 function calcWindSensorTotal(windSensorSelections, totalOpenings) {
   let total = 0;
-  if (windSensorSelections?.wired)    total += WIND_SENSOR_WIRED.price;     // global — always 1
-  if (windSensorSelections?.wireless) total += WIND_SENSOR_WIRELESS.price * Math.max(1, totalOpenings); // per opening
+  if (windSensorSelections?.wired)    total += WIND_SENSOR_WIRED.price;
+  if (windSensorSelections?.wireless) total += WIND_SENSOR_WIRELESS.price * Math.max(1, totalOpenings);
   return total;
 }
 
-// CHANGE 3: Auto-assign transmitter based on total awning qty in order
 function getAutoTransmitter(totalAwningQty) {
   if (totalAwningQty <= 2) return "5-Channel Somfy Transmitter";
   return "16-Channel Somfy Transmitter";
@@ -779,7 +775,7 @@ function getAutoTransmitter(totalAwningQty) {
 // ─────────────────────────────────────────────────────────────
 // SESSION STORAGE PERSISTENCE
 // ─────────────────────────────────────────────────────────────
-const SESSION_KEY = "productSummaryState_v3"; // bumped version for new schema
+const SESSION_KEY = "productSummaryState_v4";
 
 function saveToSession(state) {
   try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(state)); } catch (e) {}
@@ -998,6 +994,7 @@ function MotorSelector({ motorId, productName, onChange }) {
 
 // ─────────────────────────────────────────────────────────────
 // FABRIC SELECTOR COMPONENT — Hierarchical cascade
+// FIX 3: Textilene now correctly shows openness step before color
 // ─────────────────────────────────────────────────────────────
 function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
   const { brand = "", series = "", openness = "", color = "" } = fabricSelection;
@@ -1024,6 +1021,7 @@ function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
         {fabricLabel && <span className="fabric-label-badge">{fabricLabel}</span>}
       </div>
       <div className="fabric-cascade-grid">
+        {/* Step 1: Brand */}
         <div className="mps-field">
           <label className="mps-label fabric-step-label"><span className="fabric-step-num">1</span> Brand</label>
           <select className="mps-select" value={brand} onChange={e => update("brand", e.target.value)}>
@@ -1031,6 +1029,7 @@ function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
             {brands.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
         </div>
+        {/* Step 2: Series */}
         <div className="mps-field">
           <label className="mps-label fabric-step-label"><span className="fabric-step-num">2</span> Series</label>
           <select className="mps-select" value={series} onChange={e => update("series", e.target.value)} disabled={!brand}>
@@ -1038,6 +1037,7 @@ function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
             {seriesList.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
+        {/* Step 3: Openness — shown whenever series has openness (including Textilene 80/90) */}
         {brand && series && hasOpenness && (
           <div className="mps-field">
             <label className="mps-label fabric-step-label"><span className="fabric-step-num">3</span> Openness %</label>
@@ -1047,6 +1047,7 @@ function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
             </select>
           </div>
         )}
+        {/* Step 4 (or 3 if no openness): Color — only shown when ready */}
         {brand && series && (!hasOpenness || openness) && (
           <div className="mps-field">
             <label className="mps-label fabric-step-label">
@@ -1064,11 +1065,11 @@ function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// CHANGE 3: SKYLIGHT MRA FABRIC SELECTOR — Brand → Type → Color
+// SKYLIGHT MRA FABRIC SELECTOR — Brand → Type → Color (free text)
 // ─────────────────────────────────────────────────────────────
 function SkylightFabricSelector({ fabricBrand, fabricType, fabricColor, onChange }) {
-  const brands    = SKYLIGHT_FABRIC_BRANDS;
-  const types     = fabricBrand ? (SKYLIGHT_FABRIC_TYPES[fabricBrand] || []) : [];
+  const brands = SKYLIGHT_FABRIC_BRANDS;
+  const types  = fabricBrand ? (SKYLIGHT_FABRIC_TYPES[fabricBrand] || []) : [];
 
   const update = (field, value) => {
     const next = { fabricBrand, fabricType, fabricColor, [field]: value };
@@ -1175,8 +1176,8 @@ function LChannelItem({ lc, index, onChange, onRemove, showRemove }) {
 function BuildoutItem({ bo, index, onChange, onRemove, showRemove }) {
   const set  = (field, val) => onChange({ ...bo, [field]: val });
   const cost = calcBuildoutCost(bo);
-  const woodRate     = WOOD_BUILDOUT_RATES[bo.woodSize] || 0;
-  const isAlumitube  = bo.type === "Alumitube";
+  const woodRate      = WOOD_BUILDOUT_RATES[bo.woodSize] || 0;
+  const isAlumitube   = bo.type === "Alumitube";
   const isCustomAlumi = bo.isCustomAlumitubeSize;
   return (
     <div className="structural-item-card">
@@ -1235,6 +1236,8 @@ function BuildoutItem({ bo, index, onChange, onRemove, showRemove }) {
 
 // ─────────────────────────────────────────────────────────────
 // OPENING EDITOR
+// FIX 2: Cassette Color and Track Color are now dropdowns
+// FIX 4: Motor Type in area defaults shows the new default motor name
 // ─────────────────────────────────────────────────────────────
 function OpeningEditor({ opening, index, areaDefaults, productName, onChange, onRemove, showRemove }) {
   const structural   = calcOpeningStructural(opening, areaDefaults);
@@ -1254,13 +1257,13 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
     : (areaDefaults.fabricSelection?.brand ? areaDefaults.fabricSelection : null);
   const effectiveFabricLabel = effectiveFabric ? buildFabricLabel(effectiveFabric) : "—";
 
-  const stormRailCost     = calcStormRailCost(opening, effectiveTrack);
-  const cassIsCustom      = effectiveCassette.toLowerCase().includes("custom");
-  const effectiveMotorId  = opening.motorId || getDefaultMotorId(productName) || "";
-  const motorObj          = MOTOR_CATALOG.find(m => m.id === effectiveMotorId);
-  const motorAdj          = motorObj?.priceAdjustment || 0;
+  const stormRailCost    = calcStormRailCost(opening, effectiveTrack);
+  const cassIsCustom     = effectiveCassette.toLowerCase().includes("custom");
+  const trackIsCustom    = effectiveTrackColor.toLowerCase().includes("custom");
+  const effectiveMotorId = opening.motorId || getDefaultMotorId(productName) || "";
+  const motorObj         = MOTOR_CATALOG.find(m => m.id === effectiveMotorId);
+  const motorAdj         = motorObj?.priceAdjustment || 0;
 
-  // CHANGE 2: Track color visibility — hidden for Wire Guide
   const showTrackColor = effectiveTrack !== "Wire Guide";
 
   const addLChannel    = () => set("lChannels", [...(opening.lChannels || []), createLChannel()]);
@@ -1365,7 +1368,7 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
             </select>
           </div>
 
-          {/* Motor Type (legacy) */}
+          {/* FIX 4: Motor Type (legacy/area-level) — shows new default motor name */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Motor Type (legacy)
@@ -1374,24 +1377,28 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
             </label>
             <select className={`override-resolved-select ${opening.motorOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
               value={opening.motorOverride || ""} onChange={e => set("motorOverride", e.target.value)}>
-              <option value="">— area default ({areaDefaults.motorType || "not set"}) —</option>
+              <option value="">
+                — area default ({getDefaultMotorDisplayName(productName) || areaDefaults.motorType || "not set"}) —
+              </option>
               {MPS_DEFAULTS.motorTypes.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
           </div>
 
-          {/* Cassette Color */}
+          {/* FIX 2: Cassette Color — now a dropdown */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Cassette Color
               {opening.colorOverride ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
                 : <span className="override-resolved-source">area default</span>}
             </label>
-            <input
-              className={`override-resolved-input ${opening.colorOverride ? "override-resolved-input--set" : "override-resolved-input--default"}`}
-              type="text" value={opening.colorOverride || ""}
-              placeholder={`area default (${areaDefaults.cassetteColor || "not set"})`}
+            <select
+              className={`override-resolved-select ${opening.colorOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
+              value={opening.colorOverride || ""}
               onChange={e => set("colorOverride", e.target.value)}
-            />
+            >
+              <option value="">— area default ({areaDefaults.cassetteColor || "not set"}) —</option>
+              {MPS_DEFAULTS.cassetteColors.map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
             {cassIsCustom && (
               <div className="custom-color-price-row">
                 <span className="custom-color-price-label">Custom Cassette Color Price (based on width):</span>
@@ -1403,7 +1410,7 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
             )}
           </div>
 
-          {/* CHANGE 2: Track Color — hidden for Wire Guide */}
+          {/* FIX 2: Track Color — now a dropdown, hidden for Wire Guide */}
           {showTrackColor && (
             <div className="override-resolved-item">
               <label className="override-resolved-label">
@@ -1411,13 +1418,15 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
                 {opening.trackColorOverride ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
                   : <span className="override-resolved-source">area default</span>}
               </label>
-              <input
-                className={`override-resolved-input ${opening.trackColorOverride ? "override-resolved-input--set" : "override-resolved-input--default"}`}
-                type="text" value={opening.trackColorOverride || ""}
-                placeholder={`area default (${areaDefaults.trackColor || "not set"})`}
+              <select
+                className={`override-resolved-select ${opening.trackColorOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
+                value={opening.trackColorOverride || ""}
                 onChange={e => set("trackColorOverride", e.target.value)}
-              />
-              {(opening.trackColorOverride || areaDefaults.trackColor || "").toLowerCase().includes("custom") && (
+              >
+                <option value="">— area default ({areaDefaults.trackColor || "not set"}) —</option>
+                {MPS_DEFAULTS.trackColors.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
+              {trackIsCustom && (
                 <div className="custom-color-price-row">
                   <span className="custom-color-price-label">Custom Track Color Price (based on width):</span>
                   <input className="custom-color-price-input" type="number" min="0"
@@ -1429,7 +1438,6 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
             </div>
           )}
 
-          {/* CHANGE 2: Wire Guide notice when track color hidden */}
           {!showTrackColor && (
             <div className="override-resolved-item">
               <div className="wire-guide-notice">
@@ -1514,6 +1522,8 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
 
 // ─────────────────────────────────────────────────────────────
 // AREA EDITOR
+// FIX 2: Cassette Color and Track Color in area defaults are now dropdowns
+// FIX 4: Motor Type default field shows the product's new default motor name
 // ─────────────────────────────────────────────────────────────
 function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemove }) {
   const areaBaseTotal       = area.openings.reduce((s,o) => s + calcOpeningBasePrice(o, productName), 0);
@@ -1528,9 +1538,11 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
   const addOpening    = () => onChange({ ...area, openings: [...area.openings, createOpening(productName, { motorSide: "Left" })] });
   const removeOpening = (id) => onChange({ ...area, openings: area.openings.filter(o => o.id !== id) });
 
-  // CHANGE 2: effective track for this area — determines track color visibility at area level
   const areaEffectiveTrack = area.trackType || "";
   const showAreaTrackColor = areaEffectiveTrack !== "Wire Guide";
+
+  // FIX 4: Get the default motor display name for this product
+  const defaultMotorDisplayName = getDefaultMotorDisplayName(productName);
 
   return (
     <div className="area-card">
@@ -1567,11 +1579,25 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
           </div>
           <Sel label="Mount Type"  value={area.mountType}  options={MPS_DEFAULTS.mountTypes}  onChange={v=>setArea("mountType",v)} />
           <Sel label="Track Type"  value={area.trackType}  options={MPS_DEFAULTS.trackTypes}  onChange={v=>setArea("trackType",v)} />
-          <Field label="Cassette Color" value={area.cassetteColor} onChange={v=>setArea("cassetteColor",v)} placeholder="e.g. White or Custom" />
 
-          {/* CHANGE 2: Track Color hidden for Wire Guide at area level */}
+          {/* FIX 2: Cassette Color — area-level dropdown */}
+          <div className="mps-field">
+            <label className="mps-label">Cassette Color</label>
+            <select className="mps-select" value={area.cassetteColor || ""} onChange={e => setArea("cassetteColor", e.target.value)}>
+              <option value="">Select Cassette Color</option>
+              {MPS_DEFAULTS.cassetteColors.map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+
+          {/* FIX 2: Track Color — area-level dropdown, hidden for Wire Guide */}
           {showAreaTrackColor ? (
-            <Field label="Track Color" value={area.trackColor} onChange={v=>setArea("trackColor",v)} placeholder="e.g. Beige or Custom" />
+            <div className="mps-field">
+              <label className="mps-label">Track Color</label>
+              <select className="mps-select" value={area.trackColor || ""} onChange={e => setArea("trackColor", e.target.value)}>
+                <option value="">Select Track Color</option>
+                {MPS_DEFAULTS.trackColors.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </div>
           ) : (
             <div className="mps-field">
               <label className="mps-label">Track Color</label>
@@ -1579,8 +1605,15 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
             </div>
           )}
 
-          <Sel label="Motor Type"  value={area.motorType}  options={MPS_DEFAULTS.motorTypes}  onChange={v=>setArea("motorType",v)} />
-          {/* CHANGE 2: Weight Bar always shown for all track types */}
+          {/* FIX 4: Motor Type — area default shows new motor name */}
+          <div className="mps-field">
+            <label className="mps-label">Motor Type (Default)</label>
+            <div className="mps-input mps-input--readonly">
+              {defaultMotorDisplayName || area.motorType || "Somfy (default)"}
+              {defaultMotorDisplayName && <span className="motor-badge motor-badge--included" style={{marginLeft:"8px",fontSize:"0.7em"}}>✓ Included</span>}
+            </div>
+          </div>
+
           <Sel label="Weight Bar Color" value={area.weightBar || ""} options={MPS_DEFAULTS.weightBarTypes} onChange={v=>setArea("weightBar",v)} placeholder="Select Weight Bar Color" />
         </div>
 
@@ -1617,9 +1650,7 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
 }
 
 // ─────────────────────────────────────────────────────────────
-// CHANGE 1 & 2: WIND SENSOR SECTION COMPONENT
-// Renders available wind sensors with correct per-opening / global logic
-// productName determines which sensors are available
+// WIND SENSOR SECTION
 // ─────────────────────────────────────────────────────────────
 function WindSensorSection({ productName, windSensorSelections, onWindSensorChange, totalOpenings }) {
   const availableSensors = getAvailableWindSensors(productName);
@@ -1649,7 +1680,7 @@ function WindSensorSection({ productName, windSensorSelections, onWindSensorChan
             <input type="checkbox" className="ps-addon-checkbox" checked={isChecked} onChange={() => toggle(sensorKey)} />
             <div className="ps-addon-content">
               <span className="ps-addon-name">{sensor.name}</span>
-              <span className="wind-sensor-type-badge wind-sensor-type-badge--{sensorKey}">
+              <span className="wind-sensor-type-badge">
                 {isWired ? "🔌 Wired — Global (shared)" : "📡 Wireless — Per Opening"}
               </span>
               <span className="ps-addon-price">
@@ -1677,7 +1708,7 @@ function WindSensorSection({ productName, windSensorSelections, onWindSensorChan
 }
 
 // ─────────────────────────────────────────────────────────────
-// SIGNATURE PAD COMPONENT
+// SIGNATURE PAD
 // ─────────────────────────────────────────────────────────────
 function SignaturePad({ value, onChange }) {
   const canvasRef = useRef(null);
@@ -1769,8 +1800,6 @@ function MPSProductCard({
   const autoRemoteName       = getAutoRemote(totalOpenings > 0 ? totalOpenings : 1);
 
   const simpleAddonTotal = MPS_SIMPLE_ADDONS.reduce((s, a) => selected[a.id] ? s + a.price * qty : s, 0);
-
-  // CHANGE 1: wind sensor total for this line
   const windTotal = calcWindSensorTotal(windSensorSelections[line.id], totalOpenings);
 
   const enriched              = snapshot.productLines.find(l => l.id === line.id);
@@ -1873,7 +1902,6 @@ function MPSProductCard({
         <button type="button" className="add-area-btn" onClick={addArea}>+ Add Area</button>
       </div>
 
-      {/* CHANGE 1 & 2: Wind Sensor Section with corrected product-aware logic */}
       <WindSensorSection
         productName={line.product}
         windSensorSelections={windSensorSelections[line.id] || {}}
@@ -1916,75 +1944,63 @@ function MPSProductCard({
 }
 
 // ─────────────────────────────────────────────────────────────
-// CHANGE 3: SKYLIGHT PLUS MRA CARD
-// Renamed from "Motor B Retractable Awning"
-// Locked projection dropdown, feet+inches width, fabric fields,
-// auto-transmitter, auto-LED, no user-selectable transmitter/LED checkboxes
+// FIX 1: GENERIC MRA CARD (Skyline MRA + Open Roll MRA)
+// Uses getMRAPrice() for matrix pricing, same UX as SkylightMRACard
 // ─────────────────────────────────────────────────────────────
-function SkylightMRACard({
+function GenericMRACard({
   line, index, snapshot,
-  skylightConfig, onSkylightConfigChange,
+  mraConfig, onMRAConfigChange,
   fieldAddonValues, onFieldAddonChange,
   productNotes, onProductNoteChange,
   totalAwningQty,
 }) {
-  const cfg = skylightConfig[line.id] || createSkylightMRAConfig();
-  const setConfig = (updates) => onSkylightConfigChange(line.id, { ...cfg, ...updates });
+  const cfg = mraConfig[line.id] || createMRAConfig();
+  const setConfig = (updates) => onMRAConfigChange(line.id, { ...cfg, ...updates });
 
   const qty = parseInt(line.quantity, 10) || 1;
 
-  // CHANGE 3: Auto-assigned transmitter based on total awning qty in order
-  const autoTransmitter = getAutoTransmitter(totalAwningQty);
+  // Determine width in feet from ft+in inputs
+  const totalWidthFt = (parseInt(cfg.widthFt, 10) || 0) + ((parseInt(cfg.widthIn, 10) || 0) / 12);
+  const widthFtKey   = totalWidthFt > 0 ? Math.ceil(totalWidthFt) : null;
 
-  // Field addons for Skylight Plus MRA (Somfy RTS, brackets, etc.)
-  const fieldAddonDefs = getFieldAddonsForProduct("Skylight Plus MRA");
-  const fieldTotal     = calcFieldAddonTotal(fieldAddonValues, "Skylight Plus MRA");
+  // Matrix price lookup
+  const priceResult  = widthFtKey && cfg.projection
+    ? getMRAPrice(line.product, cfg.projection, widthFtKey)
+    : { ok: false, price: 0, message: "" };
+  const unitPrice    = priceResult.ok ? priceResult.price : 0;
+  const matrixTotal  = unitPrice * qty;
 
-  const enriched  = snapshot.productLines.find(l => l.id === line.id);
-  const baseTotal = enriched?.pricing?.lineSubtotal || 0;
-  const grandLineTotal = baseTotal + fieldTotal;
+  // Field addons
+  const fieldAddonDefs = getFieldAddonsForProduct(line.product);
+  const fieldTotal     = calcFieldAddonTotal(fieldAddonValues, line.product);
+  const grandLineTotal = matrixTotal + fieldTotal;
+
+  // Determine width range for this product
+  const matrixRef = line.product === "Skyline Motorized Retractable Awning"
+    ? SKYLINE_MRA_PRICE_DATA
+    : OPEN_ROLL_MRA_PRICE_DATA;
+  const sampleRow    = cfg.projection ? matrixRef[cfg.projection] : null;
+  const validWidths  = sampleRow ? Object.keys(sampleRow).map(Number).sort((a,b)=>a-b) : [];
+
+  const isSkylightType = line.product === "Skyline Motorized Retractable Awning";
+  const productLabel   = isSkylightType ? "Skyline MRA (QIP Square Box)" : "Open Roll MRA";
+  const badgeLabel     = isSkylightType ? "Motor A + B Merged" : "Open Roll";
 
   return (
     <div className="ps-product-card skylight-mra-card">
       <div className="ps-product-header">
         <div className="ps-product-number">#{index + 1}</div>
         <div className="ps-product-name">
-          Skylight Plus MRA
-          <span className="skylight-mra-badge">Motorized Retractable Awning</span>
+          {line.product}
+          <span className="skylight-mra-badge">{badgeLabel}</span>
         </div>
         <div className="ps-product-price">{fmt(grandLineTotal)}</div>
       </div>
 
-      {/* Auto-included items banner */}
-      <div className="skylight-included-banner">
-        <div className="skylight-included-title">✅ Standard Included Items (Auto-Assigned)</div>
-        <div className="skylight-included-grid">
-          <div className="skylight-included-item">
-            <span className="skylight-included-icon">🎛</span>
-            <div className="skylight-included-content">
-              <span className="skylight-included-name">Transmitter</span>
-              <span className="skylight-included-value">{autoTransmitter}</span>
-              <span className="skylight-included-hint">
-                Auto-assigned based on {totalAwningQty} total awning{totalAwningQty !== 1 ? "s" : ""} in order
-                {totalAwningQty <= 2 ? " (1–2 units → 5-channel)" : " (3–7 units → 16-channel)"}
-              </span>
-            </div>
-          </div>
-          <div className="skylight-included-item">
-            <span className="skylight-included-icon">💡</span>
-            <div className="skylight-included-content">
-              <span className="skylight-included-name">LED Lighting</span>
-              <span className="skylight-included-value">Built-in LED — Included</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Dimensions */}
       <div className="ps-detail-grid">
-        <div className="ps-detail-item"><span className="ps-detail-label">Product</span><span className="ps-detail-value">Skylight Plus MRA</span></div>
+        <div className="ps-detail-item"><span className="ps-detail-label">Product</span><span className="ps-detail-value">{line.product}</span></div>
         <div className="ps-detail-item"><span className="ps-detail-label">Category</span><span className="ps-detail-value">{line.category}</span></div>
-        <div className="ps-detail-item"><span className="ps-detail-label">Quantity</span><span className="ps-detail-value">{line.quantity}</span></div>
+        <div className="ps-detail-item"><span className="ps-detail-label">Quantity</span><span className="ps-detail-value">{qty}</span></div>
         <div className="ps-detail-item"><span className="ps-detail-label">Operation</span><span className="ps-detail-value" style={{textTransform:"capitalize"}}>{line.operation}</span></div>
       </div>
 
@@ -1992,7 +2008,7 @@ function SkylightMRACard({
         <div className="skylight-config-title">📐 Awning Configuration</div>
         <div className="skylight-config-grid">
 
-          {/* CHANGE 3: Projection — locked dropdown, no free text */}
+          {/* Projection — locked dropdown */}
           <div className="mps-field">
             <label className="mps-label">
               Projection <span className="mps-req">*</span>
@@ -2004,16 +2020,17 @@ function SkylightMRACard({
               onChange={e => setConfig({ projection: e.target.value })}
             >
               <option value="">Select Projection</option>
-              {SKYLIGHT_MRA_PROJECTIONS.map(p => <option key={p} value={p}>{p}</option>)}
+              {MRA_PROJECTION_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
             {cfg.projection && (
               <div className="skylight-projection-note">
-                ✓ Projection locked to <strong>{cfg.projection}</strong> — pricing tier confirmed
+                ✓ Projection locked to <strong>{cfg.projection}</strong>
+                {validWidths.length > 0 && ` — Valid widths: ${validWidths[0]}–${validWidths[validWidths.length-1]}ft`}
               </div>
             )}
           </div>
 
-          {/* CHANGE 3: Width — feet + inches format, same as MPS */}
+          {/* Width — feet + inches format */}
           <div className="mps-field skylight-width-field">
             <label className="mps-label">
               Width <span className="mps-req">*</span>
@@ -2047,12 +2064,23 @@ function SkylightMRACard({
             {(cfg.widthFt || cfg.widthIn) && (
               <div className="skylight-width-display">
                 Width: <strong>{cfg.widthFt || 0}' {cfg.widthIn || 0}"</strong>
+                {widthFtKey && <span style={{marginLeft:"6px",color:"var(--ps-text-muted,#888)"}}>(→ {widthFtKey}ft bracket)</span>}
               </div>
             )}
           </div>
         </div>
 
-        {/* CHANGE 3: Fabric selection */}
+        {/* Pricing feedback */}
+        {cfg.projection && widthFtKey && (
+          <div className={`opening-price-badge ${priceResult.ok ? "opening-price-badge--ok" : "opening-price-badge--error"}`}>
+            {priceResult.ok
+              ? <><span className="opening-price-badge__label">Unit price:</span> <span className="opening-price-badge__value">{fmt(unitPrice)}</span>{qty > 1 && <span className="opening-price-badge__hint"> × {qty} = <strong>{fmt(matrixTotal)}</strong></span>}</>
+              : <span>⚠ {priceResult.message}</span>
+            }
+          </div>
+        )}
+
+        {/* Fabric selection */}
         <div className="skylight-fabric-section">
           <div className="skylight-config-title" style={{marginTop:"16px"}}>🧵 Fabric Selection</div>
           <SkylightFabricSelector
@@ -2073,9 +2101,7 @@ function SkylightMRACard({
           value={productNotes || ""} onChange={e => onProductNoteChange(line.id, e.target.value)} rows={3} />
       </div>
 
-      {enriched?.pricing?.priceNote && <div className="ps-price-note">💡 {enriched.pricing.priceNote}</div>}
-
-      {/* Field Add-ons (Somfy RTS accessories, brackets — transmitter/LED excluded) */}
+      {/* Field Add-ons */}
       {fieldAddonDefs.length > 0 && (
         <div className="ps-addons-section field-addons-section">
           <div className="ps-addons-title">
@@ -2135,7 +2161,10 @@ function SkylightMRACard({
       )}
 
       <div className="mps-line-total">
-        <span>Base Price (from form): {fmt(baseTotal)}</span>
+        {priceResult.ok
+          ? <span>Matrix Price: {fmt(unitPrice)}{qty > 1 ? ` × ${qty} = ${fmt(matrixTotal)}` : ""}</span>
+          : <span style={{color:"var(--ps-warn,#e67e22)"}}>⚠ Enter projection &amp; width to calculate price</span>
+        }
         {fieldTotal > 0 && <span>+ Accessories: {fmt(fieldTotal)}</span>}
         <span className="mps-line-grand">Line Total: {fmt(grandLineTotal)}</span>
       </div>
@@ -2144,7 +2173,251 @@ function SkylightMRACard({
 }
 
 // ─────────────────────────────────────────────────────────────
-// STANDARD PRODUCT CARD (unchanged)
+// SKYLIGHT PLUS MRA CARD (Motor B QIP only, widths 13–20ft)
+// Auto-transmitter + auto-LED banner; matrix pricing from SKYLIGHT_MRA_PRICE_DATA
+// ─────────────────────────────────────────────────────────────
+function SkylightMRACard({
+  line, index, snapshot,
+  mraConfig, onMRAConfigChange,
+  fieldAddonValues, onFieldAddonChange,
+  productNotes, onProductNoteChange,
+  totalAwningQty,
+}) {
+  const cfg = mraConfig[line.id] || createMRAConfig();
+  const setConfig = (updates) => onMRAConfigChange(line.id, { ...cfg, ...updates });
+
+  const qty = parseInt(line.quantity, 10) || 1;
+  const autoTransmitter = getAutoTransmitter(totalAwningQty);
+
+  // Matrix price lookup
+  const totalWidthFt = (parseInt(cfg.widthFt, 10) || 0) + ((parseInt(cfg.widthIn, 10) || 0) / 12);
+  const widthFtKey   = totalWidthFt > 0 ? Math.ceil(totalWidthFt) : null;
+  const priceResult  = widthFtKey && cfg.projection
+    ? getMRAPrice("Skylight Plus MRA", cfg.projection, widthFtKey)
+    : { ok: false, price: 0, message: "" };
+  const unitPrice    = priceResult.ok ? priceResult.price : 0;
+  const matrixTotal  = unitPrice * qty;
+
+  const sampleRow   = cfg.projection ? SKYLIGHT_MRA_PRICE_DATA[cfg.projection] : null;
+  const validWidths = sampleRow ? Object.keys(sampleRow).map(Number).sort((a,b)=>a-b) : [];
+
+  const fieldAddonDefs = getFieldAddonsForProduct("Skylight Plus MRA");
+  const fieldTotal     = calcFieldAddonTotal(fieldAddonValues, "Skylight Plus MRA");
+  const grandLineTotal = matrixTotal + fieldTotal;
+
+  return (
+    <div className="ps-product-card skylight-mra-card">
+      <div className="ps-product-header">
+        <div className="ps-product-number">#{index + 1}</div>
+        <div className="ps-product-name">
+          Skylight Plus MRA
+          <span className="skylight-mra-badge">Motorized Retractable Awning</span>
+        </div>
+        <div className="ps-product-price">{fmt(grandLineTotal)}</div>
+      </div>
+
+      {/* Auto-included items banner */}
+      <div className="skylight-included-banner">
+        <div className="skylight-included-title">✅ Standard Included Items (Auto-Assigned)</div>
+        <div className="skylight-included-grid">
+          <div className="skylight-included-item">
+            <span className="skylight-included-icon">🎛</span>
+            <div className="skylight-included-content">
+              <span className="skylight-included-name">Transmitter</span>
+              <span className="skylight-included-value">{autoTransmitter}</span>
+              <span className="skylight-included-hint">
+                Auto-assigned based on {totalAwningQty} total awning{totalAwningQty !== 1 ? "s" : ""} in order
+                {totalAwningQty <= 2 ? " (1–2 units → 5-channel)" : " (3+ units → 16-channel)"}
+              </span>
+            </div>
+          </div>
+          <div className="skylight-included-item">
+            <span className="skylight-included-icon">💡</span>
+            <div className="skylight-included-content">
+              <span className="skylight-included-name">LED Lighting</span>
+              <span className="skylight-included-value">Built-in LED — Included</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="ps-detail-grid">
+        <div className="ps-detail-item"><span className="ps-detail-label">Product</span><span className="ps-detail-value">Skylight Plus MRA</span></div>
+        <div className="ps-detail-item"><span className="ps-detail-label">Category</span><span className="ps-detail-value">{line.category}</span></div>
+        <div className="ps-detail-item"><span className="ps-detail-label">Quantity</span><span className="ps-detail-value">{line.quantity}</span></div>
+        <div className="ps-detail-item"><span className="ps-detail-label">Operation</span><span className="ps-detail-value" style={{textTransform:"capitalize"}}>{line.operation}</span></div>
+      </div>
+
+      <div className="skylight-config-section">
+        <div className="skylight-config-title">📐 Awning Configuration</div>
+        <div className="skylight-config-grid">
+
+          {/* Projection — locked dropdown */}
+          <div className="mps-field">
+            <label className="mps-label">
+              Projection <span className="mps-req">*</span>
+              <span className="skylight-field-hint">— select exact projection size</span>
+            </label>
+            <select
+              className="mps-select skylight-projection-select"
+              value={cfg.projection}
+              onChange={e => setConfig({ projection: e.target.value })}
+            >
+              <option value="">Select Projection</option>
+              {MRA_PROJECTION_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+            {cfg.projection && (
+              <div className="skylight-projection-note">
+                ✓ Projection locked to <strong>{cfg.projection}</strong>
+                {validWidths.length > 0 && ` — Valid widths: ${validWidths[0]}–${validWidths[validWidths.length-1]}ft`}
+              </div>
+            )}
+          </div>
+
+          {/* Width — feet + inches */}
+          <div className="mps-field skylight-width-field">
+            <label className="mps-label">
+              Width <span className="mps-req">*</span>
+              <span className="skylight-field-hint">— enter feet and inches</span>
+            </label>
+            <div className="skylight-width-inputs">
+              <div className="skylight-width-input-wrap">
+                <input
+                  className="mps-input skylight-dim-input"
+                  type="number"
+                  value={cfg.widthFt}
+                  onChange={e => setConfig({ widthFt: e.target.value })}
+                  placeholder="0"
+                  min="0"
+                />
+                <span className="skylight-dim-unit">ft</span>
+              </div>
+              <div className="skylight-width-input-wrap">
+                <input
+                  className="mps-input skylight-dim-input"
+                  type="number"
+                  value={cfg.widthIn}
+                  onChange={e => setConfig({ widthIn: e.target.value })}
+                  placeholder="0"
+                  min="0"
+                  max="11"
+                />
+                <span className="skylight-dim-unit">in</span>
+              </div>
+            </div>
+            {(cfg.widthFt || cfg.widthIn) && (
+              <div className="skylight-width-display">
+                Width: <strong>{cfg.widthFt || 0}' {cfg.widthIn || 0}"</strong>
+                {widthFtKey && <span style={{marginLeft:"6px",color:"var(--ps-text-muted,#888)"}}>(→ {widthFtKey}ft bracket)</span>}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Pricing feedback */}
+        {cfg.projection && widthFtKey && (
+          <div className={`opening-price-badge ${priceResult.ok ? "opening-price-badge--ok" : "opening-price-badge--error"}`}>
+            {priceResult.ok
+              ? <><span className="opening-price-badge__label">Unit price:</span> <span className="opening-price-badge__value">{fmt(unitPrice)}</span>{qty > 1 && <span className="opening-price-badge__hint"> × {qty} = <strong>{fmt(matrixTotal)}</strong></span>}</>
+              : <span>⚠ {priceResult.message}</span>
+            }
+          </div>
+        )}
+
+        {/* Fabric selection */}
+        <div className="skylight-fabric-section">
+          <div className="skylight-config-title" style={{marginTop:"16px"}}>🧵 Fabric Selection</div>
+          <SkylightFabricSelector
+            fabricBrand={cfg.fabricBrand}
+            fabricType={cfg.fabricType}
+            fabricColor={cfg.fabricColor}
+            onChange={({ fabricBrand, fabricType, fabricColor }) =>
+              setConfig({ fabricBrand, fabricType, fabricColor })
+            }
+          />
+        </div>
+      </div>
+
+      <div className="product-note-section">
+        <label className="mps-label">📝 Product Notes</label>
+        <textarea className="product-note-textarea"
+          placeholder="Add any important notes about this awning (e.g. mounting location, special instructions, site conditions)…"
+          value={productNotes || ""} onChange={e => onProductNoteChange(line.id, e.target.value)} rows={3} />
+      </div>
+
+      {/* Field Add-ons */}
+      {fieldAddonDefs.length > 0 && (
+        <div className="ps-addons-section field-addons-section">
+          <div className="ps-addons-title">
+            <span className="ps-addons-icon">◆</span> Optional Accessories
+            {fieldTotal > 0 && <span className="ps-addons-running-total">+{fmt(fieldTotal)} selected</span>}
+          </div>
+          <div className="field-addons-grid">
+            {(() => {
+              const groupMap = {};
+              fieldAddonDefs.forEach(def => { const g = def.group||"Add-ons"; if (!groupMap[g]) groupMap[g]=[]; groupMap[g].push(def); });
+              const groupOrder = [...new Set(fieldAddonDefs.map(d=>d.group||"Add-ons"))];
+              return groupOrder.map(groupLabel => (
+                <div key={groupLabel} className="field-addon-group">
+                  <div className="field-addon-group-header">{groupLabel}</div>
+                  {groupMap[groupLabel].map(def => {
+                    const val = fieldAddonValues?.[def.id] || {};
+                    const enabled = !!val.enabled;
+                    const qtyVal = val.qty || "";
+                    const customPrice = val.customPrice || "";
+                    const isCustom = def.pricingType === "custom";
+                    const lineAmt = enabled ? (isCustom ? (parseFloat(customPrice)||0) : def.rate*(parseFloat(qtyVal)||0)) : 0;
+                    return (
+                      <div key={def.id} className={`field-addon-row ${enabled?"field-addon-active":""}`}>
+                        <label className="field-addon-check-label">
+                          <input type="checkbox" className="ps-addon-checkbox" checked={enabled}
+                            onChange={() => onFieldAddonChange(line.id, def.id, {...val, enabled: !enabled})} />
+                          <span className="field-addon-name">{def.name}</span>
+                        </label>
+                        <div className="field-addon-right">
+                          {!isCustom && <div className="field-addon-rate">{fmt(def.rate)} / {def.unitShort}</div>}
+                          {enabled && (
+                            <div className="field-addon-input-wrap">
+                              {isCustom ? (
+                                <><span className="field-addon-unit-label">$</span>
+                                  <input type="number" className="field-addon-qty-input" value={customPrice} min="0" step="1" placeholder={def.placeholder}
+                                    onChange={e => onFieldAddonChange(line.id, def.id, {...val, enabled:true, customPrice:e.target.value})} />
+                                  {lineAmt > 0 && <span className="field-addon-line-total">{fmt(lineAmt)}</span>}
+                                </>
+                              ) : (
+                                <><input type="number" className="field-addon-qty-input" value={qtyVal} min="0" step="1" placeholder={def.placeholder}
+                                    onChange={e => onFieldAddonChange(line.id, def.id, {...val, enabled:true, qty:e.target.value})} />
+                                  <span className="field-addon-unit-label">{def.unit}</span>
+                                  {lineAmt > 0 && <span className="field-addon-line-total">{fmt(lineAmt)}</span>}
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ));
+            })()}
+          </div>
+        </div>
+      )}
+
+      <div className="mps-line-total">
+        {priceResult.ok
+          ? <span>Matrix Price: {fmt(unitPrice)}{qty > 1 ? ` × ${qty} = ${fmt(matrixTotal)}` : ""}</span>
+          : <span style={{color:"var(--ps-warn,#e67e22)"}}>⚠ Enter projection &amp; width to calculate price</span>
+        }
+        {fieldTotal > 0 && <span>+ Accessories: {fmt(fieldTotal)}</span>}
+        <span className="mps-line-grand">Line Total: {fmt(grandLineTotal)}</span>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// STANDARD PRODUCT CARD
 // ─────────────────────────────────────────────────────────────
 function StandardProductCard({ line, index, snapshot, addonSelections, onAddonToggle, fieldAddonValues, onFieldAddonChange, productNotes, onProductNoteChange }) {
   const enriched  = snapshot.productLines.find(l => l.id === line.id);
@@ -2289,19 +2562,18 @@ export default function ProductSummary() {
   const navigate = useNavigate();
   const snapshot = location.state?.snapshot;
 
-  const [addonSelections,   setAddonSelections]   = useState(() => loadFromSession()?.addonSelections   || {});
-  const [mpsData,           setMpsData]           = useState(() => loadFromSession()?.mpsData           || {});
-  const [fieldAddonValues,  setFieldAddonValues]  = useState(() => loadFromSession()?.fieldAddonValues  || {});
-  const [productNotes,      setProductNotes]      = useState(() => loadFromSession()?.productNotes      || {});
-  const [signature,         setSignature]         = useState(() => loadFromSession()?.signature         || null);
-  // CHANGE 1: wind sensor selections — per line { wired: bool, wireless: bool }
+  const [addonSelections,      setAddonSelections]      = useState(() => loadFromSession()?.addonSelections      || {});
+  const [mpsData,              setMpsData]              = useState(() => loadFromSession()?.mpsData              || {});
+  const [fieldAddonValues,     setFieldAddonValues]     = useState(() => loadFromSession()?.fieldAddonValues     || {});
+  const [productNotes,         setProductNotes]         = useState(() => loadFromSession()?.productNotes         || {});
+  const [signature,            setSignature]            = useState(() => loadFromSession()?.signature            || null);
   const [windSensorSelections, setWindSensorSelections] = useState(() => loadFromSession()?.windSensorSelections || {});
-  // CHANGE 3: Skylight MRA config — per line { width, widthFt, widthIn, projection, fabricBrand, fabricType, fabricColor }
-  const [skylightConfig, setSkylightConfig] = useState(() => loadFromSession()?.skylightConfig || {});
+  // FIX 1: Unified mraConfig replaces separate skylightConfig
+  const [mraConfig,            setMraConfig]            = useState(() => loadFromSession()?.mraConfig            || {});
 
   useEffect(() => {
-    saveToSession({ addonSelections, mpsData, fieldAddonValues, productNotes, signature, windSensorSelections, skylightConfig });
-  }, [addonSelections, mpsData, fieldAddonValues, productNotes, signature, windSensorSelections, skylightConfig]);
+    saveToSession({ addonSelections, mpsData, fieldAddonValues, productNotes, signature, windSensorSelections, mraConfig });
+  }, [addonSelections, mpsData, fieldAddonValues, productNotes, signature, windSensorSelections, mraConfig]);
 
   const handleProductNoteChange = (lineId, note) => setProductNotes(prev => ({ ...prev, [lineId]: note }));
 
@@ -2314,14 +2586,8 @@ export default function ProductSummary() {
   };
 
   const handleMPSChange = (lineId, areas) => setMpsData(prev => ({...prev, [lineId]: areas}));
-
-  // CHANGE 1: Wind sensor handler
-  const handleWindSensorChange = (lineId, selections) =>
-    setWindSensorSelections(prev => ({ ...prev, [lineId]: selections }));
-
-  // CHANGE 3: Skylight config handler
-  const handleSkylightConfigChange = (lineId, cfg) =>
-    setSkylightConfig(prev => ({ ...prev, [lineId]: cfg }));
+  const handleWindSensorChange = (lineId, selections) => setWindSensorSelections(prev => ({ ...prev, [lineId]: selections }));
+  const handleMRAConfigChange  = (lineId, cfg) => setMraConfig(prev => ({ ...prev, [lineId]: cfg }));
 
   const handleGlobalReset = () => {
     if (window.confirm("Reset ALL areas, openings, add-ons, and notes for the entire quote? This cannot be undone.")) {
@@ -2331,7 +2597,7 @@ export default function ProductSummary() {
       setProductNotes({});
       setSignature(null);
       setWindSensorSelections({});
-      setSkylightConfig({});
+      setMraConfig({});
     }
   };
 
@@ -2347,15 +2613,15 @@ export default function ProductSummary() {
   const { customer, productLines, discount, orderNotes, lastUpdated } = snapshot;
   const configuredLines = productLines.filter(l => l.category && l.product);
 
-  // CHANGE 3: Count total awning quantity across all awning-type lines for transmitter auto-assignment
+  // Count total awning qty for transmitter auto-assignment
   const totalAwningQty = configuredLines
-    .filter(l => AWNING_PRODUCTS.includes(l.product) || l.product === "Skylight Plus MRA")
+    .filter(l => AWNING_PRODUCTS.includes(l.product))
     .reduce((sum, l) => sum + (parseInt(l.quantity, 10) || 1), 0);
 
-  const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand, windSensorGrand } = useMemo(() => {
-    if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0, mpsOpeningsProductGrand:0, windSensorGrand:0 };
+  const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand, windSensorGrand, mraMatrixGrand } = useMemo(() => {
+    if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0, mpsOpeningsProductGrand:0, windSensorGrand:0, mraMatrixGrand:0 };
     const configured = snapshot.productLines.filter(l => l.category && l.product);
-    let addonGrand=0, structuralGrand=0, openingsGrand=0, appBaseMPSGrand=0, windGrand=0;
+    let addonGrand=0, structuralGrand=0, openingsGrand=0, appBaseMPSGrand=0, windGrand=0, mraGrand=0;
 
     configured.forEach(line => {
       if (MPS_PRODUCTS.includes(line.product)) {
@@ -2365,33 +2631,44 @@ export default function ProductSummary() {
         const qty = parseInt(line.quantity,10)||1;
         const sel = addonSelections[line.id]||{};
         MPS_SIMPLE_ADDONS.forEach(a => { if(sel[a.id]) addonGrand += a.price*qty; });
-        // CHANGE 1: wind sensor totals
         const totalOpenings = countTotalOpenings(areas);
         windGrand += calcWindSensorTotal(windSensorSelections[line.id], totalOpenings);
         if (openingsTotal > 0) openingsGrand += openingsTotal;
         else { const e = snapshot.productLines.find(l2=>l2.id===line.id); appBaseMPSGrand += e?.pricing?.lineSubtotal||0; }
-      } else if (line.product !== "Skylight Plus MRA") {
+      } else if (AWNING_PRODUCTS.includes(line.product)) {
+        // MRA products: use matrix price
+        const cfg = mraConfig[line.id] || {};
+        const qty = parseInt(line.quantity,10)||1;
+        const totalWidthFt = (parseInt(cfg.widthFt,10)||0) + ((parseInt(cfg.widthIn,10)||0)/12);
+        const widthFtKey = totalWidthFt > 0 ? Math.ceil(totalWidthFt) : null;
+        if (widthFtKey && cfg.projection) {
+          const pr = getMRAPrice(line.product, cfg.projection, widthFtKey);
+          if (pr.ok) mraGrand += pr.price * qty;
+        }
+        mraGrand += calcFieldAddonTotal(fieldAddonValues[line.id], line.product);
+      } else {
         const qty = parseInt(line.quantity,10)||1;
         const addons = getAddonsForProduct(line.product);
         const sel = addonSelections[line.id]||{};
         addons.forEach(a => { if(sel[a.id]) addonGrand += a.price*qty; });
         addonGrand += calcFieldAddonTotal(fieldAddonValues[line.id], line.product);
       }
-      // Skylight MRA: field addons included in base calc inside SkylightMRACard
     });
 
-    const nonMPSOriginal = (snapshot.pricingSummary?.subtotal||0) -
-      snapshot.productLines.filter(l=>l.category&&l.product&&MPS_PRODUCTS.includes(l.product))
-        .reduce((s,l)=>{ const e=snapshot.productLines.find(l2=>l2.id===l.id); return s+(e?.pricing?.lineSubtotal||0); },0);
+    const nonMPSNonMRAOriginal = (snapshot.pricingSummary?.subtotal||0) -
+      snapshot.productLines
+        .filter(l => l.category && l.product && (MPS_PRODUCTS.includes(l.product) || AWNING_PRODUCTS.includes(l.product)))
+        .reduce((s,l)=>{ const e=snapshot.productLines.find(l2=>l2.id===l.id); return s+(e?.pricing?.lineSubtotal||0); }, 0);
 
     return {
       summaryAddonGrandTotal:  addonGrand,
       mpsStructuralGrand:      structuralGrand,
       mpsOpeningsProductGrand: openingsGrand,
       windSensorGrand:         windGrand,
-      subtotalWithAddons: nonMPSOriginal + openingsGrand + appBaseMPSGrand + addonGrand + structuralGrand + windGrand,
+      mraMatrixGrand:          mraGrand,
+      subtotalWithAddons: nonMPSNonMRAOriginal + openingsGrand + appBaseMPSGrand + addonGrand + structuralGrand + windGrand + mraGrand,
     };
-  }, [snapshot, addonSelections, mpsData, fieldAddonValues, windSensorSelections]);
+  }, [snapshot, addonSelections, mpsData, fieldAddonValues, windSensorSelections, mraConfig]);
 
   const discountPercent = snapshot?.pricingSummary?.discountPercent || 0;
   const discountAmount  = subtotalWithAddons * (discountPercent / 100);
@@ -2436,18 +2713,39 @@ export default function ProductSummary() {
           {configuredLines.length === 0 ? <p className="ps-empty">No products configured yet.</p> : (
             <div className="ps-products-list">
               {configuredLines.map((line, idx) => {
-                // CHANGE 3: Route "Skylight Plus MRA" (and legacy "Motor B Retractable Awning") to SkylightMRACard
+                // Skylight Plus MRA (or legacy "Motor B Retractable Awning") → SkylightMRACard
                 const isSkylightMRA = line.product === "Skylight Plus MRA" || line.product === "Motor B Retractable Awning";
+                // Skyline MRA and Open Roll MRA → GenericMRACard
+                const isGenericMRA  = line.product === "Skyline Motorized Retractable Awning" ||
+                                      line.product === "Open Roll Motorized Retractable Awning";
 
                 if (isSkylightMRA) {
                   return (
                     <SkylightMRACard
                       key={line.id}
-                      line={{ ...line, product: "Skylight Plus MRA" }} // normalize name
+                      line={{ ...line, product: "Skylight Plus MRA" }}
                       index={idx}
                       snapshot={snapshot}
-                      skylightConfig={skylightConfig}
-                      onSkylightConfigChange={handleSkylightConfigChange}
+                      mraConfig={mraConfig}
+                      onMRAConfigChange={handleMRAConfigChange}
+                      fieldAddonValues={fieldAddonValues[line.id] || {}}
+                      onFieldAddonChange={handleFieldAddonChange}
+                      productNotes={productNotes[line.id]}
+                      onProductNoteChange={handleProductNoteChange}
+                      totalAwningQty={totalAwningQty}
+                    />
+                  );
+                }
+
+                if (isGenericMRA) {
+                  return (
+                    <GenericMRACard
+                      key={line.id}
+                      line={line}
+                      index={idx}
+                      snapshot={snapshot}
+                      mraConfig={mraConfig}
+                      onMRAConfigChange={handleMRAConfigChange}
                       fieldAddonValues={fieldAddonValues[line.id] || {}}
                       onFieldAddonChange={handleFieldAddonChange}
                       productNotes={productNotes[line.id]}
@@ -2500,6 +2798,7 @@ export default function ProductSummary() {
           <div className="ps-pricing-table">
             <div className="ps-pricing-row"><span>Product Subtotal</span><span>{fmt(snapshot.pricingSummary?.subtotal)}</span></div>
             {mpsOpeningsProductGrand > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>MPS Opening-Based Pricing (replaces base)</span><span className="ps-addon-highlight">{fmt(mpsOpeningsProductGrand)}</span></div>}
+            {mraMatrixGrand          > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Awning Matrix Pricing</span><span className="ps-addon-highlight">{fmt(mraMatrixGrand)}</span></div>}
             {summaryAddonGrandTotal  > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Selected Add-ons</span><span className="ps-addon-highlight">+{fmt(summaryAddonGrandTotal)}</span></div>}
             {windSensorGrand         > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Wind Sensor(s)</span><span className="ps-addon-highlight">+{fmt(windSensorGrand)}</span></div>}
             {mpsStructuralGrand      > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Structural Adjustments (L-Channel / Buildout / Storm Rail / Custom Color)</span><span className="ps-addon-highlight">+{fmt(mpsStructuralGrand)}</span></div>}
