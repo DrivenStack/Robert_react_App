@@ -193,7 +193,7 @@ const FABRIC_CATALOG = {
         "90": ["White", "Desert Sand", "Sandstone", "Dusk Grey", "Brown", "Black/Brown", "Black"],
       },
     },
-    "Blackout (Dimout)": {
+    "Dimout": {
       hasOpenness: false,
       colors: ["Light Grey", "Shadow Texture", "Grey", "Charcoal", "Espresso Texture", "Flat Black", "Tan", "Stone Texture", "Putty", "Tobacco"],
     },
@@ -249,15 +249,15 @@ const MPS_DEFAULTS = {
   mountTypes:       ["Surface", "Inside", "Soffit Mount"],
   trackTypes:       ["Zipper", "Wire Guide", "Storm Rail"],
   motorTypes:       ["Somfy (default)", "Somfy RTS", "Somfy WireFree", "Custom"],
-  lChannelSizes:    ["1×1", "1×2", "Custom"],
+  lChannelSizes:    ["1.5", "1×2", "Custom"],
   lChannelLocs:     ["Left", "Right", "Top", "Bottom"],
   buildoutTypes:    ["Wood", "Alumitube"],
   woodSizes:        ["2x4", "2x6", "2x8", "2x10", "4x4", "4x6", "4x8", "4x10"],
   motorSides:       ["Left", "Right"],
-  weightBarTypes:   ["Sand", "White", "Black", "Brown", "Custom"],
+  weightBarTypes:   ["Sand", "White", "Black", "Bronze", "Custom"],
   // FIX 2: cassette and track color options with Bronze
-  cassetteColors:   ["White", "Beige", "Ivory", "Brown", "Black", "Tan", "Grey", "Custom"],
-  trackColors:      ["White", "Beige", "Ivory", "Brown", "Black", "Tan", "Grey", "Custom"],
+  cassetteColors:   ["Sand", "White", "Black", "Bronze", "Custom"],
+  trackColors:      ["Sand", "White", "Black", "Bronze", "Custom"],
   remoteTypes:      ["1 Channel Somfy Remote", "5 Channel Somfy Remote", "16 Channel Somfy Remote"],
 };
 
@@ -1201,7 +1201,16 @@ function BuildoutItem({ bo, index, onChange, onRemove, showRemove }) {
             <div className="alumitube-size-row">
               <label className="alumitube-radio">
                 <input type="radio" checked={!isCustomAlumi} onChange={() => set("isCustomAlumitubeSize", false)} />
-                <span>1.5" × 1.5" (${ALUMITUBE_DEFAULT_RATE}/LF)</span>
+                <span>3" × 8" (${ALUMITUBE_DEFAULT_RATE}/LF)</span>
+              </label>
+              
+              <label className="alumitube-radio">
+                <input type="radio" checked={isCustomAlumi} onChange={() => set("isCustomAlumitubeSize", true)} />
+                <span>2" × 4"</span>
+              </label>
+               <label className="alumitube-radio">
+                <input type="radio" checked={isCustomAlumi} onChange={() => set("isCustomAlumitubeSize", true)} />
+                <span>2" × 6"</span>
               </label>
               <label className="alumitube-radio">
                 <input type="radio" checked={isCustomAlumi} onChange={() => set("isCustomAlumitubeSize", true)} />
