@@ -21,7 +21,6 @@ const AWNING_PRODUCTS = [
   "Motor B Open Roll Retractable Awning",
 ];
 
-// Projection options shared by all MRA products
 const MRA_PROJECTION_OPTIONS = [
   "4'11\"",
   "6'6\"",
@@ -32,15 +31,9 @@ const MRA_PROJECTION_OPTIONS = [
 ];
 
 // ─────────────────────────────────────────────────────────────
-// FIX 1: MRA PRICING MATRICES
-// Skylight Plus MRA  = Motor B QIP-Square Box (widths 13–20 ft)
-// Skyline MRA        = Motor A + Motor B QIP-Square Box (widths 7–20 ft merged)
-// Open Roll MRA      = Motor A + Motor B Open Roll (widths 7–20 ft merged)
-//
-// Keys: projection string → width (ft) → price
+// MRA PRICING MATRICES
 // ─────────────────────────────────────────────────────────────
 const SKYLIGHT_MRA_PRICE_DATA = {
-  // Motor B QIP Square Box — widths 13–20 ft
   "4'11\"": { 13:4550,14:4745,15:4940,16:5135,17:5330,18:5525,19:5720,20:5915 },
   "6'6\"":  { 13:5060,14:5280,15:5500,16:5720,17:5940,18:6160,19:6380,20:6600 },
   "8'2\"":  { 13:5720,14:5975,15:6230,16:6485,17:6740,18:6995,19:7250,20:7505 },
@@ -50,7 +43,6 @@ const SKYLIGHT_MRA_PRICE_DATA = {
 };
 
 const SKYLINE_MRA_PRICE_DATA = {
-  // Motor A QIP (widths 7–12) + Motor B QIP (widths 13–20) merged
   "4'11\"": { 7:2860,8:3025,9:3190,10:3355,11:3520,12:3685,13:4550,14:4745,15:4940,16:5135,17:5330,18:5525,19:5720,20:5915 },
   "6'6\"":  { 7:3190,8:3380,9:3570,10:3760,11:3950,12:4140,13:5060,14:5280,15:5500,16:5720,17:5940,18:6160,19:6380,20:6600 },
   "8'2\"":  { 7:3575,8:3795,9:4015,10:4235,11:4455,12:4675,13:5720,14:5975,15:6230,16:6485,17:6740,18:6995,19:7250,20:7505 },
@@ -60,7 +52,6 @@ const SKYLINE_MRA_PRICE_DATA = {
 };
 
 const OPEN_ROLL_MRA_PRICE_DATA = {
-  // Motor A Open Roll (widths 7–12) + Motor B Open Roll (widths 13–20) merged
   "4'11\"": { 7:2310,8:2445,9:2580,10:2715,11:2850,12:2985,13:3685,14:3850,15:4015,16:4180,17:4345,18:4510,19:4675,20:4840 },
   "6'6\"":  { 7:2585,8:2740,9:2895,10:3050,11:3205,12:3360,13:4125,14:4315,15:4505,16:4695,17:4885,18:5075,19:5265,20:5455 },
   "8'2\"":  { 7:2915,8:3090,9:3265,10:3440,11:3615,12:3790,13:4675,14:4895,15:5115,16:5335,17:5555,18:5775,19:5995,20:6215 },
@@ -94,15 +85,24 @@ function getMRAPrice(productName, projection, widthFt) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// SKYLIGHT PLUS MRA fabric catalog
+// SUNBRELLA FABRIC DATA — 247 fabrics from CSV
 // ─────────────────────────────────────────────────────────────
-const SKYLIGHT_FABRIC_BRANDS = ["Sunbrella", "Recacril", "Dickson", "Tempotest"];
-const SKYLIGHT_FABRIC_TYPES = {
-  Sunbrella:  ["Stripe", "Solid", "Jacquard", "Canvas"],
-  Recacril:   ["Standard", "Premium"],
-  Dickson:    ["Orchestra", "Fantasy", "Tweed"],
-  Tempotest:  ["Base", "Para", "Uni"],
-};
+const SUNBRELLA_FABRICS = [{"brand":"Sunbrella","style_number":"4631-0000","color_name":"Burgundy"},{"brand":"Sunbrella","style_number":"4630-0000","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"4675-0000","color_name":"Capri"},{"brand":"Sunbrella","style_number":"4646-0000","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"4644-0000","color_name":"Charcoal Grey"},{"brand":"Sunbrella","style_number":"4607-0000","color_name":"Charcoal Tweed"},{"brand":"Sunbrella","style_number":"14609-0000","color_name":"Cloud"},{"brand":"Sunbrella","style_number":"4676-0000","color_name":"Cocoa"},{"brand":"Sunbrella","style_number":"4662-0000","color_name":"Crest Ash"},{"brand":"Sunbrella","style_number":"4660-0000","color_name":"Crest Birch"},{"brand":"Sunbrella","style_number":"4606-0000","color_name":"Dubonnet Tweed"},{"brand":"Sunbrella","style_number":"4600-0000","color_name":"Erin Green"},{"brand":"Sunbrella","style_number":"4671-0000","color_name":"Fern"},{"brand":"Sunbrella","style_number":"4637-0000","color_name":"Forest Green"},{"brand":"Sunbrella","style_number":"4672-0000","color_name":"Heather Beige"},{"brand":"Sunbrella","style_number":"4605-0000","color_name":"Hemlock Tweed"},{"brand":"Sunbrella","style_number":"14613-0000","color_name":"Hogan Admiral"},{"brand":"Sunbrella","style_number":"14612-0000","color_name":"Hogan Arctic"},{"brand":"Sunbrella","style_number":"14616-0000","color_name":"Hogan Carob"},{"brand":"Sunbrella","style_number":"14617-0000","color_name":"Hogan Flame"},{"brand":"Sunbrella","style_number":"14611-0000","color_name":"Hogan Marina"},{"brand":"Sunbrella","style_number":"14615-0000","color_name":"Hogan Sparrow"},{"brand":"Sunbrella","style_number":"14614-0000","color_name":"Hogan Walnut"},{"brand":"Sunbrella","style_number":"4632-0000","color_name":"Ivy"},{"brand":"Sunbrella","style_number":"4603-0000","color_name":"Jockey Red"},{"brand":"Sunbrella","style_number":"4633-0000","color_name":"Linen"},{"brand":"Sunbrella","style_number":"4654-0000","color_name":"Linen Tweed"},{"brand":"Sunbrella","style_number":"4666-0000","color_name":"Logo Red"},{"brand":"Sunbrella","style_number":"4678-0000","color_name":"Marine Blue"},{"brand":"Sunbrella","style_number":"4652-0000","color_name":"Mediterranean Blue"},{"brand":"Sunbrella","style_number":"4653-0000","color_name":"Mediterranean Blue Tweed"},{"brand":"Sunbrella","style_number":"4616-0000","color_name":"Mocha Tweed"},{"brand":"Sunbrella","style_number":"4604-0000","color_name":"Natural"},{"brand":"Sunbrella","style_number":"4626-0000","color_name":"Navy"},{"brand":"Sunbrella","style_number":"4679-0000","color_name":"Ocean Blue"},{"brand":"Sunbrella","style_number":"4609-0000","color_name":"Orange"},{"brand":"Sunbrella","style_number":"4642-0000","color_name":"Oyster"},{"brand":"Sunbrella","style_number":"4601-0000","color_name":"Pacific Blue"},{"brand":"Sunbrella","style_number":"4683-0000","color_name":"Parchment"},{"brand":"Sunbrella","style_number":"4617-0000","color_name":"Royal Blue Tweed"},{"brand":"Sunbrella","style_number":"4641-0000","color_name":"Sapphire Blue"},{"brand":"Sunbrella","style_number":"4664-0000","color_name":"Sea"},{"brand":"Sunbrella","style_number":"4897-0000","color_name":"Silica Charcoal"},{"brand":"Sunbrella","style_number":"4859-0000","color_name":"Silica Dune"},{"brand":"Sunbrella","style_number":"4833-0000","color_name":"Silica Gravel"},{"brand":"Sunbrella","style_number":"4860-0000","color_name":"Silica Sesame"},{"brand":"Sunbrella","style_number":"4612-0000","color_name":"Aruba"},{"brand":"Sunbrella","style_number":"4688-0000","color_name":"Basil"},{"brand":"Sunbrella","style_number":"4620-0000","color_name":"Beige"},{"brand":"Sunbrella","style_number":"4608-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"6023-0000","color_name":"Aquamarine"},{"brand":"Sunbrella","style_number":"6012-0000","color_name":"Aruba"},{"brand":"Sunbrella","style_number":"6020-0000","color_name":"Beige"},{"brand":"Sunbrella","style_number":"6008-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"4862-0000","color_name":"Silica Silver"},{"brand":"Sunbrella","style_number":"4861-0000","color_name":"Silica Stone"},{"brand":"Sunbrella","style_number":"4651-0000","color_name":"Silver"},{"brand":"Sunbrella","style_number":"4624-0000","color_name":"Sky Blue"},{"brand":"Sunbrella","style_number":"4684-0000","color_name":"Slate"},{"brand":"Sunbrella","style_number":"4615-0000","color_name":"Smoke"},{"brand":"Sunbrella","style_number":"4636-0000","color_name":"Storm"},{"brand":"Sunbrella","style_number":"4602-0000","color_name":"Sunflower Yellow"},{"brand":"Sunbrella","style_number":"4648-0000","color_name":"Taupe"},{"brand":"Sunbrella","style_number":"4622-0000","color_name":"Terracotta"},{"brand":"Sunbrella","style_number":"4628-0000","color_name":"Toast"},{"brand":"Sunbrella","style_number":"14618-0000","color_name":"Toast Tweed"},{"brand":"Sunbrella","style_number":"4696-0000","color_name":"Tresco Birch"},{"brand":"Sunbrella","style_number":"4695-0000","color_name":"Tresco Linen"},{"brand":"Sunbrella","style_number":"4621-0000","color_name":"True Brown"},{"brand":"Sunbrella","style_number":"4610-0000","color_name":"Turquoise"},{"brand":"Sunbrella","style_number":"4677-0000","color_name":"Tuscan"},{"brand":"Sunbrella","style_number":"4618-0000","color_name":"Walnut Brown Tweed"},{"brand":"Sunbrella","style_number":"4634-0000","color_name":"White"},{"brand":"Sunbrella","style_number":"6095-0000","color_name":"Tresco Linen"},{"brand":"Sunbrella","style_number":"6021-0000","color_name":"True Brown"},{"brand":"Sunbrella","style_number":"6010-0000","color_name":"Turquoise"},{"brand":"Sunbrella","style_number":"6077-0000","color_name":"Tuscan"},{"brand":"Sunbrella","style_number":"6018-0000","color_name":"Walnut Brown Tweed"},{"brand":"Sunbrella","style_number":"6034-0000","color_name":"White"},{"brand":"Sunbrella","style_number":"6031-0000","color_name":"Burgundy"},{"brand":"Sunbrella","style_number":"6030-0000","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"6075-0000","color_name":"Capri"},{"brand":"Sunbrella","style_number":"6046-0000","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"6044-0000","color_name":"Charcoal Grey"},{"brand":"Sunbrella","style_number":"6007-0000","color_name":"Charcoal Tweed"},{"brand":"Sunbrella","style_number":"6064-0000","color_name":"Cloud"},{"brand":"Sunbrella","style_number":"6076-0000","color_name":"Cocoa"},{"brand":"Sunbrella","style_number":"6065-0000","color_name":"Concord"},{"brand":"Sunbrella","style_number":"6006-0000","color_name":"Dubonnet Tweed"},{"brand":"Sunbrella","style_number":"6000-0000","color_name":"Erin Green"},{"brand":"Sunbrella","style_number":"6071-0000","color_name":"Fern"},{"brand":"Sunbrella","style_number":"6037-0000","color_name":"Forest Green"},{"brand":"Sunbrella","style_number":"6072-0000","color_name":"Heather Beige"},{"brand":"Sunbrella","style_number":"6005-0000","color_name":"Hemlock Tweed"},{"brand":"Sunbrella","style_number":"6032-0000","color_name":"Ivy"},{"brand":"Sunbrella","style_number":"6003-0000","color_name":"Jockey Red"},{"brand":"Sunbrella","style_number":"6033-0000","color_name":"Linen"},{"brand":"Sunbrella","style_number":"6054-0000","color_name":"Linen Tweed"},{"brand":"Sunbrella","style_number":"6066-0000","color_name":"Logo Red"},{"brand":"Sunbrella","style_number":"6078-0000","color_name":"Marine Blue"},{"brand":"Sunbrella","style_number":"6052-0000","color_name":"Mediterranean Blue"},{"brand":"Sunbrella","style_number":"6053-0000","color_name":"Mediterranean Blue Tweed"},{"brand":"Sunbrella","style_number":"6036-0000","color_name":"Midnight"},{"brand":"Sunbrella","style_number":"6004-0000","color_name":"Natural"},{"brand":"Sunbrella","style_number":"6026-0000","color_name":"Navy"},{"brand":"Sunbrella","style_number":"6079-0000","color_name":"Ocean Blue"},{"brand":"Sunbrella","style_number":"6009-0000","color_name":"Orange"},{"brand":"Sunbrella","style_number":"6042-0000","color_name":"Oyster"},{"brand":"Sunbrella","style_number":"6001-0000","color_name":"Pacific Blue"},{"brand":"Sunbrella","style_number":"6083-0000","color_name":"Parchment"},{"brand":"Sunbrella","style_number":"6043-0000","color_name":"Persian Green"},{"brand":"Sunbrella","style_number":"6017-0000","color_name":"Royal Blue Tweed"},{"brand":"Sunbrella","style_number":"6041-0000","color_name":"Sapphire Blue"},{"brand":"Sunbrella","style_number":"6059-0000","color_name":"Silica Dune"},{"brand":"Sunbrella","style_number":"6063-0000","color_name":"Silica Gravel"},{"brand":"Sunbrella","style_number":"6062-0000","color_name":"Silica Silver"},{"brand":"Sunbrella","style_number":"6061-0000","color_name":"Silica Stone"},{"brand":"Sunbrella","style_number":"6051-0000","color_name":"Silver"},{"brand":"Sunbrella","style_number":"6024-0000","color_name":"Sky Blue"},{"brand":"Sunbrella","style_number":"6084-0000","color_name":"Slate"},{"brand":"Sunbrella","style_number":"6015-0000","color_name":"Smoke"},{"brand":"Sunbrella","style_number":"6002-0000","color_name":"Sunflower Yellow"},{"brand":"Sunbrella","style_number":"6048-0000","color_name":"Taupe"},{"brand":"Sunbrella","style_number":"6022-0000","color_name":"Terracotta"},{"brand":"Sunbrella","style_number":"6028-0000","color_name":"Toast"},{"brand":"Sunbrella","style_number":"2389-0060","color_name":"Toast Tweed"},{"brand":"Sunbrella","style_number":"6096-0000","color_name":"Tresco Birch"},{"brand":"Sunbrella","style_number":"80008-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"80030-0000","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"80046-0000","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"80001-0000","color_name":"Pacific Blue"},{"brand":"Sunbrella","style_number":"80028-0000","color_name":"Toast"},{"brand":"Sunbrella","style_number":"4888-0000","color_name":"Clinton Granite"},{"brand":"Sunbrella","style_number":"4856-0000","color_name":"Colonnade Juniper"},{"brand":"Sunbrella","style_number":"4857-0000","color_name":"Colonnade Redwood"},{"brand":"Sunbrella","style_number":"4835-0000","color_name":"Cooper Ash"},{"brand":"Sunbrella","style_number":"4988-0000","color_name":"Cooper Black"},{"brand":"Sunbrella","style_number":"4987-0000","color_name":"Cooper Navy"},{"brand":"Sunbrella","style_number":"4813-0000","color_name":"Eastland Redwood"},{"brand":"Sunbrella","style_number":"4994-0000","color_name":"Eastridge Cocoa"},{"brand":"Sunbrella","style_number":"4709-0000","color_name":"Equate Cashmere"},{"brand":"Sunbrella","style_number":"4766-0000","color_name":"Era Ash"},{"brand":"Sunbrella","style_number":"4959-0000","color_name":"Fern / Heather Beige Blockstripe"},{"brand":"Sunbrella","style_number":"4955-0000","color_name":"Fern Classic"},{"brand":"Sunbrella","style_number":"4932-0000","color_name":"Forest / Beige / Natural / Sage Fancy"},{"brand":"Sunbrella","style_number":"4790-0000","color_name":"Forest Green Fancy"},{"brand":"Sunbrella","style_number":"4949-0000","color_name":"Forest Vintage Bar Stripe"},{"brand":"Sunbrella","style_number":"4777-0000","color_name":"Grey / Beige Chip Fancy"},{"brand":"Sunbrella","style_number":"4799-0000","color_name":"Grey / Black / White"},{"brand":"Sunbrella","style_number":"4989-0000","color_name":"Hatteras Raven"},{"brand":"Sunbrella","style_number":"4985-0000","color_name":"Havelock Brick"},{"brand":"Sunbrella","style_number":"4954-0000","color_name":"Heather Beige Classic"},{"brand":"Sunbrella","style_number":"4751-0000","color_name":"Hemlock Tweed Fancy"},{"brand":"Sunbrella","style_number":"4969-0000","color_name":"Henna / Fern Vintage"},{"brand":"Sunbrella","style_number":"4868-0000","color_name":"Kiawah Spa"},{"brand":"Sunbrella","style_number":"4789-0000","color_name":"Manhattan Classic"},{"brand":"Sunbrella","style_number":"4876-0000","color_name":"Manhattan Fog"},{"brand":"Sunbrella","style_number":"4703-0000","color_name":"Marco Black"},{"brand":"Sunbrella","style_number":"4704-0000","color_name":"Marco Blue Grey"},{"brand":"Sunbrella","style_number":"4707-0000","color_name":"Marco Olive"},{"brand":"Sunbrella","style_number":"4706-0000","color_name":"Marco Sandstone"},{"brand":"Sunbrella","style_number":"4895-0000","color_name":"Motive Denim"},{"brand":"Sunbrella","style_number":"4916-0000","color_name":"Navy / Taupe Fancy"},{"brand":"Sunbrella","style_number":"4755-0000","color_name":"Pacific Blue Fancy"},{"brand":"Sunbrella","style_number":"4712-0000","color_name":"Paxton Dew"},{"brand":"Sunbrella","style_number":"4713-0000","color_name":"Paxton Marble"},{"brand":"Sunbrella","style_number":"4711-0000","color_name":"Paxton Stone"},{"brand":"Sunbrella","style_number":"4768-0000","color_name":"Preston Stone"},{"brand":"Sunbrella","style_number":"4961-0000","color_name":"Putty Regimental"},{"brand":"Sunbrella","style_number":"4884-0000","color_name":"Saxon Cascade"},{"brand":"Sunbrella","style_number":"4885-0000","color_name":"Saxon Chili"},{"brand":"Sunbrella","style_number":"4907-0000","color_name":"Taupe 5 Bar"},{"brand":"Sunbrella","style_number":"4945-0000","color_name":"Taupe Tailored Bar Stripe"},{"brand":"Sunbrella","style_number":"4836-0000","color_name":"Tillman Shale"},{"brand":"Sunbrella","style_number":"4817-0000","color_name":"Westfield Mushroom"},{"brand":"Sunbrella","style_number":"4995-0000","color_name":"Ashford Forest"},{"brand":"Sunbrella","style_number":"4993-0000","color_name":"Baycrest Pacific"},{"brand":"Sunbrella","style_number":"4992-0000","color_name":"Baycrest Sky"},{"brand":"Sunbrella","style_number":"5704-0000","color_name":"Beaufort Black / White 6 Bar"},{"brand":"Sunbrella","style_number":"4708-0000","color_name":"Beaufort Captain Navy"},{"brand":"Sunbrella","style_number":"4752-0000","color_name":"Beaufort Cloud"},{"brand":"Sunbrella","style_number":"4806-0000","color_name":"Beaufort Forest Green / Natural 6 Bar"},{"brand":"Sunbrella","style_number":"4753-0000","color_name":"Beaufort Mushroom"},{"brand":"Sunbrella","style_number":"4771-0000","color_name":"Beaufort Peacock"},{"brand":"Sunbrella","style_number":"4746-0000","color_name":"Beaufort Sagebrush"},{"brand":"Sunbrella","style_number":"5702-0000","color_name":"Beaufort Yellow / White 6 Bar"},{"brand":"Sunbrella","style_number":"4946-0000","color_name":"Black / Taupe Fancy"},{"brand":"Sunbrella","style_number":"4923-0000","color_name":"Black Forest Fancy"},{"brand":"Sunbrella","style_number":"4710-0000","color_name":"Boone Navy"},{"brand":"Sunbrella","style_number":"4798-0000","color_name":"Burgundy / Black / White"},{"brand":"Sunbrella","style_number":"4902-0000","color_name":"Captain Navy / Natural Classic"},{"brand":"Sunbrella","style_number":"4776-0000","color_name":"Chocolate Chip Fancy"},{"brand":"Sunbrella","style_number":"8750-0000","color_name":"Bay Brown"},{"brand":"Sunbrella","style_number":"8751-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"8756-0000","color_name":"Burgundy"},{"brand":"Sunbrella","style_number":"8752-0000","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"8753-0000","color_name":"Forest Green"},{"brand":"Sunbrella","style_number":"8754-0000","color_name":"Jockey Red"},{"brand":"Sunbrella","style_number":"8755-0000","color_name":"Pacific Blue"},{"brand":"Sunbrella","style_number":"8757-0000","color_name":"Terracotta"},{"brand":"Sunbrella","style_number":"6093-0000","color_name":"Pink"},{"brand":"Sunbrella","style_number":"4879-0000","color_name":"Rodanthe Metallic"},{"brand":"Sunbrella","style_number":"2079-0000","color_name":"Royal Navy"},{"brand":"Sunbrella","style_number":"6089-0000","color_name":"Rust"},{"brand":"Sunbrella","style_number":"6073-0000","color_name":"Spa"},{"brand":"Sunbrella","style_number":"6074-0000","color_name":"Wheat"},{"brand":"Sunbrella","style_number":"6069-0000","color_name":"Azure"},{"brand":"Sunbrella","style_number":"6091-0000","color_name":"Badger"},{"brand":"Sunbrella","style_number":"4982-0000","color_name":"Beaufort Classic"},{"brand":"Sunbrella","style_number":"1160-0060","color_name":"Beaufort Classic"},{"brand":"Sunbrella","style_number":"6040-0000","color_name":"Black Cherry"},{"brand":"Sunbrella","style_number":"4855-0000","color_name":"Colonnade Fossil"},{"brand":"Sunbrella","style_number":"4823-0000","color_name":"Colonnade Seaglass"},{"brand":"Sunbrella","style_number":"4822-0000","color_name":"Colonnade Stone"},{"brand":"Sunbrella","style_number":"4838-0000","color_name":"Emblem Badger"},{"brand":"Sunbrella","style_number":"4837-0000","color_name":"Emblem Beige"},{"brand":"Sunbrella","style_number":"4824-0000","color_name":"Emblem Classic"},{"brand":"Sunbrella","style_number":"4839-0000","color_name":"Emblem Dew"},{"brand":"Sunbrella","style_number":"4801-0000","color_name":"Emblem Fern"},{"brand":"Sunbrella","style_number":"4898-0000","color_name":"Emblem Navy"},{"brand":"Sunbrella","style_number":"6080-0000","color_name":"Fawn"},{"brand":"Sunbrella","style_number":"6085-0000","color_name":"Ginkgo"},{"brand":"Sunbrella","style_number":"4991-0000","color_name":"Manteo Cardinal"},{"brand":"Sunbrella","style_number":"4921-0000","color_name":"Mediterranean / Canvas Block Stripe"},{"brand":"Sunbrella","style_number":"4880-0000","color_name":"Moreland Taupe"},{"brand":"Sunbrella","style_number":"8408-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"8430-0000","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"8446-0000","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"8404-0000","color_name":"Natural"},{"brand":"Sunbrella","style_number":"8442-0000","color_name":"Oyster"},{"brand":"Sunbrella","style_number":"8428-0000","color_name":"Toast"},{"brand":"Sunbrella","style_number":"2095-0063","color_name":"Black"},{"brand":"Sunbrella","style_number":"2097-0063","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"2098-0063","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"2110-0063","color_name":"Charcoal Grey"},{"brand":"Sunbrella","style_number":"2105-0063","color_name":"Charcoal Tweed"},{"brand":"Sunbrella","style_number":"2102-0063","color_name":"Dubonnet Tweed"},{"brand":"Sunbrella","style_number":"2099-0063","color_name":"Hemlock Tweed"},{"brand":"Sunbrella","style_number":"2104-0063","color_name":"Linen"},{"brand":"Sunbrella","style_number":"2096-0063","color_name":"Linen Tweed"},{"brand":"Sunbrella","style_number":"2107-0063","color_name":"Navy"},{"brand":"Sunbrella","style_number":"2101-0063","color_name":"Oyster"},{"brand":"Sunbrella","style_number":"2103-0063","color_name":"Royal Blue Tweed"},{"brand":"Sunbrella","style_number":"2100-0063","color_name":"Toast Tweed"},{"brand":"Sunbrella","style_number":"84008-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"84030-0000","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"84044-0000","color_name":"Charcoal Grey"}];
+
+const FABRIC_BRANDS = ["Sunbrella"];
+
+function getFabricsByBrand(brand) {
+  if (!brand) return [];
+  return SUNBRELLA_FABRICS.filter(f => f.brand === brand);
+}
+
+function buildFabricLabel(fabricSelection) {
+  if (!fabricSelection?.brand) return "";
+  if (fabricSelection.style_number) {
+    return fabricSelection.style_number + " - " + (fabricSelection.color_name || "");
+  }
+  return fabricSelection.brand;
+}
 
 // ─────────────────────────────────────────────────────────────
 // MOTOR CATALOG
@@ -159,7 +159,6 @@ function getMotorPriceAdjustment(motorId) {
   return motor.priceAdjustment;
 }
 
-// FIX 4: Get the display name for the default motor of a product
 function getDefaultMotorDisplayName(productName) {
   const motorId = getDefaultMotorId(productName);
   if (!motorId) return null;
@@ -168,82 +167,7 @@ function getDefaultMotorDisplayName(productName) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// FIX 3: FABRIC CATALOG — Corrected Twitchell Textilene openness flow
-// Textilene is now a series with hasOpenness:true and openness options 80/90
-// ─────────────────────────────────────────────────────────────
-const FABRIC_CATALOG = {
-  Twitchell: {
-    "Nano": {
-      hasOpenness: true,
-      openness: {
-        "50": ["Black", "White"],
-        "55": ["Black", "White"],
-        "60": ["Black"],
-        "70": ["Black"],
-        "95": ["White", "Bone", "Sable", "Desert Sand", "Almond", "Café", "Stone Texture", "Shadow Texture", "Tumbleweed", "Espresso Texture", "Granite", "Tobacco", "Charcoal", "Flat Black"],
-        "97": ["White", "Bone", "Sable", "Desert Sand", "Almond", "Café", "Stone Texture", "Shadow Texture", "Tumbleweed", "Espresso Texture", "Granite", "Tobacco", "Charcoal", "Flat Black"],
-        "99": ["Flat Black", "Charcoal", "Espresso Texture", "Tobacco", "Granite"],
-      },
-    },
-    // FIX 3: Textilene is now a series with openness 80/90 → then color
-    "Textilene": {
-      hasOpenness: true,
-      openness: {
-        "80": ["White", "Desert Sand", "Sandstone", "Dusk Grey", "Brown", "Black/Brown", "Black"],
-        "90": ["White", "Desert Sand", "Sandstone", "Dusk Grey", "Brown", "Black/Brown", "Black"],
-      },
-    },
-    "Dimout": {
-      hasOpenness: false,
-      colors: ["Light Grey", "Shadow Texture", "Grey", "Charcoal", "Espresso Texture", "Flat Black", "Tan", "Stone Texture", "Putty", "Tobacco"],
-    },
-  },
-  Phifer: {
-    "Suntex (Standard)": {
-      hasOpenness: true,
-      openness: {
-        "80": ["Black", "Brown", "Grey", "Beige", "Stucco", "Dark Bronze"],
-        "90": ["Black", "Brown", "Grey", "Beige", "Stucco", "Dark Bronze"],
-        "95": ["Dark Bronze", "White", "White/Grey", "Stucco", "Sand", "Alpaca", "Chestnut", "Mocha", "Carbon", "Black"],
-        "97": ["Dark Bronze", "White", "White/Grey", "Stucco", "Sand", "Alpaca", "Chestnut", "Mocha", "Carbon", "Black"],
-        "99": ["Dark Bronze", "White", "White/Grey", "Stucco", "Sand", "Alpaca", "Chestnut", "Mocha", "Carbon", "Black"],
-      },
-    },
-    "Suntex Matte": {
-      hasOpenness: true,
-      openness: {
-        "95": ["Matte Dark Bronze", "Matte Niko", "Matte Iron Grey", "Matte Black"],
-        "97": ["Matte Dark Bronze", "Matte Niko", "Matte Iron Grey", "Matte Black"],
-      },
-    },
-  },
-};
-
-function getFabricBrands() { return Object.keys(FABRIC_CATALOG); }
-function getFabricSeries(brand) { if (!brand || !FABRIC_CATALOG[brand]) return []; return Object.keys(FABRIC_CATALOG[brand]); }
-function getFabricSeriesData(brand, series) { return FABRIC_CATALOG[brand]?.[series] || null; }
-function getFabricOpennessOptions(brand, series) {
-  const data = getFabricSeriesData(brand, series);
-  if (!data || !data.hasOpenness) return [];
-  return Object.keys(data.openness);
-}
-function getFabricColors(brand, series, openness) {
-  const data = getFabricSeriesData(brand, series);
-  if (!data) return [];
-  if (data.hasOpenness) { if (!openness) return []; return data.openness[openness] || []; }
-  return data.colors || [];
-}
-function buildFabricLabel(fabricSelection) {
-  if (!fabricSelection?.brand) return "";
-  const parts = [fabricSelection.brand, fabricSelection.series];
-  if (fabricSelection.openness) parts.push(`${fabricSelection.openness}%`);
-  if (fabricSelection.color) parts.push(fabricSelection.color);
-  return parts.filter(Boolean).join(" › ");
-}
-
-// ─────────────────────────────────────────────────────────────
 // MPS DEFAULTS
-// FIX 2: Added color options for cassette/track dropdowns (including Bronze)
 // ─────────────────────────────────────────────────────────────
 const MPS_DEFAULTS = {
   mountTypes:       ["Surface", "Inside", "Soffit Mount"],
@@ -255,7 +179,6 @@ const MPS_DEFAULTS = {
   woodSizes:        ["2x4", "2x6", "2x8", "2x10", "4x4", "4x6", "4x8", "4x10"],
   motorSides:       ["Left", "Right"],
   weightBarTypes:   ["Sand", "White", "Black", "Bronze", "Custom"],
-  // FIX 2: cassette and track color options with Bronze
   cassetteColors:   ["Sand", "White", "Black", "Bronze", "Custom"],
   trackColors:      ["Sand", "White", "Black", "Bronze", "Custom"],
   remoteTypes:      ["1 Channel Somfy Remote", "5 Channel Somfy Remote", "16 Channel Somfy Remote"],
@@ -577,7 +500,6 @@ const PRODUCT_FIELD_ADDONS = {
     { id:"part_gold_deco_s",     name:"Gold Extra Parts Deco / Sq Sill etc (single)",pricingType:"per_unit",rate:70,   unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
     { id:"part_gold_deco_d",     name:"Gold Extra Parts Deco / Sq Sill etc (double)",pricingType:"per_unit",rate:140,  unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
   ],
-  // Skylight Plus MRA — Somfy RTS accessories, brackets (no transmitter/LED — auto-included)
   "Skylight Plus MRA": [
     { id:"somfy_wind_sensor", name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_sun_wind",    name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
@@ -586,7 +508,6 @@ const PRODUCT_FIELD_ADDONS = {
     { id:"bracket_16in",      name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
     { id:"bracket_24in",      name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
   ],
-  // Shared field addons for Skyline MRA and Open Roll MRA
   "Skyline Motorized Retractable Awning": [
     { id:"somfy_1ch_tx",      name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_5ch_tx",      name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
@@ -655,11 +576,11 @@ function createOpening(productName = "", areaDefaults = {}) {
     id: uid(), label: "", width: "", height: "",
     motorSide: areaDefaults.motorSide || "Left",
     motorId: getDefaultMotorId(productName) || "",
-    fabricSelection: { brand: "", series: "", openness: "", color: "" },
+    // UPDATED: fabric stored as { brand, style_number, color_name }
+    fabricSelection: { brand: "", style_number: "", color_name: "" },
     lChannels: [],
     buildouts: [],
     mountOverride: "", trackOverride: "",
-    // FIX 2: Changed from free-text to empty string (dropdown value)
     colorOverride: "", trackColorOverride: "",
     motorOverride: "",
     weightBarOverride: "", remoteOverride: "",
@@ -673,8 +594,8 @@ function createOpening(productName = "", areaDefaults = {}) {
 function createArea(productName = "") {
   return {
     id: uid(), name: "", mountType: "", trackType: "",
-    fabricSelection: { brand: "", series: "", openness: "", color: "" },
-    // FIX 2: area-level cassette/track as empty string (dropdown)
+    // UPDATED: fabric stored as { brand, style_number, color_name }
+    fabricSelection: { brand: "", style_number: "", color_name: "" },
     cassetteColor: "", trackColor: "",
     motorType: "Somfy (default)",
     weightBar: "", remote: "",
@@ -682,15 +603,15 @@ function createArea(productName = "") {
   };
 }
 
-// MRA config (shared by Skylight Plus, Skyline, Open Roll)
+// MRA config
 function createMRAConfig() {
   return {
     widthFt: "",
     widthIn: "",
     projection: "",
     fabricBrand: "",
-    fabricType: "",
-    fabricColor: "",
+    style_number: "",
+    color_name: "",
     quantity: 1,
   };
 }
@@ -993,70 +914,161 @@ function MotorSelector({ motorId, productName, onChange }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// FABRIC SELECTOR COMPONENT — Hierarchical cascade
-// FIX 3: Textilene now correctly shows openness step before color
+// FABRIC TYPEAHEAD — searchable autocomplete
+// Searches by style_number or color_name
+// ─────────────────────────────────────────────────────────────
+function FabricTypeahead({ brand, value, onChange }) {
+  const [query, setQuery] = useState(
+    value?.style_number ? (value.style_number + " - " + value.color_name) : ""
+  );
+  const [open, setOpen] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const inputRef = useRef(null);
+
+  const fabrics = getFabricsByBrand(brand);
+
+  const matches = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return fabrics.slice(0, 50);
+    return fabrics.filter(f =>
+      f.style_number.toLowerCase().includes(q) ||
+      f.color_name.toLowerCase().includes(q)
+    ).slice(0, 60);
+  }, [query, brand]);
+
+  // Sync display when value changes externally (e.g. brand reset)
+  useEffect(() => {
+    if (value?.style_number) {
+      setQuery(value.style_number + " - " + value.color_name);
+    } else {
+      setQuery("");
+    }
+  }, [value?.style_number]);
+
+  const select = (fabric) => {
+    setQuery(fabric.style_number + " - " + fabric.color_name);
+    setOpen(false);
+    onChange({ brand: fabric.brand, style_number: fabric.style_number, color_name: fabric.color_name });
+  };
+
+  const handleInput = (e) => {
+    setQuery(e.target.value);
+    setOpen(true);
+    if (value?.style_number) onChange({ brand, style_number: "", color_name: "" });
+  };
+
+  const handleBlur = () => {
+    setTimeout(() => { setOpen(false); setFocused(false); }, 150);
+  };
+
+  const handleFocus = () => {
+    setFocused(true);
+    setOpen(true);
+  };
+
+  const clearSelection = () => {
+    setQuery("");
+    setOpen(false);
+    onChange({ brand, style_number: "", color_name: "" });
+    inputRef.current?.focus();
+  };
+
+  const isSelected = !!value?.style_number;
+
+  return (
+    <div className="fabric-typeahead-wrap">
+      <div className={`fabric-typeahead-input-row${focused ? " fabric-typeahead-focused" : ""}${isSelected ? " fabric-typeahead-selected" : ""}`}>
+        <span className="fabric-typeahead-search-icon">🔍</span>
+        <input
+          ref={inputRef}
+          className="fabric-typeahead-input"
+          type="text"
+          value={query}
+          onChange={handleInput}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          placeholder="Search by style/color name"
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+        />
+        {query && (
+          <button type="button" className="fabric-typeahead-clear" onClick={clearSelection} title="Clear">✕</button>
+        )}
+        {isSelected && <span className="fabric-typeahead-check">✓</span>}
+      </div>
+
+      {open && !isSelected && (
+        <div className="fabric-typeahead-dropdown">
+          {matches.length === 0 ? (
+            <div className="fabric-typeahead-empty">No fabrics match "{query}"</div>
+          ) : (
+            <>
+              {!query.trim() && (
+                <div className="fabric-typeahead-hint">Showing first 50 — type to search all {fabrics.length}</div>
+              )}
+              {matches.map(f => (
+                <button
+                  key={f.style_number}
+                  type="button"
+                  className="fabric-typeahead-option"
+                  onMouseDown={() => select(f)}
+                >
+                  <span className="fabric-typeahead-style">{f.style_number}</span>
+                  <span className="fabric-typeahead-color">{f.color_name}</span>
+                </button>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// FABRIC SELECTOR — Brand picklist + Typeahead
+// Stores: { brand, style_number, color_name }
 // ─────────────────────────────────────────────────────────────
 function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
-  const { brand = "", series = "", openness = "", color = "" } = fabricSelection;
-  const brands       = getFabricBrands();
-  const seriesList   = getFabricSeries(brand);
-  const seriesData   = getFabricSeriesData(brand, series);
-  const hasOpenness  = seriesData?.hasOpenness || false;
-  const opennessOpts = getFabricOpennessOptions(brand, series);
-  const colorOpts    = getFabricColors(brand, series, openness);
-  const fabricLabel  = buildFabricLabel(fabricSelection);
+  const { brand = "", style_number = "", color_name = "" } = fabricSelection;
+  const fabricLabel = buildFabricLabel(fabricSelection);
 
-  const update = (field, value) => {
-    const next = { ...fabricSelection, [field]: value };
-    if (field === "brand")    { next.series = ""; next.openness = ""; next.color = ""; }
-    if (field === "series")   { next.openness = ""; next.color = ""; }
-    if (field === "openness") { next.color = ""; }
-    onChange(next);
+  const handleBrandChange = (newBrand) => {
+    onChange({ brand: newBrand, style_number: "", color_name: "" });
+  };
+
+  const handleFabricChange = (updated) => {
+    onChange({ ...fabricSelection, ...updated });
   };
 
   return (
     <div className="fabric-selector">
       <div className="fabric-selector-label">
         <span className="mps-label">{label}</span>
-        {fabricLabel && <span className="fabric-label-badge">{fabricLabel}</span>}
+        {fabricLabel && style_number && (
+          <span className="fabric-label-badge">{fabricLabel}</span>
+        )}
       </div>
       <div className="fabric-cascade-grid">
         {/* Step 1: Brand */}
         <div className="mps-field">
           <label className="mps-label fabric-step-label"><span className="fabric-step-num">1</span> Brand</label>
-          <select className="mps-select" value={brand} onChange={e => update("brand", e.target.value)}>
+          <select className="mps-select" value={brand} onChange={e => handleBrandChange(e.target.value)}>
             <option value="">Select Brand</option>
-            {brands.map(b => <option key={b} value={b}>{b}</option>)}
+            {FABRIC_BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
         </div>
-        {/* Step 2: Series */}
-        <div className="mps-field">
-          <label className="mps-label fabric-step-label"><span className="fabric-step-num">2</span> Series</label>
-          <select className="mps-select" value={series} onChange={e => update("series", e.target.value)} disabled={!brand}>
-            <option value="">{brand ? "Select Series" : "— select brand first —"}</option>
-            {seriesList.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </div>
-        {/* Step 3: Openness — shown whenever series has openness (including Textilene 80/90) */}
-        {brand && series && hasOpenness && (
-          <div className="mps-field">
-            <label className="mps-label fabric-step-label"><span className="fabric-step-num">3</span> Openness %</label>
-            <select className="mps-select" value={openness} onChange={e => update("openness", e.target.value)}>
-              <option value="">Select Openness</option>
-              {opennessOpts.map(o => <option key={o} value={o}>{o}%</option>)}
-            </select>
-          </div>
-        )}
-        {/* Step 4 (or 3 if no openness): Color — only shown when ready */}
-        {brand && series && (!hasOpenness || openness) && (
-          <div className="mps-field">
-            <label className="mps-label fabric-step-label">
-              <span className="fabric-step-num">{hasOpenness ? "4" : "3"}</span> Color
-            </label>
-            <select className="mps-select" value={color} onChange={e => update("color", e.target.value)}>
-              <option value="">Select Color</option>
-              {colorOpts.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+
+        {/* Step 2: Fabric search — only shown after brand selected */}
+        {brand && (
+          <div className="mps-field fabric-typeahead-field">
+            <label className="mps-label fabric-step-label"><span className="fabric-step-num">2</span> Fabric</label>
+            <FabricTypeahead
+              brand={brand}
+              value={{ brand, style_number, color_name }}
+              onChange={handleFabricChange}
+            />
           </div>
         )}
       </div>
@@ -1065,53 +1077,42 @@ function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// SKYLIGHT MRA FABRIC SELECTOR — Brand → Type → Color (free text)
+// SKYLIGHT MRA FABRIC SELECTOR — same Brand + Typeahead pattern
+// Stores: { fabricBrand, style_number, color_name }
 // ─────────────────────────────────────────────────────────────
-function SkylightFabricSelector({ fabricBrand, fabricType, fabricColor, onChange }) {
-  const brands = SKYLIGHT_FABRIC_BRANDS;
-  const types  = fabricBrand ? (SKYLIGHT_FABRIC_TYPES[fabricBrand] || []) : [];
+function SkylightFabricSelector({ fabricBrand, style_number, color_name, onChange }) {
+  const fabricLabel = style_number ? (style_number + " - " + (color_name || "")) : "";
 
-  const update = (field, value) => {
-    const next = { fabricBrand, fabricType, fabricColor, [field]: value };
-    if (field === "fabricBrand") { next.fabricType = ""; next.fabricColor = ""; }
-    if (field === "fabricType")  { next.fabricColor = ""; }
-    onChange(next);
+  const handleBrandChange = (newBrand) => {
+    onChange({ fabricBrand: newBrand, style_number: "", color_name: "" });
+  };
+
+  const handleFabricChange = (updated) => {
+    onChange({ fabricBrand, style_number: updated.style_number, color_name: updated.color_name });
   };
 
   return (
     <div className="fabric-selector">
       <div className="fabric-selector-label">
         <span className="mps-label">Fabric</span>
-        {fabricBrand && fabricType && (
-          <span className="fabric-label-badge">
-            {[fabricBrand, fabricType, fabricColor].filter(Boolean).join(" › ")}
-          </span>
-        )}
+        {fabricLabel && <span className="fabric-label-badge">{fabricLabel}</span>}
       </div>
       <div className="fabric-cascade-grid">
         <div className="mps-field">
           <label className="mps-label fabric-step-label"><span className="fabric-step-num">1</span> Fabric Brand</label>
-          <select className="mps-select" value={fabricBrand} onChange={e => update("fabricBrand", e.target.value)}>
+          <select className="mps-select" value={fabricBrand} onChange={e => handleBrandChange(e.target.value)}>
             <option value="">Select Brand</option>
-            {brands.map(b => <option key={b} value={b}>{b}</option>)}
+            {FABRIC_BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
         </div>
-        <div className="mps-field">
-          <label className="mps-label fabric-step-label"><span className="fabric-step-num">2</span> Fabric Type</label>
-          <select className="mps-select" value={fabricType} onChange={e => update("fabricType", e.target.value)} disabled={!fabricBrand}>
-            <option value="">{fabricBrand ? "Select Type" : "— select brand first —"}</option>
-            {types.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
-        </div>
-        {fabricBrand && fabricType && (
-          <div className="mps-field">
-            <label className="mps-label fabric-step-label"><span className="fabric-step-num">3</span> Fabric Color</label>
-            <input
-              className="mps-input"
-              type="text"
-              value={fabricColor}
-              onChange={e => update("fabricColor", e.target.value)}
-              placeholder="Enter fabric color / pattern name"
+
+        {fabricBrand && (
+          <div className="mps-field fabric-typeahead-field">
+            <label className="mps-label fabric-step-label"><span className="fabric-step-num">2</span> Fabric</label>
+            <FabricTypeahead
+              brand={fabricBrand}
+              value={{ brand: fabricBrand, style_number: style_number || "", color_name: color_name || "" }}
+              onChange={handleFabricChange}
             />
           </div>
         )}
@@ -1203,12 +1204,11 @@ function BuildoutItem({ bo, index, onChange, onRemove, showRemove }) {
                 <input type="radio" checked={!isCustomAlumi} onChange={() => set("isCustomAlumitubeSize", false)} />
                 <span>3" × 8" (${ALUMITUBE_DEFAULT_RATE}/LF)</span>
               </label>
-              
               <label className="alumitube-radio">
                 <input type="radio" checked={isCustomAlumi} onChange={() => set("isCustomAlumitubeSize", true)} />
                 <span>2" × 4"</span>
               </label>
-               <label className="alumitube-radio">
+              <label className="alumitube-radio">
                 <input type="radio" checked={isCustomAlumi} onChange={() => set("isCustomAlumitubeSize", true)} />
                 <span>2" × 6"</span>
               </label>
@@ -1245,8 +1245,6 @@ function BuildoutItem({ bo, index, onChange, onRemove, showRemove }) {
 
 // ─────────────────────────────────────────────────────────────
 // OPENING EDITOR
-// FIX 2: Cassette Color and Track Color are now dropdowns
-// FIX 4: Motor Type in area defaults shows the new default motor name
 // ─────────────────────────────────────────────────────────────
 function OpeningEditor({ opening, index, areaDefaults, productName, onChange, onRemove, showRemove }) {
   const structural   = calcOpeningStructural(opening, areaDefaults);
@@ -1349,7 +1347,6 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
         <div className="override-resolved-info">These settings default to the Area values above. Change any field here to override for this opening only.</div>
         <div className="override-resolved-grid">
 
-          {/* Mount Type */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Mount Type
@@ -1363,7 +1360,6 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
             </select>
           </div>
 
-          {/* Track Type */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Track Type
@@ -1377,7 +1373,6 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
             </select>
           </div>
 
-          {/* FIX 4: Motor Type (legacy/area-level) — shows new default motor name */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Motor Type (legacy)
@@ -1393,7 +1388,6 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
             </select>
           </div>
 
-          {/* FIX 2: Cassette Color — now a dropdown */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Cassette Color
@@ -1419,7 +1413,6 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
             )}
           </div>
 
-          {/* FIX 2: Track Color — now a dropdown, hidden for Wire Guide */}
           {showTrackColor && (
             <div className="override-resolved-item">
               <label className="override-resolved-label">
@@ -1456,7 +1449,6 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
             </div>
           )}
 
-          {/* Weight Bar Color — shown for ALL track types */}
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Weight Bar Color
@@ -1531,8 +1523,6 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
 
 // ─────────────────────────────────────────────────────────────
 // AREA EDITOR
-// FIX 2: Cassette Color and Track Color in area defaults are now dropdowns
-// FIX 4: Motor Type default field shows the product's new default motor name
 // ─────────────────────────────────────────────────────────────
 function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemove }) {
   const areaBaseTotal       = area.openings.reduce((s,o) => s + calcOpeningBasePrice(o, productName), 0);
@@ -1549,8 +1539,6 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
 
   const areaEffectiveTrack = area.trackType || "";
   const showAreaTrackColor = areaEffectiveTrack !== "Wire Guide";
-
-  // FIX 4: Get the default motor display name for this product
   const defaultMotorDisplayName = getDefaultMotorDisplayName(productName);
 
   return (
@@ -1589,7 +1577,6 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
           <Sel label="Mount Type"  value={area.mountType}  options={MPS_DEFAULTS.mountTypes}  onChange={v=>setArea("mountType",v)} />
           <Sel label="Track Type"  value={area.trackType}  options={MPS_DEFAULTS.trackTypes}  onChange={v=>setArea("trackType",v)} />
 
-          {/* FIX 2: Cassette Color — area-level dropdown */}
           <div className="mps-field">
             <label className="mps-label">Cassette Color</label>
             <select className="mps-select" value={area.cassetteColor || ""} onChange={e => setArea("cassetteColor", e.target.value)}>
@@ -1598,7 +1585,6 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
             </select>
           </div>
 
-          {/* FIX 2: Track Color — area-level dropdown, hidden for Wire Guide */}
           {showAreaTrackColor ? (
             <div className="mps-field">
               <label className="mps-label">Track Color</label>
@@ -1614,7 +1600,6 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
             </div>
           )}
 
-          {/* FIX 4: Motor Type — area default shows new motor name */}
           <div className="mps-field">
             <label className="mps-label">Motor Type (Default)</label>
             <div className="mps-input mps-input--readonly">
@@ -1629,7 +1614,7 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
         <div className="area-fabric-section">
           <div className="area-defaults-label" style={{marginTop: "12px"}}>Area Default Fabric (openings inherit this unless overridden)</div>
           <FabricSelector
-            fabricSelection={area.fabricSelection || { brand: "", series: "", openness: "", color: "" }}
+            fabricSelection={area.fabricSelection || { brand: "", style_number: "", color_name: "" }}
             onChange={v => setArea("fabricSelection", v)}
             label="Area Fabric Default"
           />
@@ -1787,6 +1772,73 @@ function SignaturePad({ value, onChange }) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// FIELD ADDON RENDERER (shared helper)
+// ─────────────────────────────────────────────────────────────
+function FieldAddonSection({ productName, fieldAddonValues, onFieldAddonChange, lineId }) {
+  const fieldAddonDefs = getFieldAddonsForProduct(productName);
+  const fieldTotal     = calcFieldAddonTotal(fieldAddonValues, productName);
+
+  if (fieldAddonDefs.length === 0) return null;
+
+  const groupMap = {};
+  fieldAddonDefs.forEach(def => { const g = def.group || "Add-ons"; if (!groupMap[g]) groupMap[g] = []; groupMap[g].push(def); });
+  const groupOrder = [...new Set(fieldAddonDefs.map(d => d.group || "Add-ons"))];
+
+  return (
+    <div className="ps-addons-section field-addons-section">
+      <div className="ps-addons-title">
+        <span className="ps-addons-icon">◆</span> Optional Accessories
+        {fieldTotal > 0 && <span className="ps-addons-running-total">+{fmt(fieldTotal)} selected</span>}
+      </div>
+      <div className="field-addons-grid">
+        {groupOrder.map(groupLabel => (
+          <div key={groupLabel} className="field-addon-group">
+            <div className="field-addon-group-header">{groupLabel}</div>
+            {groupMap[groupLabel].map(def => {
+              const val = fieldAddonValues?.[def.id] || {};
+              const enabled = !!val.enabled;
+              const qtyVal = val.qty || "";
+              const customPrice = val.customPrice || "";
+              const isCustom = def.pricingType === "custom";
+              const lineAmt = enabled ? (isCustom ? (parseFloat(customPrice) || 0) : def.rate * (parseFloat(qtyVal) || 0)) : 0;
+              return (
+                <div key={def.id} className={`field-addon-row ${enabled ? "field-addon-active" : ""}`}>
+                  <label className="field-addon-check-label">
+                    <input type="checkbox" className="ps-addon-checkbox" checked={enabled}
+                      onChange={() => onFieldAddonChange(lineId, def.id, { ...val, enabled: !enabled })} />
+                    <span className="field-addon-name">{def.name}</span>
+                  </label>
+                  <div className="field-addon-right">
+                    {!isCustom && <div className="field-addon-rate">{fmt(def.rate)} / {def.unitShort}</div>}
+                    {enabled && (
+                      <div className="field-addon-input-wrap">
+                        {isCustom ? (
+                          <><span className="field-addon-unit-label">$</span>
+                            <input type="number" className="field-addon-qty-input" value={customPrice} min="0" step="1" placeholder={def.placeholder}
+                              onChange={e => onFieldAddonChange(lineId, def.id, { ...val, enabled: true, customPrice: e.target.value })} />
+                            {lineAmt > 0 && <span className="field-addon-line-total">{fmt(lineAmt)}</span>}
+                          </>
+                        ) : (
+                          <><input type="number" className="field-addon-qty-input" value={qtyVal} min="0" step="1" placeholder={def.placeholder}
+                              onChange={e => onFieldAddonChange(lineId, def.id, { ...val, enabled: true, qty: e.target.value })} />
+                            <span className="field-addon-unit-label">{def.unit}</span>
+                            {lineAmt > 0 && <span className="field-addon-line-total">{fmt(lineAmt)}</span>}
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
 // MPS PRODUCT CARD
 // ─────────────────────────────────────────────────────────────
 function MPSProductCard({
@@ -1838,9 +1890,7 @@ function MPSProductCard({
 
       <div className="quote-tool-controls">
         <span className="quote-tool-controls-label">🛠 Quote Tool Controls</span>
-        <button type="button" className="ctrl-btn ctrl-btn-reset" onClick={handleReset} title="Reset all areas and openings for this product">
-          ↺ Reset Quote Tool
-        </button>
+        <button type="button" className="ctrl-btn ctrl-btn-reset" onClick={handleReset}>↺ Reset Quote Tool</button>
       </div>
 
       {defaultMotor && (
@@ -1871,7 +1921,7 @@ function MPSProductCard({
       <div className="product-note-section">
         <label className="mps-label">📝 Product Notes</label>
         <textarea className="product-note-textarea"
-          placeholder="Add any important notes about this product (e.g. special instructions, site conditions, client preferences)…"
+          placeholder="Add any important notes about this product…"
           value={productNotes || ""} onChange={e => onProductNoteChange(line.id, e.target.value)} rows={3} />
       </div>
 
@@ -1953,8 +2003,7 @@ function MPSProductCard({
 }
 
 // ─────────────────────────────────────────────────────────────
-// FIX 1: GENERIC MRA CARD (Skyline MRA + Open Roll MRA)
-// Uses getMRAPrice() for matrix pricing, same UX as SkylightMRACard
+// GENERIC MRA CARD (Skyline MRA + Open Roll MRA)
 // ─────────────────────────────────────────────────────────────
 function GenericMRACard({
   line, index, snapshot,
@@ -1968,23 +2017,18 @@ function GenericMRACard({
 
   const qty = parseInt(line.quantity, 10) || 1;
 
-  // Determine width in feet from ft+in inputs
   const totalWidthFt = (parseInt(cfg.widthFt, 10) || 0) + ((parseInt(cfg.widthIn, 10) || 0) / 12);
   const widthFtKey   = totalWidthFt > 0 ? Math.ceil(totalWidthFt) : null;
 
-  // Matrix price lookup
   const priceResult  = widthFtKey && cfg.projection
     ? getMRAPrice(line.product, cfg.projection, widthFtKey)
     : { ok: false, price: 0, message: "" };
   const unitPrice    = priceResult.ok ? priceResult.price : 0;
   const matrixTotal  = unitPrice * qty;
 
-  // Field addons
-  const fieldAddonDefs = getFieldAddonsForProduct(line.product);
   const fieldTotal     = calcFieldAddonTotal(fieldAddonValues, line.product);
   const grandLineTotal = matrixTotal + fieldTotal;
 
-  // Determine width range for this product
   const matrixRef = line.product === "Skyline Motorized Retractable Awning"
     ? SKYLINE_MRA_PRICE_DATA
     : OPEN_ROLL_MRA_PRICE_DATA;
@@ -1992,7 +2036,6 @@ function GenericMRACard({
   const validWidths  = sampleRow ? Object.keys(sampleRow).map(Number).sort((a,b)=>a-b) : [];
 
   const isSkylightType = line.product === "Skyline Motorized Retractable Awning";
-  const productLabel   = isSkylightType ? "Skyline MRA (QIP Square Box)" : "Open Roll MRA";
   const badgeLabel     = isSkylightType ? "Motor A + B Merged" : "Open Roll";
 
   return (
@@ -2016,18 +2059,9 @@ function GenericMRACard({
       <div className="skylight-config-section">
         <div className="skylight-config-title">📐 Awning Configuration</div>
         <div className="skylight-config-grid">
-
-          {/* Projection — locked dropdown */}
           <div className="mps-field">
-            <label className="mps-label">
-              Projection <span className="mps-req">*</span>
-              <span className="skylight-field-hint">— select exact projection size</span>
-            </label>
-            <select
-              className="mps-select skylight-projection-select"
-              value={cfg.projection}
-              onChange={e => setConfig({ projection: e.target.value })}
-            >
+            <label className="mps-label">Projection <span className="mps-req">*</span></label>
+            <select className="mps-select skylight-projection-select" value={cfg.projection} onChange={e => setConfig({ projection: e.target.value })}>
               <option value="">Select Projection</option>
               {MRA_PROJECTION_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
@@ -2039,34 +2073,17 @@ function GenericMRACard({
             )}
           </div>
 
-          {/* Width — feet + inches format */}
           <div className="mps-field skylight-width-field">
-            <label className="mps-label">
-              Width <span className="mps-req">*</span>
-              <span className="skylight-field-hint">— enter feet and inches</span>
-            </label>
+            <label className="mps-label">Width <span className="mps-req">*</span></label>
             <div className="skylight-width-inputs">
               <div className="skylight-width-input-wrap">
-                <input
-                  className="mps-input skylight-dim-input"
-                  type="number"
-                  value={cfg.widthFt}
-                  onChange={e => setConfig({ widthFt: e.target.value })}
-                  placeholder="0"
-                  min="0"
-                />
+                <input className="mps-input skylight-dim-input" type="number" value={cfg.widthFt}
+                  onChange={e => setConfig({ widthFt: e.target.value })} placeholder="0" min="0" />
                 <span className="skylight-dim-unit">ft</span>
               </div>
               <div className="skylight-width-input-wrap">
-                <input
-                  className="mps-input skylight-dim-input"
-                  type="number"
-                  value={cfg.widthIn}
-                  onChange={e => setConfig({ widthIn: e.target.value })}
-                  placeholder="0"
-                  min="0"
-                  max="11"
-                />
+                <input className="mps-input skylight-dim-input" type="number" value={cfg.widthIn}
+                  onChange={e => setConfig({ widthIn: e.target.value })} placeholder="0" min="0" max="11" />
                 <span className="skylight-dim-unit">in</span>
               </div>
             </div>
@@ -2079,7 +2096,6 @@ function GenericMRACard({
           </div>
         </div>
 
-        {/* Pricing feedback */}
         {cfg.projection && widthFtKey && (
           <div className={`opening-price-badge ${priceResult.ok ? "opening-price-badge--ok" : "opening-price-badge--error"}`}>
             {priceResult.ok
@@ -2089,15 +2105,14 @@ function GenericMRACard({
           </div>
         )}
 
-        {/* Fabric selection */}
         <div className="skylight-fabric-section">
           <div className="skylight-config-title" style={{marginTop:"16px"}}>🧵 Fabric Selection</div>
           <SkylightFabricSelector
             fabricBrand={cfg.fabricBrand}
-            fabricType={cfg.fabricType}
-            fabricColor={cfg.fabricColor}
-            onChange={({ fabricBrand, fabricType, fabricColor }) =>
-              setConfig({ fabricBrand, fabricType, fabricColor })
+            style_number={cfg.style_number}
+            color_name={cfg.color_name}
+            onChange={({ fabricBrand, style_number, color_name }) =>
+              setConfig({ fabricBrand, style_number, color_name })
             }
           />
         </div>
@@ -2106,68 +2121,16 @@ function GenericMRACard({
       <div className="product-note-section">
         <label className="mps-label">📝 Product Notes</label>
         <textarea className="product-note-textarea"
-          placeholder="Add any important notes about this awning (e.g. mounting location, special instructions, site conditions)…"
+          placeholder="Add any important notes about this awning…"
           value={productNotes || ""} onChange={e => onProductNoteChange(line.id, e.target.value)} rows={3} />
       </div>
 
-      {/* Field Add-ons */}
-      {fieldAddonDefs.length > 0 && (
-        <div className="ps-addons-section field-addons-section">
-          <div className="ps-addons-title">
-            <span className="ps-addons-icon">◆</span> Optional Accessories
-            {fieldTotal > 0 && <span className="ps-addons-running-total">+{fmt(fieldTotal)} selected</span>}
-          </div>
-          <div className="field-addons-grid">
-            {(() => {
-              const groupMap = {};
-              fieldAddonDefs.forEach(def => { const g = def.group||"Add-ons"; if (!groupMap[g]) groupMap[g]=[]; groupMap[g].push(def); });
-              const groupOrder = [...new Set(fieldAddonDefs.map(d=>d.group||"Add-ons"))];
-              return groupOrder.map(groupLabel => (
-                <div key={groupLabel} className="field-addon-group">
-                  <div className="field-addon-group-header">{groupLabel}</div>
-                  {groupMap[groupLabel].map(def => {
-                    const val = fieldAddonValues?.[def.id] || {};
-                    const enabled = !!val.enabled;
-                    const qtyVal = val.qty || "";
-                    const customPrice = val.customPrice || "";
-                    const isCustom = def.pricingType === "custom";
-                    const lineAmt = enabled ? (isCustom ? (parseFloat(customPrice)||0) : def.rate*(parseFloat(qtyVal)||0)) : 0;
-                    return (
-                      <div key={def.id} className={`field-addon-row ${enabled?"field-addon-active":""}`}>
-                        <label className="field-addon-check-label">
-                          <input type="checkbox" className="ps-addon-checkbox" checked={enabled}
-                            onChange={() => onFieldAddonChange(line.id, def.id, {...val, enabled: !enabled})} />
-                          <span className="field-addon-name">{def.name}</span>
-                        </label>
-                        <div className="field-addon-right">
-                          {!isCustom && <div className="field-addon-rate">{fmt(def.rate)} / {def.unitShort}</div>}
-                          {enabled && (
-                            <div className="field-addon-input-wrap">
-                              {isCustom ? (
-                                <><span className="field-addon-unit-label">$</span>
-                                  <input type="number" className="field-addon-qty-input" value={customPrice} min="0" step="1" placeholder={def.placeholder}
-                                    onChange={e => onFieldAddonChange(line.id, def.id, {...val, enabled:true, customPrice:e.target.value})} />
-                                  {lineAmt > 0 && <span className="field-addon-line-total">{fmt(lineAmt)}</span>}
-                                </>
-                              ) : (
-                                <><input type="number" className="field-addon-qty-input" value={qtyVal} min="0" step="1" placeholder={def.placeholder}
-                                    onChange={e => onFieldAddonChange(line.id, def.id, {...val, enabled:true, qty:e.target.value})} />
-                                  <span className="field-addon-unit-label">{def.unit}</span>
-                                  {lineAmt > 0 && <span className="field-addon-line-total">{fmt(lineAmt)}</span>}
-                                </>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ));
-            })()}
-          </div>
-        </div>
-      )}
+      <FieldAddonSection
+        productName={line.product}
+        fieldAddonValues={fieldAddonValues}
+        onFieldAddonChange={onFieldAddonChange}
+        lineId={line.id}
+      />
 
       <div className="mps-line-total">
         {priceResult.ok
@@ -2182,8 +2145,7 @@ function GenericMRACard({
 }
 
 // ─────────────────────────────────────────────────────────────
-// SKYLIGHT PLUS MRA CARD (Motor B QIP only, widths 13–20ft)
-// Auto-transmitter + auto-LED banner; matrix pricing from SKYLIGHT_MRA_PRICE_DATA
+// SKYLIGHT PLUS MRA CARD
 // ─────────────────────────────────────────────────────────────
 function SkylightMRACard({
   line, index, snapshot,
@@ -2198,7 +2160,6 @@ function SkylightMRACard({
   const qty = parseInt(line.quantity, 10) || 1;
   const autoTransmitter = getAutoTransmitter(totalAwningQty);
 
-  // Matrix price lookup
   const totalWidthFt = (parseInt(cfg.widthFt, 10) || 0) + ((parseInt(cfg.widthIn, 10) || 0) / 12);
   const widthFtKey   = totalWidthFt > 0 ? Math.ceil(totalWidthFt) : null;
   const priceResult  = widthFtKey && cfg.projection
@@ -2210,7 +2171,6 @@ function SkylightMRACard({
   const sampleRow   = cfg.projection ? SKYLIGHT_MRA_PRICE_DATA[cfg.projection] : null;
   const validWidths = sampleRow ? Object.keys(sampleRow).map(Number).sort((a,b)=>a-b) : [];
 
-  const fieldAddonDefs = getFieldAddonsForProduct("Skylight Plus MRA");
   const fieldTotal     = calcFieldAddonTotal(fieldAddonValues, "Skylight Plus MRA");
   const grandLineTotal = matrixTotal + fieldTotal;
 
@@ -2225,7 +2185,6 @@ function SkylightMRACard({
         <div className="ps-product-price">{fmt(grandLineTotal)}</div>
       </div>
 
-      {/* Auto-included items banner */}
       <div className="skylight-included-banner">
         <div className="skylight-included-title">✅ Standard Included Items (Auto-Assigned)</div>
         <div className="skylight-included-grid">
@@ -2260,18 +2219,9 @@ function SkylightMRACard({
       <div className="skylight-config-section">
         <div className="skylight-config-title">📐 Awning Configuration</div>
         <div className="skylight-config-grid">
-
-          {/* Projection — locked dropdown */}
           <div className="mps-field">
-            <label className="mps-label">
-              Projection <span className="mps-req">*</span>
-              <span className="skylight-field-hint">— select exact projection size</span>
-            </label>
-            <select
-              className="mps-select skylight-projection-select"
-              value={cfg.projection}
-              onChange={e => setConfig({ projection: e.target.value })}
-            >
+            <label className="mps-label">Projection <span className="mps-req">*</span></label>
+            <select className="mps-select skylight-projection-select" value={cfg.projection} onChange={e => setConfig({ projection: e.target.value })}>
               <option value="">Select Projection</option>
               {MRA_PROJECTION_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
@@ -2283,34 +2233,17 @@ function SkylightMRACard({
             )}
           </div>
 
-          {/* Width — feet + inches */}
           <div className="mps-field skylight-width-field">
-            <label className="mps-label">
-              Width <span className="mps-req">*</span>
-              <span className="skylight-field-hint">— enter feet and inches</span>
-            </label>
+            <label className="mps-label">Width <span className="mps-req">*</span></label>
             <div className="skylight-width-inputs">
               <div className="skylight-width-input-wrap">
-                <input
-                  className="mps-input skylight-dim-input"
-                  type="number"
-                  value={cfg.widthFt}
-                  onChange={e => setConfig({ widthFt: e.target.value })}
-                  placeholder="0"
-                  min="0"
-                />
+                <input className="mps-input skylight-dim-input" type="number" value={cfg.widthFt}
+                  onChange={e => setConfig({ widthFt: e.target.value })} placeholder="0" min="0" />
                 <span className="skylight-dim-unit">ft</span>
               </div>
               <div className="skylight-width-input-wrap">
-                <input
-                  className="mps-input skylight-dim-input"
-                  type="number"
-                  value={cfg.widthIn}
-                  onChange={e => setConfig({ widthIn: e.target.value })}
-                  placeholder="0"
-                  min="0"
-                  max="11"
-                />
+                <input className="mps-input skylight-dim-input" type="number" value={cfg.widthIn}
+                  onChange={e => setConfig({ widthIn: e.target.value })} placeholder="0" min="0" max="11" />
                 <span className="skylight-dim-unit">in</span>
               </div>
             </div>
@@ -2323,7 +2256,6 @@ function SkylightMRACard({
           </div>
         </div>
 
-        {/* Pricing feedback */}
         {cfg.projection && widthFtKey && (
           <div className={`opening-price-badge ${priceResult.ok ? "opening-price-badge--ok" : "opening-price-badge--error"}`}>
             {priceResult.ok
@@ -2333,15 +2265,14 @@ function SkylightMRACard({
           </div>
         )}
 
-        {/* Fabric selection */}
         <div className="skylight-fabric-section">
           <div className="skylight-config-title" style={{marginTop:"16px"}}>🧵 Fabric Selection</div>
           <SkylightFabricSelector
             fabricBrand={cfg.fabricBrand}
-            fabricType={cfg.fabricType}
-            fabricColor={cfg.fabricColor}
-            onChange={({ fabricBrand, fabricType, fabricColor }) =>
-              setConfig({ fabricBrand, fabricType, fabricColor })
+            style_number={cfg.style_number}
+            color_name={cfg.color_name}
+            onChange={({ fabricBrand, style_number, color_name }) =>
+              setConfig({ fabricBrand, style_number, color_name })
             }
           />
         </div>
@@ -2350,68 +2281,16 @@ function SkylightMRACard({
       <div className="product-note-section">
         <label className="mps-label">📝 Product Notes</label>
         <textarea className="product-note-textarea"
-          placeholder="Add any important notes about this awning (e.g. mounting location, special instructions, site conditions)…"
+          placeholder="Add any important notes about this awning…"
           value={productNotes || ""} onChange={e => onProductNoteChange(line.id, e.target.value)} rows={3} />
       </div>
 
-      {/* Field Add-ons */}
-      {fieldAddonDefs.length > 0 && (
-        <div className="ps-addons-section field-addons-section">
-          <div className="ps-addons-title">
-            <span className="ps-addons-icon">◆</span> Optional Accessories
-            {fieldTotal > 0 && <span className="ps-addons-running-total">+{fmt(fieldTotal)} selected</span>}
-          </div>
-          <div className="field-addons-grid">
-            {(() => {
-              const groupMap = {};
-              fieldAddonDefs.forEach(def => { const g = def.group||"Add-ons"; if (!groupMap[g]) groupMap[g]=[]; groupMap[g].push(def); });
-              const groupOrder = [...new Set(fieldAddonDefs.map(d=>d.group||"Add-ons"))];
-              return groupOrder.map(groupLabel => (
-                <div key={groupLabel} className="field-addon-group">
-                  <div className="field-addon-group-header">{groupLabel}</div>
-                  {groupMap[groupLabel].map(def => {
-                    const val = fieldAddonValues?.[def.id] || {};
-                    const enabled = !!val.enabled;
-                    const qtyVal = val.qty || "";
-                    const customPrice = val.customPrice || "";
-                    const isCustom = def.pricingType === "custom";
-                    const lineAmt = enabled ? (isCustom ? (parseFloat(customPrice)||0) : def.rate*(parseFloat(qtyVal)||0)) : 0;
-                    return (
-                      <div key={def.id} className={`field-addon-row ${enabled?"field-addon-active":""}`}>
-                        <label className="field-addon-check-label">
-                          <input type="checkbox" className="ps-addon-checkbox" checked={enabled}
-                            onChange={() => onFieldAddonChange(line.id, def.id, {...val, enabled: !enabled})} />
-                          <span className="field-addon-name">{def.name}</span>
-                        </label>
-                        <div className="field-addon-right">
-                          {!isCustom && <div className="field-addon-rate">{fmt(def.rate)} / {def.unitShort}</div>}
-                          {enabled && (
-                            <div className="field-addon-input-wrap">
-                              {isCustom ? (
-                                <><span className="field-addon-unit-label">$</span>
-                                  <input type="number" className="field-addon-qty-input" value={customPrice} min="0" step="1" placeholder={def.placeholder}
-                                    onChange={e => onFieldAddonChange(line.id, def.id, {...val, enabled:true, customPrice:e.target.value})} />
-                                  {lineAmt > 0 && <span className="field-addon-line-total">{fmt(lineAmt)}</span>}
-                                </>
-                              ) : (
-                                <><input type="number" className="field-addon-qty-input" value={qtyVal} min="0" step="1" placeholder={def.placeholder}
-                                    onChange={e => onFieldAddonChange(line.id, def.id, {...val, enabled:true, qty:e.target.value})} />
-                                  <span className="field-addon-unit-label">{def.unit}</span>
-                                  {lineAmt > 0 && <span className="field-addon-line-total">{fmt(lineAmt)}</span>}
-                                </>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ));
-            })()}
-          </div>
-        </div>
-      )}
+      <FieldAddonSection
+        productName="Skylight Plus MRA"
+        fieldAddonValues={fieldAddonValues}
+        onFieldAddonChange={onFieldAddonChange}
+        lineId={line.id}
+      />
 
       <div className="mps-line-total">
         {priceResult.ok
@@ -2436,7 +2315,6 @@ function StandardProductCard({ line, index, snapshot, addonSelections, onAddonTo
   const availableAddons   = getAddonsForProduct(line.product);
   const selected          = addonSelections[line.id] || {};
   const summaryAddonTotal = availableAddons.reduce((s, a) => selected[a.id] ? s + a.price * qty : s, 0);
-  const fieldAddonDefs    = getFieldAddonsForProduct(line.product);
   const fieldTotal        = calcFieldAddonTotal(fieldAddonValues, line.product);
   const grandLineTotal    = baseTotal + summaryAddonTotal + fieldTotal;
 
@@ -2500,63 +2378,12 @@ function StandardProductCard({ line, index, snapshot, addonSelections, onAddonTo
         </div>
       )}
 
-      {fieldAddonDefs.length > 0 && (
-        <div className="ps-addons-section field-addons-section">
-          <div className="ps-addons-title">
-            <span className="ps-addons-icon">&#x25C6;</span> Upgrades &amp; Add-ons
-            {fieldTotal > 0 && <span className="ps-addons-running-total">+{fmt(fieldTotal)} selected</span>}
-          </div>
-          <div className="field-addons-grid">
-            {(() => {
-              const groupMap = {};
-              fieldAddonDefs.forEach(def => { const g = def.group||"Add-ons"; if (!groupMap[g]) groupMap[g]=[]; groupMap[g].push(def); });
-              const groupOrder = [...new Set(fieldAddonDefs.map(d=>d.group||"Add-ons"))];
-              return groupOrder.map(groupLabel => (
-                <div key={groupLabel} className="field-addon-group">
-                  <div className="field-addon-group-header">{groupLabel}</div>
-                  {groupMap[groupLabel].map(def => {
-                    const val = fieldAddonValues?.[def.id] || {};
-                    const enabled = !!val.enabled;
-                    const qtyVal = val.qty || "";
-                    const customPrice = val.customPrice || "";
-                    const isCustom = def.pricingType === "custom";
-                    const lineAmt = enabled ? (isCustom ? (parseFloat(customPrice)||0) : def.rate*(parseFloat(qtyVal)||0)) : 0;
-                    return (
-                      <div key={def.id} className={`field-addon-row ${enabled?"field-addon-active":""}`}>
-                        <label className="field-addon-check-label">
-                          <input type="checkbox" className="ps-addon-checkbox" checked={enabled}
-                            onChange={() => onFieldAddonChange(line.id, def.id, {...val, enabled: !enabled})} />
-                          <span className="field-addon-name">{def.name}</span>
-                        </label>
-                        <div className="field-addon-right">
-                          {!isCustom && <div className="field-addon-rate">{fmt(def.rate)} / {def.unitShort}</div>}
-                          {enabled && (
-                            <div className="field-addon-input-wrap">
-                              {isCustom ? (
-                                <><span className="field-addon-unit-label">$</span>
-                                  <input type="number" className="field-addon-qty-input" value={customPrice} min="0" step="1" placeholder={def.placeholder}
-                                    onChange={e => onFieldAddonChange(line.id, def.id, {...val, enabled:true, customPrice:e.target.value})} />
-                                  {lineAmt > 0 && <span className="field-addon-line-total">{fmt(lineAmt)}</span>}
-                                </>
-                              ) : (
-                                <><input type="number" className="field-addon-qty-input" value={qtyVal} min="0" step={def.pricingType==="per_lf"?"0.5":"1"} placeholder={def.placeholder}
-                                    onChange={e => onFieldAddonChange(line.id, def.id, {...val, enabled:true, qty:e.target.value})} />
-                                  <span className="field-addon-unit-label">{def.unit}</span>
-                                  {lineAmt > 0 && <span className="field-addon-line-total">{fmt(lineAmt)}</span>}
-                                </>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ));
-            })()}
-          </div>
-        </div>
-      )}
+      <FieldAddonSection
+        productName={line.product}
+        fieldAddonValues={fieldAddonValues}
+        onFieldAddonChange={onFieldAddonChange}
+        lineId={line.id}
+      />
 
       {line.notes && <div className="ps-product-notes"><span className="ps-detail-label">Notes — </span>{line.notes}</div>}
     </div>
@@ -2577,7 +2404,6 @@ export default function ProductSummary() {
   const [productNotes,         setProductNotes]         = useState(() => loadFromSession()?.productNotes         || {});
   const [signature,            setSignature]            = useState(() => loadFromSession()?.signature            || null);
   const [windSensorSelections, setWindSensorSelections] = useState(() => loadFromSession()?.windSensorSelections || {});
-  // FIX 1: Unified mraConfig replaces separate skylightConfig
   const [mraConfig,            setMraConfig]            = useState(() => loadFromSession()?.mraConfig            || {});
 
   useEffect(() => {
@@ -2622,7 +2448,6 @@ export default function ProductSummary() {
   const { customer, productLines, discount, orderNotes, lastUpdated } = snapshot;
   const configuredLines = productLines.filter(l => l.category && l.product);
 
-  // Count total awning qty for transmitter auto-assignment
   const totalAwningQty = configuredLines
     .filter(l => AWNING_PRODUCTS.includes(l.product))
     .reduce((sum, l) => sum + (parseInt(l.quantity, 10) || 1), 0);
@@ -2645,7 +2470,6 @@ export default function ProductSummary() {
         if (openingsTotal > 0) openingsGrand += openingsTotal;
         else { const e = snapshot.productLines.find(l2=>l2.id===line.id); appBaseMPSGrand += e?.pricing?.lineSubtotal||0; }
       } else if (AWNING_PRODUCTS.includes(line.product)) {
-        // MRA products: use matrix price
         const cfg = mraConfig[line.id] || {};
         const qty = parseInt(line.quantity,10)||1;
         const totalWidthFt = (parseInt(cfg.widthFt,10)||0) + ((parseInt(cfg.widthIn,10)||0)/12);
@@ -2698,7 +2522,7 @@ export default function ProductSummary() {
           <button className="ps-btn ps-btn-back" onClick={()=>navigate("/")}>← Back to Form</button>
           <div className="ps-nav-row-right">
             <span className="ps-last-updated">Last updated: {new Date(lastUpdated).toLocaleString()}</span>
-            <button className="ps-btn ctrl-btn-reset ctrl-btn-global-reset" onClick={handleGlobalReset} title="Reset entire quote tool">
+            <button className="ps-btn ctrl-btn-reset ctrl-btn-global-reset" onClick={handleGlobalReset}>
               ↺ Reset Quote Tool
             </button>
           </div>
@@ -2722,9 +2546,7 @@ export default function ProductSummary() {
           {configuredLines.length === 0 ? <p className="ps-empty">No products configured yet.</p> : (
             <div className="ps-products-list">
               {configuredLines.map((line, idx) => {
-                // Skylight Plus MRA (or legacy "Motor B Retractable Awning") → SkylightMRACard
                 const isSkylightMRA = line.product === "Skylight Plus MRA" || line.product === "Motor B Retractable Awning";
-                // Skyline MRA and Open Roll MRA → GenericMRACard
                 const isGenericMRA  = line.product === "Skyline Motorized Retractable Awning" ||
                                       line.product === "Open Roll Motorized Retractable Awning";
 

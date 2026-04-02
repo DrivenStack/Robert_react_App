@@ -1809,3 +1809,122 @@ details[open] .override-summary::before { content:"▼"; }
   margin-left: 6px;
   font-style: italic;
 }
+
+.fabric-typeahead-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  font-family: Arial, sans-serif;
+}
+
+.fabric-typeahead-input-row {
+  display: flex;
+  align-items: center;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  width: 250px;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+.fabric-typeahead-focused {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.fabric-typeahead-selected {
+  border-color: #16a34a;
+}
+
+.fabric-typeahead-search-icon {
+  margin-right: 8px;
+  font-size: 14px;
+  opacity: 0.6;
+}
+
+.fabric-typeahead-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  background: transparent;
+  width: 200px;
+}
+
+.fabric-typeahead-input::placeholder {
+  color: #9ca3af;
+}
+
+.fabric-typeahead-clear {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  margin-left: 6px;
+  color: #6b7280;
+}
+
+.fabric-typeahead-clear:hover {
+  color: #111827;
+}
+
+.fabric-typeahead-check {
+  margin-left: 6px;
+  color: #16a34a;
+  font-weight: bold;
+}
+
+.fabric-typeahead-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  max-height: 260px;
+  overflow-y: auto;
+  margin-top: 6px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  z-index: 1000;
+}
+
+.fabric-typeahead-option {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-size: 14px;
+}
+
+.fabric-typeahead-option:hover {
+  background: #f3f4f6;
+}
+
+.fabric-typeahead-style {
+  font-weight: 600;
+  color: #111827;
+}
+
+.fabric-typeahead-color {
+  color: #6b7280;
+  margin-left: 10px;
+}
+
+.fabric-typeahead-empty {
+  padding: 12px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.fabric-typeahead-hint {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #9ca3af;
+  border-bottom: 1px solid #f3f4f6;
+}
