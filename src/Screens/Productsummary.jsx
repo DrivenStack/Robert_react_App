@@ -87,13 +87,73 @@ function getMRAPrice(productName, projection, widthFt) {
 // ─────────────────────────────────────────────────────────────
 // SUNBRELLA FABRIC DATA — 247 fabrics from CSV
 // ─────────────────────────────────────────────────────────────
-const SUNBRELLA_FABRICS = [{"brand":"Sunbrella","style_number":"4631-0000","color_name":"Burgundy"},{"brand":"Sunbrella","style_number":"4630-0000","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"4675-0000","color_name":"Capri"},{"brand":"Sunbrella","style_number":"4646-0000","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"4644-0000","color_name":"Charcoal Grey"},{"brand":"Sunbrella","style_number":"4607-0000","color_name":"Charcoal Tweed"},{"brand":"Sunbrella","style_number":"14609-0000","color_name":"Cloud"},{"brand":"Sunbrella","style_number":"4676-0000","color_name":"Cocoa"},{"brand":"Sunbrella","style_number":"4662-0000","color_name":"Crest Ash"},{"brand":"Sunbrella","style_number":"4660-0000","color_name":"Crest Birch"},{"brand":"Sunbrella","style_number":"4606-0000","color_name":"Dubonnet Tweed"},{"brand":"Sunbrella","style_number":"4600-0000","color_name":"Erin Green"},{"brand":"Sunbrella","style_number":"4671-0000","color_name":"Fern"},{"brand":"Sunbrella","style_number":"4637-0000","color_name":"Forest Green"},{"brand":"Sunbrella","style_number":"4672-0000","color_name":"Heather Beige"},{"brand":"Sunbrella","style_number":"4605-0000","color_name":"Hemlock Tweed"},{"brand":"Sunbrella","style_number":"14613-0000","color_name":"Hogan Admiral"},{"brand":"Sunbrella","style_number":"14612-0000","color_name":"Hogan Arctic"},{"brand":"Sunbrella","style_number":"14616-0000","color_name":"Hogan Carob"},{"brand":"Sunbrella","style_number":"14617-0000","color_name":"Hogan Flame"},{"brand":"Sunbrella","style_number":"14611-0000","color_name":"Hogan Marina"},{"brand":"Sunbrella","style_number":"14615-0000","color_name":"Hogan Sparrow"},{"brand":"Sunbrella","style_number":"14614-0000","color_name":"Hogan Walnut"},{"brand":"Sunbrella","style_number":"4632-0000","color_name":"Ivy"},{"brand":"Sunbrella","style_number":"4603-0000","color_name":"Jockey Red"},{"brand":"Sunbrella","style_number":"4633-0000","color_name":"Linen"},{"brand":"Sunbrella","style_number":"4654-0000","color_name":"Linen Tweed"},{"brand":"Sunbrella","style_number":"4666-0000","color_name":"Logo Red"},{"brand":"Sunbrella","style_number":"4678-0000","color_name":"Marine Blue"},{"brand":"Sunbrella","style_number":"4652-0000","color_name":"Mediterranean Blue"},{"brand":"Sunbrella","style_number":"4653-0000","color_name":"Mediterranean Blue Tweed"},{"brand":"Sunbrella","style_number":"4616-0000","color_name":"Mocha Tweed"},{"brand":"Sunbrella","style_number":"4604-0000","color_name":"Natural"},{"brand":"Sunbrella","style_number":"4626-0000","color_name":"Navy"},{"brand":"Sunbrella","style_number":"4679-0000","color_name":"Ocean Blue"},{"brand":"Sunbrella","style_number":"4609-0000","color_name":"Orange"},{"brand":"Sunbrella","style_number":"4642-0000","color_name":"Oyster"},{"brand":"Sunbrella","style_number":"4601-0000","color_name":"Pacific Blue"},{"brand":"Sunbrella","style_number":"4683-0000","color_name":"Parchment"},{"brand":"Sunbrella","style_number":"4617-0000","color_name":"Royal Blue Tweed"},{"brand":"Sunbrella","style_number":"4641-0000","color_name":"Sapphire Blue"},{"brand":"Sunbrella","style_number":"4664-0000","color_name":"Sea"},{"brand":"Sunbrella","style_number":"4897-0000","color_name":"Silica Charcoal"},{"brand":"Sunbrella","style_number":"4859-0000","color_name":"Silica Dune"},{"brand":"Sunbrella","style_number":"4833-0000","color_name":"Silica Gravel"},{"brand":"Sunbrella","style_number":"4860-0000","color_name":"Silica Sesame"},{"brand":"Sunbrella","style_number":"4612-0000","color_name":"Aruba"},{"brand":"Sunbrella","style_number":"4688-0000","color_name":"Basil"},{"brand":"Sunbrella","style_number":"4620-0000","color_name":"Beige"},{"brand":"Sunbrella","style_number":"4608-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"6023-0000","color_name":"Aquamarine"},{"brand":"Sunbrella","style_number":"6012-0000","color_name":"Aruba"},{"brand":"Sunbrella","style_number":"6020-0000","color_name":"Beige"},{"brand":"Sunbrella","style_number":"6008-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"4862-0000","color_name":"Silica Silver"},{"brand":"Sunbrella","style_number":"4861-0000","color_name":"Silica Stone"},{"brand":"Sunbrella","style_number":"4651-0000","color_name":"Silver"},{"brand":"Sunbrella","style_number":"4624-0000","color_name":"Sky Blue"},{"brand":"Sunbrella","style_number":"4684-0000","color_name":"Slate"},{"brand":"Sunbrella","style_number":"4615-0000","color_name":"Smoke"},{"brand":"Sunbrella","style_number":"4636-0000","color_name":"Storm"},{"brand":"Sunbrella","style_number":"4602-0000","color_name":"Sunflower Yellow"},{"brand":"Sunbrella","style_number":"4648-0000","color_name":"Taupe"},{"brand":"Sunbrella","style_number":"4622-0000","color_name":"Terracotta"},{"brand":"Sunbrella","style_number":"4628-0000","color_name":"Toast"},{"brand":"Sunbrella","style_number":"14618-0000","color_name":"Toast Tweed"},{"brand":"Sunbrella","style_number":"4696-0000","color_name":"Tresco Birch"},{"brand":"Sunbrella","style_number":"4695-0000","color_name":"Tresco Linen"},{"brand":"Sunbrella","style_number":"4621-0000","color_name":"True Brown"},{"brand":"Sunbrella","style_number":"4610-0000","color_name":"Turquoise"},{"brand":"Sunbrella","style_number":"4677-0000","color_name":"Tuscan"},{"brand":"Sunbrella","style_number":"4618-0000","color_name":"Walnut Brown Tweed"},{"brand":"Sunbrella","style_number":"4634-0000","color_name":"White"},{"brand":"Sunbrella","style_number":"6095-0000","color_name":"Tresco Linen"},{"brand":"Sunbrella","style_number":"6021-0000","color_name":"True Brown"},{"brand":"Sunbrella","style_number":"6010-0000","color_name":"Turquoise"},{"brand":"Sunbrella","style_number":"6077-0000","color_name":"Tuscan"},{"brand":"Sunbrella","style_number":"6018-0000","color_name":"Walnut Brown Tweed"},{"brand":"Sunbrella","style_number":"6034-0000","color_name":"White"},{"brand":"Sunbrella","style_number":"6031-0000","color_name":"Burgundy"},{"brand":"Sunbrella","style_number":"6030-0000","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"6075-0000","color_name":"Capri"},{"brand":"Sunbrella","style_number":"6046-0000","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"6044-0000","color_name":"Charcoal Grey"},{"brand":"Sunbrella","style_number":"6007-0000","color_name":"Charcoal Tweed"},{"brand":"Sunbrella","style_number":"6064-0000","color_name":"Cloud"},{"brand":"Sunbrella","style_number":"6076-0000","color_name":"Cocoa"},{"brand":"Sunbrella","style_number":"6065-0000","color_name":"Concord"},{"brand":"Sunbrella","style_number":"6006-0000","color_name":"Dubonnet Tweed"},{"brand":"Sunbrella","style_number":"6000-0000","color_name":"Erin Green"},{"brand":"Sunbrella","style_number":"6071-0000","color_name":"Fern"},{"brand":"Sunbrella","style_number":"6037-0000","color_name":"Forest Green"},{"brand":"Sunbrella","style_number":"6072-0000","color_name":"Heather Beige"},{"brand":"Sunbrella","style_number":"6005-0000","color_name":"Hemlock Tweed"},{"brand":"Sunbrella","style_number":"6032-0000","color_name":"Ivy"},{"brand":"Sunbrella","style_number":"6003-0000","color_name":"Jockey Red"},{"brand":"Sunbrella","style_number":"6033-0000","color_name":"Linen"},{"brand":"Sunbrella","style_number":"6054-0000","color_name":"Linen Tweed"},{"brand":"Sunbrella","style_number":"6066-0000","color_name":"Logo Red"},{"brand":"Sunbrella","style_number":"6078-0000","color_name":"Marine Blue"},{"brand":"Sunbrella","style_number":"6052-0000","color_name":"Mediterranean Blue"},{"brand":"Sunbrella","style_number":"6053-0000","color_name":"Mediterranean Blue Tweed"},{"brand":"Sunbrella","style_number":"6036-0000","color_name":"Midnight"},{"brand":"Sunbrella","style_number":"6004-0000","color_name":"Natural"},{"brand":"Sunbrella","style_number":"6026-0000","color_name":"Navy"},{"brand":"Sunbrella","style_number":"6079-0000","color_name":"Ocean Blue"},{"brand":"Sunbrella","style_number":"6009-0000","color_name":"Orange"},{"brand":"Sunbrella","style_number":"6042-0000","color_name":"Oyster"},{"brand":"Sunbrella","style_number":"6001-0000","color_name":"Pacific Blue"},{"brand":"Sunbrella","style_number":"6083-0000","color_name":"Parchment"},{"brand":"Sunbrella","style_number":"6043-0000","color_name":"Persian Green"},{"brand":"Sunbrella","style_number":"6017-0000","color_name":"Royal Blue Tweed"},{"brand":"Sunbrella","style_number":"6041-0000","color_name":"Sapphire Blue"},{"brand":"Sunbrella","style_number":"6059-0000","color_name":"Silica Dune"},{"brand":"Sunbrella","style_number":"6063-0000","color_name":"Silica Gravel"},{"brand":"Sunbrella","style_number":"6062-0000","color_name":"Silica Silver"},{"brand":"Sunbrella","style_number":"6061-0000","color_name":"Silica Stone"},{"brand":"Sunbrella","style_number":"6051-0000","color_name":"Silver"},{"brand":"Sunbrella","style_number":"6024-0000","color_name":"Sky Blue"},{"brand":"Sunbrella","style_number":"6084-0000","color_name":"Slate"},{"brand":"Sunbrella","style_number":"6015-0000","color_name":"Smoke"},{"brand":"Sunbrella","style_number":"6002-0000","color_name":"Sunflower Yellow"},{"brand":"Sunbrella","style_number":"6048-0000","color_name":"Taupe"},{"brand":"Sunbrella","style_number":"6022-0000","color_name":"Terracotta"},{"brand":"Sunbrella","style_number":"6028-0000","color_name":"Toast"},{"brand":"Sunbrella","style_number":"2389-0060","color_name":"Toast Tweed"},{"brand":"Sunbrella","style_number":"6096-0000","color_name":"Tresco Birch"},{"brand":"Sunbrella","style_number":"80008-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"80030-0000","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"80046-0000","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"80001-0000","color_name":"Pacific Blue"},{"brand":"Sunbrella","style_number":"80028-0000","color_name":"Toast"},{"brand":"Sunbrella","style_number":"4888-0000","color_name":"Clinton Granite"},{"brand":"Sunbrella","style_number":"4856-0000","color_name":"Colonnade Juniper"},{"brand":"Sunbrella","style_number":"4857-0000","color_name":"Colonnade Redwood"},{"brand":"Sunbrella","style_number":"4835-0000","color_name":"Cooper Ash"},{"brand":"Sunbrella","style_number":"4988-0000","color_name":"Cooper Black"},{"brand":"Sunbrella","style_number":"4987-0000","color_name":"Cooper Navy"},{"brand":"Sunbrella","style_number":"4813-0000","color_name":"Eastland Redwood"},{"brand":"Sunbrella","style_number":"4994-0000","color_name":"Eastridge Cocoa"},{"brand":"Sunbrella","style_number":"4709-0000","color_name":"Equate Cashmere"},{"brand":"Sunbrella","style_number":"4766-0000","color_name":"Era Ash"},{"brand":"Sunbrella","style_number":"4959-0000","color_name":"Fern / Heather Beige Blockstripe"},{"brand":"Sunbrella","style_number":"4955-0000","color_name":"Fern Classic"},{"brand":"Sunbrella","style_number":"4932-0000","color_name":"Forest / Beige / Natural / Sage Fancy"},{"brand":"Sunbrella","style_number":"4790-0000","color_name":"Forest Green Fancy"},{"brand":"Sunbrella","style_number":"4949-0000","color_name":"Forest Vintage Bar Stripe"},{"brand":"Sunbrella","style_number":"4777-0000","color_name":"Grey / Beige Chip Fancy"},{"brand":"Sunbrella","style_number":"4799-0000","color_name":"Grey / Black / White"},{"brand":"Sunbrella","style_number":"4989-0000","color_name":"Hatteras Raven"},{"brand":"Sunbrella","style_number":"4985-0000","color_name":"Havelock Brick"},{"brand":"Sunbrella","style_number":"4954-0000","color_name":"Heather Beige Classic"},{"brand":"Sunbrella","style_number":"4751-0000","color_name":"Hemlock Tweed Fancy"},{"brand":"Sunbrella","style_number":"4969-0000","color_name":"Henna / Fern Vintage"},{"brand":"Sunbrella","style_number":"4868-0000","color_name":"Kiawah Spa"},{"brand":"Sunbrella","style_number":"4789-0000","color_name":"Manhattan Classic"},{"brand":"Sunbrella","style_number":"4876-0000","color_name":"Manhattan Fog"},{"brand":"Sunbrella","style_number":"4703-0000","color_name":"Marco Black"},{"brand":"Sunbrella","style_number":"4704-0000","color_name":"Marco Blue Grey"},{"brand":"Sunbrella","style_number":"4707-0000","color_name":"Marco Olive"},{"brand":"Sunbrella","style_number":"4706-0000","color_name":"Marco Sandstone"},{"brand":"Sunbrella","style_number":"4895-0000","color_name":"Motive Denim"},{"brand":"Sunbrella","style_number":"4916-0000","color_name":"Navy / Taupe Fancy"},{"brand":"Sunbrella","style_number":"4755-0000","color_name":"Pacific Blue Fancy"},{"brand":"Sunbrella","style_number":"4712-0000","color_name":"Paxton Dew"},{"brand":"Sunbrella","style_number":"4713-0000","color_name":"Paxton Marble"},{"brand":"Sunbrella","style_number":"4711-0000","color_name":"Paxton Stone"},{"brand":"Sunbrella","style_number":"4768-0000","color_name":"Preston Stone"},{"brand":"Sunbrella","style_number":"4961-0000","color_name":"Putty Regimental"},{"brand":"Sunbrella","style_number":"4884-0000","color_name":"Saxon Cascade"},{"brand":"Sunbrella","style_number":"4885-0000","color_name":"Saxon Chili"},{"brand":"Sunbrella","style_number":"4907-0000","color_name":"Taupe 5 Bar"},{"brand":"Sunbrella","style_number":"4945-0000","color_name":"Taupe Tailored Bar Stripe"},{"brand":"Sunbrella","style_number":"4836-0000","color_name":"Tillman Shale"},{"brand":"Sunbrella","style_number":"4817-0000","color_name":"Westfield Mushroom"},{"brand":"Sunbrella","style_number":"4995-0000","color_name":"Ashford Forest"},{"brand":"Sunbrella","style_number":"4993-0000","color_name":"Baycrest Pacific"},{"brand":"Sunbrella","style_number":"4992-0000","color_name":"Baycrest Sky"},{"brand":"Sunbrella","style_number":"5704-0000","color_name":"Beaufort Black / White 6 Bar"},{"brand":"Sunbrella","style_number":"4708-0000","color_name":"Beaufort Captain Navy"},{"brand":"Sunbrella","style_number":"4752-0000","color_name":"Beaufort Cloud"},{"brand":"Sunbrella","style_number":"4806-0000","color_name":"Beaufort Forest Green / Natural 6 Bar"},{"brand":"Sunbrella","style_number":"4753-0000","color_name":"Beaufort Mushroom"},{"brand":"Sunbrella","style_number":"4771-0000","color_name":"Beaufort Peacock"},{"brand":"Sunbrella","style_number":"4746-0000","color_name":"Beaufort Sagebrush"},{"brand":"Sunbrella","style_number":"5702-0000","color_name":"Beaufort Yellow / White 6 Bar"},{"brand":"Sunbrella","style_number":"4946-0000","color_name":"Black / Taupe Fancy"},{"brand":"Sunbrella","style_number":"4923-0000","color_name":"Black Forest Fancy"},{"brand":"Sunbrella","style_number":"4710-0000","color_name":"Boone Navy"},{"brand":"Sunbrella","style_number":"4798-0000","color_name":"Burgundy / Black / White"},{"brand":"Sunbrella","style_number":"4902-0000","color_name":"Captain Navy / Natural Classic"},{"brand":"Sunbrella","style_number":"4776-0000","color_name":"Chocolate Chip Fancy"},{"brand":"Sunbrella","style_number":"8750-0000","color_name":"Bay Brown"},{"brand":"Sunbrella","style_number":"8751-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"8756-0000","color_name":"Burgundy"},{"brand":"Sunbrella","style_number":"8752-0000","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"8753-0000","color_name":"Forest Green"},{"brand":"Sunbrella","style_number":"8754-0000","color_name":"Jockey Red"},{"brand":"Sunbrella","style_number":"8755-0000","color_name":"Pacific Blue"},{"brand":"Sunbrella","style_number":"8757-0000","color_name":"Terracotta"},{"brand":"Sunbrella","style_number":"6093-0000","color_name":"Pink"},{"brand":"Sunbrella","style_number":"4879-0000","color_name":"Rodanthe Metallic"},{"brand":"Sunbrella","style_number":"2079-0000","color_name":"Royal Navy"},{"brand":"Sunbrella","style_number":"6089-0000","color_name":"Rust"},{"brand":"Sunbrella","style_number":"6073-0000","color_name":"Spa"},{"brand":"Sunbrella","style_number":"6074-0000","color_name":"Wheat"},{"brand":"Sunbrella","style_number":"6069-0000","color_name":"Azure"},{"brand":"Sunbrella","style_number":"6091-0000","color_name":"Badger"},{"brand":"Sunbrella","style_number":"4982-0000","color_name":"Beaufort Classic"},{"brand":"Sunbrella","style_number":"1160-0060","color_name":"Beaufort Classic"},{"brand":"Sunbrella","style_number":"6040-0000","color_name":"Black Cherry"},{"brand":"Sunbrella","style_number":"4855-0000","color_name":"Colonnade Fossil"},{"brand":"Sunbrella","style_number":"4823-0000","color_name":"Colonnade Seaglass"},{"brand":"Sunbrella","style_number":"4822-0000","color_name":"Colonnade Stone"},{"brand":"Sunbrella","style_number":"4838-0000","color_name":"Emblem Badger"},{"brand":"Sunbrella","style_number":"4837-0000","color_name":"Emblem Beige"},{"brand":"Sunbrella","style_number":"4824-0000","color_name":"Emblem Classic"},{"brand":"Sunbrella","style_number":"4839-0000","color_name":"Emblem Dew"},{"brand":"Sunbrella","style_number":"4801-0000","color_name":"Emblem Fern"},{"brand":"Sunbrella","style_number":"4898-0000","color_name":"Emblem Navy"},{"brand":"Sunbrella","style_number":"6080-0000","color_name":"Fawn"},{"brand":"Sunbrella","style_number":"6085-0000","color_name":"Ginkgo"},{"brand":"Sunbrella","style_number":"4991-0000","color_name":"Manteo Cardinal"},{"brand":"Sunbrella","style_number":"4921-0000","color_name":"Mediterranean / Canvas Block Stripe"},{"brand":"Sunbrella","style_number":"4880-0000","color_name":"Moreland Taupe"},{"brand":"Sunbrella","style_number":"8408-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"8430-0000","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"8446-0000","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"8404-0000","color_name":"Natural"},{"brand":"Sunbrella","style_number":"8442-0000","color_name":"Oyster"},{"brand":"Sunbrella","style_number":"8428-0000","color_name":"Toast"},{"brand":"Sunbrella","style_number":"2095-0063","color_name":"Black"},{"brand":"Sunbrella","style_number":"2097-0063","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"2098-0063","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"2110-0063","color_name":"Charcoal Grey"},{"brand":"Sunbrella","style_number":"2105-0063","color_name":"Charcoal Tweed"},{"brand":"Sunbrella","style_number":"2102-0063","color_name":"Dubonnet Tweed"},{"brand":"Sunbrella","style_number":"2099-0063","color_name":"Hemlock Tweed"},{"brand":"Sunbrella","style_number":"2104-0063","color_name":"Linen"},{"brand":"Sunbrella","style_number":"2096-0063","color_name":"Linen Tweed"},{"brand":"Sunbrella","style_number":"2107-0063","color_name":"Navy"},{"brand":"Sunbrella","style_number":"2101-0063","color_name":"Oyster"},{"brand":"Sunbrella","style_number":"2103-0063","color_name":"Royal Blue Tweed"},{"brand":"Sunbrella","style_number":"2100-0063","color_name":"Toast Tweed"},{"brand":"Sunbrella","style_number":"84008-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"84030-0000","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"84044-0000","color_name":"Charcoal Grey"}];
+const SUNBRELLA_FABRICS = [{"brand":"Sunbrella","style_number":"4631-0000","color_name":"Burgundy"},{"brand":"Sunbrella","style_number":"4630-0000","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"4675-0000","color_name":"Capri"},{"brand":"Sunbrella","style_number":"4646-0000","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"4644-0000","color_name":"Charcoal Grey"},{"brand":"Sunbrella","style_number":"4607-0000","color_name":"Charcoal Tweed"},{"brand":"Sunbrella","style_number":"14609-0000","color_name":"Cloud"},{"brand":"Sunbrella","style_number":"4676-0000","color_name":"Cocoa"},{"brand":"Sunbrella","style_number":"4662-0000","color_name":"Crest Ash"},{"brand":"Sunbrella","style_number":"4660-0000","color_name":"Crest Birch"},{"brand":"Sunbrella","style_number":"4606-0000","color_name":"Dubonnet Tweed"},{"brand":"Sunbrella","style_number":"4600-0000","color_name":"Erin Green"},{"brand":"Sunbrella","style_number":"4671-0000","color_name":"Fern"},{"brand":"Sunbrella","style_number":"4637-0000","color_name":"Forest Green"},{"brand":"Sunbrella","style_number":"4672-0000","color_name":"Heather Beige"},{"brand":"Sunbrella","style_number":"4605-0000","color_name":"Hemlock Tweed"},{"brand":"Sunbrella","style_number":"14613-0000","color_name":"Hogan Admiral"},{"brand":"Sunbrella","style_number":"14612-0000","color_name":"Hogan Arctic"},{"brand":"Sunbrella","style_number":"14616-0000","color_name":"Hogan Carob"},{"brand":"Sunbrella","style_number":"14617-0000","color_name":"Hogan Flame"},{"brand":"Sunbrella","style_number":"14611-0000","color_name":"Hogan Marina"},{"brand":"Sunbrella","style_number":"14615-0000","color_name":"Hogan Sparrow"},{"brand":"Sunbrella","style_number":"14614-0000","color_name":"Hogan Walnut"},{"brand":"Sunbrella","style_number":"4632-0000","color_name":"Ivy"},{"brand":"Sunbrella","style_number":"4603-0000","color_name":"Jockey Red"},{"brand":"Sunbrella","style_number":"4633-0000","color_name":"Linen"},{"brand":"Sunbrella","style_number":"4654-0000","color_name":"Linen Tweed"},{"brand":"Sunbrella","style_number":"4666-0000","color_name":"Logo Red"},{"brand":"Sunbrella","style_number":"4678-0000","color_name":"Marine Blue"},{"brand":"Sunbrella","style_number":"4652-0000","color_name":"Mediterranean Blue"},{"brand":"Sunbrella","style_number":"4653-0000","color_name":"Mediterranean Blue Tweed"},{"brand":"Sunbrella","style_number":"4616-0000","color_name":"Mocha Tweed"},{"brand":"Sunbrella","style_number":"4604-0000","color_name":"Natural"},{"brand":"Sunbrella","style_number":"4626-0000","color_name":"Navy"},{"brand":"Sunbrella","style_number":"4679-0000","color_name":"Ocean Blue"},{"brand":"Sunbrella","style_number":"4609-0000","color_name":"Orange"},{"brand":"Sunbrella","style_number":"4642-0000","color_name":"Oyster"},{"brand":"Sunbrella","style_number":"4601-0000","color_name":"Pacific Blue"},{"brand":"Sunbrella","style_number":"4683-0000","color_name":"Parchment"},{"brand":"Sunbrella","style_number":"4617-0000","color_name":"Royal Blue Tweed"},{"brand":"Sunbrella","style_number":"4641-0000","color_name":"Sapphire Blue"},{"brand":"Sunbrella","style_number":"4664-0000","color_name":"Sea"},{"brand":"Sunbrella","style_number":"4897-0000","color_name":"Silica Charcoal"},{"brand":"Sunbrella","style_number":"4859-0000","color_name":"Silica Dune"},{"brand":"Sunbrella","style_number":"4833-0000","color_name":"Silica Gravel"},{"brand":"Sunbrella","style_number":"4860-0000","color_name":"Silica Sesame"},{"brand":"Sunbrella","style_number":"4612-0000","color_name":"Aruba"},{"brand":"Sunbrella","style_number":"4688-0000","color_name":"Aruba"},{"brand":"Sunbrella","style_number":"4620-0000","color_name":"Beige"},{"brand":"Sunbrella","style_number":"4608-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"6023-0000","color_name":"Aquamarine"},{"brand":"Sunbrella","style_number":"6012-0000","color_name":"Aruba"},{"brand":"Sunbrella","style_number":"6020-0000","color_name":"Beige"},{"brand":"Sunbrella","style_number":"6008-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"4862-0000","color_name":"Silica Silver"},{"brand":"Sunbrella","style_number":"4861-0000","color_name":"Silica Stone"},{"brand":"Sunbrella","style_number":"4651-0000","color_name":"Silver"},{"brand":"Sunbrella","style_number":"4624-0000","color_name":"Sky Blue"},{"brand":"Sunbrella","style_number":"4684-0000","color_name":"Slate"},{"brand":"Sunbrella","style_number":"4615-0000","color_name":"Smoke"},{"brand":"Sunbrella","style_number":"4636-0000","color_name":"Storm"},{"brand":"Sunbrella","style_number":"4602-0000","color_name":"Sunflower Yellow"},{"brand":"Sunbrella","style_number":"4648-0000","color_name":"Taupe"},{"brand":"Sunbrella","style_number":"4622-0000","color_name":"Terracotta"},{"brand":"Sunbrella","style_number":"4628-0000","color_name":"Toast"},{"brand":"Sunbrella","style_number":"14618-0000","color_name":"Toast Tweed"},{"brand":"Sunbrella","style_number":"4696-0000","color_name":"Tresco Birch"},{"brand":"Sunbrella","style_number":"4695-0000","color_name":"Tresco Linen"},{"brand":"Sunbrella","style_number":"4621-0000","color_name":"True Brown"},{"brand":"Sunbrella","style_number":"4610-0000","color_name":"Turquoise"},{"brand":"Sunbrella","style_number":"4677-0000","color_name":"Tuscan"},{"brand":"Sunbrella","style_number":"4618-0000","color_name":"Walnut Brown Tweed"},{"brand":"Sunbrella","style_number":"4634-0000","color_name":"White"},{"brand":"Sunbrella","style_number":"6095-0000","color_name":"Tresco Linen"},{"brand":"Sunbrella","style_number":"6021-0000","color_name":"True Brown"},{"brand":"Sunbrella","style_number":"6010-0000","color_name":"Turquoise"},{"brand":"Sunbrella","style_number":"6077-0000","color_name":"Tuscan"},{"brand":"Sunbrella","style_number":"6018-0000","color_name":"Walnut Brown Tweed"},{"brand":"Sunbrella","style_number":"6034-0000","color_name":"White"},{"brand":"Sunbrella","style_number":"6031-0000","color_name":"Burgundy"},{"brand":"Sunbrella","style_number":"6030-0000","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"6075-0000","color_name":"Capri"},{"brand":"Sunbrella","style_number":"6046-0000","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"6044-0000","color_name":"Charcoal Grey"},{"brand":"Sunbrella","style_number":"6007-0000","color_name":"Charcoal Tweed"},{"brand":"Sunbrella","style_number":"6064-0000","color_name":"Cloud"},{"brand":"Sunbrella","style_number":"6076-0000","color_name":"Cocoa"},{"brand":"Sunbrella","style_number":"6065-0000","color_name":"Concord"},{"brand":"Sunbrella","style_number":"6006-0000","color_name":"Dubonnet Tweed"},{"brand":"Sunbrella","style_number":"6000-0000","color_name":"Erin Green"},{"brand":"Sunbrella","style_number":"6071-0000","color_name":"Fern"},{"brand":"Sunbrella","style_number":"6037-0000","color_name":"Forest Green"},{"brand":"Sunbrella","style_number":"6072-0000","color_name":"Heather Beige"},{"brand":"Sunbrella","style_number":"6005-0000","color_name":"Hemlock Tweed"},{"brand":"Sunbrella","style_number":"6032-0000","color_name":"Ivy"},{"brand":"Sunbrella","style_number":"6003-0000","color_name":"Jockey Red"},{"brand":"Sunbrella","style_number":"6033-0000","color_name":"Linen"},{"brand":"Sunbrella","style_number":"6054-0000","color_name":"Linen Tweed"},{"brand":"Sunbrella","style_number":"6066-0000","color_name":"Logo Red"},{"brand":"Sunbrella","style_number":"6078-0000","color_name":"Marine Blue"},{"brand":"Sunbrella","style_number":"6052-0000","color_name":"Mediterranean Blue"},{"brand":"Sunbrella","style_number":"6053-0000","color_name":"Mediterranean Blue Tweed"},{"brand":"Sunbrella","style_number":"6036-0000","color_name":"Midnight"},{"brand":"Sunbrella","style_number":"6004-0000","color_name":"Natural"},{"brand":"Sunbrella","style_number":"6026-0000","color_name":"Navy"},{"brand":"Sunbrella","style_number":"6079-0000","color_name":"Ocean Blue"},{"brand":"Sunbrella","style_number":"6009-0000","color_name":"Orange"},{"brand":"Sunbrella","style_number":"6042-0000","color_name":"Oyster"},{"brand":"Sunbrella","style_number":"6001-0000","color_name":"Pacific Blue"},{"brand":"Sunbrella","style_number":"6083-0000","color_name":"Parchment"},{"brand":"Sunbrella","style_number":"6043-0000","color_name":"Persian Green"},{"brand":"Sunbrella","style_number":"6017-0000","color_name":"Royal Blue Tweed"},{"brand":"Sunbrella","style_number":"6041-0000","color_name":"Sapphire Blue"},{"brand":"Sunbrella","style_number":"6059-0000","color_name":"Silica Dune"},{"brand":"Sunbrella","style_number":"6063-0000","color_name":"Silica Gravel"},{"brand":"Sunbrella","style_number":"6062-0000","color_name":"Silica Silver"},{"brand":"Sunbrella","style_number":"6061-0000","color_name":"Silica Stone"},{"brand":"Sunbrella","style_number":"6051-0000","color_name":"Silver"},{"brand":"Sunbrella","style_number":"6024-0000","color_name":"Sky Blue"},{"brand":"Sunbrella","style_number":"6084-0000","color_name":"Slate"},{"brand":"Sunbrella","style_number":"6015-0000","color_name":"Smoke"},{"brand":"Sunbrella","style_number":"6002-0000","color_name":"Sunflower Yellow"},{"brand":"Sunbrella","style_number":"6048-0000","color_name":"Taupe"},{"brand":"Sunbrella","style_number":"6022-0000","color_name":"Terracotta"},{"brand":"Sunbrella","style_number":"6028-0000","color_name":"Toast"},{"brand":"Sunbrella","style_number":"2389-0060","color_name":"Toast Tweed"},{"brand":"Sunbrella","style_number":"6096-0000","color_name":"Tresco Birch"},{"brand":"Sunbrella","style_number":"80008-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"80030-0000","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"80046-0000","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"80001-0000","color_name":"Pacific Blue"},{"brand":"Sunbrella","style_number":"80028-0000","color_name":"Toast"},{"brand":"Sunbrella","style_number":"4888-0000","color_name":"Clinton Granite"},{"brand":"Sunbrella","style_number":"4856-0000","color_name":"Colonnade Juniper"},{"brand":"Sunbrella","style_number":"4857-0000","color_name":"Colonnade Redwood"},{"brand":"Sunbrella","style_number":"4835-0000","color_name":"Cooper Ash"},{"brand":"Sunbrella","style_number":"4988-0000","color_name":"Cooper Black"},{"brand":"Sunbrella","style_number":"4987-0000","color_name":"Cooper Navy"},{"brand":"Sunbrella","style_number":"4813-0000","color_name":"Eastland Redwood"},{"brand":"Sunbrella","style_number":"4994-0000","color_name":"Eastridge Cocoa"},{"brand":"Sunbrella","style_number":"4709-0000","color_name":"Equate Cashmere"},{"brand":"Sunbrella","style_number":"4766-0000","color_name":"Era Ash"},{"brand":"Sunbrella","style_number":"4959-0000","color_name":"Fern / Heather Beige Blockstripe"},{"brand":"Sunbrella","style_number":"4955-0000","color_name":"Fern Classic"},{"brand":"Sunbrella","style_number":"4932-0000","color_name":"Forest / Beige / Natural / Sage Fancy"},{"brand":"Sunbrella","style_number":"4790-0000","color_name":"Forest Green Fancy"},{"brand":"Sunbrella","style_number":"4949-0000","color_name":"Forest Vintage Bar Stripe"},{"brand":"Sunbrella","style_number":"4777-0000","color_name":"Grey / Beige Chip Fancy"},{"brand":"Sunbrella","style_number":"4799-0000","color_name":"Grey / Black / White"},{"brand":"Sunbrella","style_number":"4989-0000","color_name":"Hatteras Raven"},{"brand":"Sunbrella","style_number":"4985-0000","color_name":"Havelock Brick"},{"brand":"Sunbrella","style_number":"4954-0000","color_name":"Heather Beige Classic"},{"brand":"Sunbrella","style_number":"4751-0000","color_name":"Hemlock Tweed Fancy"},{"brand":"Sunbrella","style_number":"4969-0000","color_name":"Henna / Fern Vintage"},{"brand":"Sunbrella","style_number":"4868-0000","color_name":"Kiawah Spa"},{"brand":"Sunbrella","style_number":"4789-0000","color_name":"Manhattan Classic"},{"brand":"Sunbrella","style_number":"4876-0000","color_name":"Manhattan Fog"},{"brand":"Sunbrella","style_number":"4703-0000","color_name":"Marco Black"},{"brand":"Sunbrella","style_number":"4704-0000","color_name":"Marco Blue Grey"},{"brand":"Sunbrella","style_number":"4707-0000","color_name":"Marco Olive"},{"brand":"Sunbrella","style_number":"4706-0000","color_name":"Marco Sandstone"},{"brand":"Sunbrella","style_number":"4895-0000","color_name":"Motive Denim"},{"brand":"Sunbrella","style_number":"4916-0000","color_name":"Navy / Taupe Fancy"},{"brand":"Sunbrella","style_number":"4755-0000","color_name":"Pacific Blue Fancy"},{"brand":"Sunbrella","style_number":"4712-0000","color_name":"Paxton Dew"},{"brand":"Sunbrella","style_number":"4713-0000","color_name":"Paxton Marble"},{"brand":"Sunbrella","style_number":"4711-0000","color_name":"Paxton Stone"},{"brand":"Sunbrella","style_number":"4768-0000","color_name":"Preston Stone"},{"brand":"Sunbrella","style_number":"4961-0000","color_name":"Putty Regimental"},{"brand":"Sunbrella","style_number":"4884-0000","color_name":"Saxon Cascade"},{"brand":"Sunbrella","style_number":"4885-0000","color_name":"Saxon Chili"},{"brand":"Sunbrella","style_number":"4907-0000","color_name":"Taupe 5 Bar"},{"brand":"Sunbrella","style_number":"4945-0000","color_name":"Taupe Tailored Bar Stripe"},{"brand":"Sunbrella","style_number":"4836-0000","color_name":"Tillman Shale"},{"brand":"Sunbrella","style_number":"4817-0000","color_name":"Westfield Mushroom"},{"brand":"Sunbrella","style_number":"4995-0000","color_name":"Ashford Forest"},{"brand":"Sunbrella","style_number":"4993-0000","color_name":"Baycrest Pacific"},{"brand":"Sunbrella","style_number":"4992-0000","color_name":"Baycrest Sky"},{"brand":"Sunbrella","style_number":"5704-0000","color_name":"Beaufort Black / White 6 Bar"},{"brand":"Sunbrella","style_number":"4708-0000","color_name":"Beaufort Captain Navy"},{"brand":"Sunbrella","style_number":"4752-0000","color_name":"Beaufort Cloud"},{"brand":"Sunbrella","style_number":"4806-0000","color_name":"Beaufort Forest Green / Natural 6 Bar"},{"brand":"Sunbrella","style_number":"4753-0000","color_name":"Beaufort Mushroom"},{"brand":"Sunbrella","style_number":"4771-0000","color_name":"Beaufort Peacock"},{"brand":"Sunbrella","style_number":"4746-0000","color_name":"Beaufort Sagebrush"},{"brand":"Sunbrella","style_number":"5702-0000","color_name":"Beaufort Yellow / White 6 Bar"},{"brand":"Sunbrella","style_number":"4946-0000","color_name":"Black / Taupe Fancy"},{"brand":"Sunbrella","style_number":"4923-0000","color_name":"Black Forest Fancy"},{"brand":"Sunbrella","style_number":"4710-0000","color_name":"Boone Navy"},{"brand":"Sunbrella","style_number":"4798-0000","color_name":"Burgundy / Black / White"},{"brand":"Sunbrella","style_number":"4902-0000","color_name":"Captain Navy / Natural Classic"},{"brand":"Sunbrella","style_number":"4776-0000","color_name":"Chocolate Chip Fancy"},{"brand":"Sunbrella","style_number":"8750-0000","color_name":"Bay Brown"},{"brand":"Sunbrella","style_number":"8751-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"8756-0000","color_name":"Burgundy"},{"brand":"Sunbrella","style_number":"8752-0000","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"8753-0000","color_name":"Forest Green"},{"brand":"Sunbrella","style_number":"8754-0000","color_name":"Jockey Red"},{"brand":"Sunbrella","style_number":"8755-0000","color_name":"Pacific Blue"},{"brand":"Sunbrella","style_number":"8757-0000","color_name":"Terracotta"},{"brand":"Sunbrella","style_number":"6093-0000","color_name":"Pink"},{"brand":"Sunbrella","style_number":"4879-0000","color_name":"Rodanthe Metallic"},{"brand":"Sunbrella","style_number":"2079-0000","color_name":"Royal Navy"},{"brand":"Sunbrella","style_number":"6089-0000","color_name":"Rust"},{"brand":"Sunbrella","style_number":"6073-0000","color_name":"Spa"},{"brand":"Sunbrella","style_number":"6074-0000","color_name":"Wheat"},{"brand":"Sunbrella","style_number":"6069-0000","color_name":"Azure"},{"brand":"Sunbrella","style_number":"6091-0000","color_name":"Badger"},{"brand":"Sunbrella","style_number":"4982-0000","color_name":"Beaufort Classic"},{"brand":"Sunbrella","style_number":"1160-0060","color_name":"Beaufort Classic"},{"brand":"Sunbrella","style_number":"6040-0000","color_name":"Black Cherry"},{"brand":"Sunbrella","style_number":"4855-0000","color_name":"Colonnade Fossil"},{"brand":"Sunbrella","style_number":"4823-0000","color_name":"Colonnade Seaglass"},{"brand":"Sunbrella","style_number":"4822-0000","color_name":"Colonnade Stone"},{"brand":"Sunbrella","style_number":"4838-0000","color_name":"Emblem Badger"},{"brand":"Sunbrella","style_number":"4837-0000","color_name":"Emblem Beige"},{"brand":"Sunbrella","style_number":"4824-0000","color_name":"Emblem Classic"},{"brand":"Sunbrella","style_number":"4839-0000","color_name":"Emblem Dew"},{"brand":"Sunbrella","style_number":"4801-0000","color_name":"Emblem Fern"},{"brand":"Sunbrella","style_number":"4898-0000","color_name":"Emblem Navy"},{"brand":"Sunbrella","style_number":"6080-0000","color_name":"Fawn"},{"brand":"Sunbrella","style_number":"6085-0000","color_name":"Ginkgo"},{"brand":"Sunbrella","style_number":"4991-0000","color_name":"Manteo Cardinal"},{"brand":"Sunbrella","style_number":"4921-0000","color_name":"Mediterranean / Canvas Block Stripe"},{"brand":"Sunbrella","style_number":"4880-0000","color_name":"Moreland Taupe"},{"brand":"Sunbrella","style_number":"8408-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"8430-0000","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"8446-0000","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"8404-0000","color_name":"Natural"},{"brand":"Sunbrella","style_number":"8442-0000","color_name":"Oyster"},{"brand":"Sunbrella","style_number":"8428-0000","color_name":"Toast"},{"brand":"Sunbrella","style_number":"2095-0063","color_name":"Black"},{"brand":"Sunbrella","style_number":"2097-0063","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"2098-0063","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"2110-0063","color_name":"Charcoal Grey"},{"brand":"Sunbrella","style_number":"2105-0063","color_name":"Charcoal Tweed"},{"brand":"Sunbrella","style_number":"2102-0063","color_name":"Dubonnet Tweed"},{"brand":"Sunbrella","style_number":"2099-0063","color_name":"Hemlock Tweed"},{"brand":"Sunbrella","style_number":"2104-0063","color_name":"Linen"},{"brand":"Sunbrella","style_number":"2096-0063","color_name":"Linen Tweed"},{"brand":"Sunbrella","style_number":"2107-0063","color_name":"Navy"},{"brand":"Sunbrella","style_number":"2101-0063","color_name":"Oyster"},{"brand":"Sunbrella","style_number":"2103-0063","color_name":"Royal Blue Tweed"},{"brand":"Sunbrella","style_number":"2100-0063","color_name":"Toast Tweed"},{"brand":"Sunbrella","style_number":"84008-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"84030-0000","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"84044-0000","color_name":"Charcoal Grey"}];
 
-const FABRIC_BRANDS = ["Sunbrella"];
+// ─────────────────────────────────────────────────────────────
+// TASK 1 — PHIFER FABRICS
+// Brand: Phifer | Series: SheerWeave Privacy | Colors: Ebony, Ash, Chalk
+// ─────────────────────────────────────────────────────────────
+const PHIFER_FABRICS = [
+  { brand: "Phifer", series: "SheerWeave Privacy", style_number: "SWP-Ebony", color_name: "Ebony" },
+  { brand: "Phifer", series: "SheerWeave Privacy", style_number: "SWP-Ash",   color_name: "Ash"   },
+  { brand: "Phifer", series: "SheerWeave Privacy", style_number: "SWP-Chalk", color_name: "Chalk" },
+];
+
+// ─────────────────────────────────────────────────────────────
+// TASK 1 — PREMIUM FABRIC SURCHARGE
+// Applies +$35 per linear foot (width) per opening when the
+// selected fabric series is one of:
+//   • Phifer → SheerWeave Privacy
+//   • Twitchell → Dimout
+// ─────────────────────────────────────────────────────────────
+const PREMIUM_FABRIC_SURCHARGE_RATE = 35; // $ per linear foot of width
+
+/**
+ * Returns true when the fabricSelection triggers the $35/LF surcharge.
+ * Checks brand + series (stored in style_number prefix for Phifer, or
+ * series field; for Twitchell uses the series field if present or the
+ * style_number convention "Dimout-*").
+ */
+function isPremiumFabricSurcharge(fabricSelection) {
+  if (!fabricSelection?.brand || !fabricSelection?.style_number) return false;
+  const brand  = fabricSelection.brand;
+  const series = fabricSelection.series || "";
+  const styleNum = fabricSelection.style_number;
+
+  // Phifer → SheerWeave Privacy
+  if (brand === "Phifer" && (series === "SheerWeave Privacy" || styleNum.startsWith("SWP-"))) {
+    return true;
+  }
+  // Twitchell → Dimout  (supports both series field and style_number prefix convention)
+  if (brand === "Twitchell" && (series === "Dimout" || styleNum.startsWith("Dimout-"))) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Calculates the premium fabric surcharge for a single opening.
+ * @param {object} fabricSelection  - the resolved fabric for this opening
+ * @param {string|number} widthRaw  - the raw width value entered (ft or inches)
+ * @returns {number} dollar amount to add
+ */
+function calcPremiumFabricSurcharge(fabricSelection, widthRaw) {
+  if (!isPremiumFabricSurcharge(fabricSelection)) return 0;
+  const widthFt = toFeetKey(widthRaw);
+  if (!widthFt) return 0;
+  return widthFt * PREMIUM_FABRIC_SURCHARGE_RATE;
+}
+
+// ─────────────────────────────────────────────────────────────
+// FABRIC BRAND REGISTRY — add "Phifer" here
+// ─────────────────────────────────────────────────────────────
+const FABRIC_BRANDS = ["Sunbrella", "Phifer"];
 
 function getFabricsByBrand(brand) {
   if (!brand) return [];
-  return SUNBRELLA_FABRICS.filter(f => f.brand === brand);
+  if (brand === "Phifer")    return PHIFER_FABRICS;
+  if (brand === "Sunbrella") return SUNBRELLA_FABRICS.filter(f => f.brand === "Sunbrella");
+  return [];
 }
 
 function buildFabricLabel(fabricSelection) {
@@ -576,8 +636,7 @@ function createOpening(productName = "", areaDefaults = {}) {
     id: uid(), label: "", width: "", height: "",
     motorSide: areaDefaults.motorSide || "Left",
     motorId: getDefaultMotorId(productName) || "",
-    // UPDATED: fabric stored as { brand, style_number, color_name }
-    fabricSelection: { brand: "", style_number: "", color_name: "" },
+    fabricSelection: { brand: "", style_number: "", color_name: "", series: "" },
     lChannels: [],
     buildouts: [],
     mountOverride: "", trackOverride: "",
@@ -594,8 +653,7 @@ function createOpening(productName = "", areaDefaults = {}) {
 function createArea(productName = "") {
   return {
     id: uid(), name: "", mountType: "", trackType: "",
-    // UPDATED: fabric stored as { brand, style_number, color_name }
-    fabricSelection: { brand: "", style_number: "", color_name: "" },
+    fabricSelection: { brand: "", style_number: "", color_name: "", series: "" },
     cassetteColor: "", trackColor: "",
     motorType: "Somfy (default)",
     weightBar: "", remote: "",
@@ -652,6 +710,12 @@ function calcMotorAdjustment(opening) {
   return getMotorPriceAdjustment(opening.motorId);
 }
 
+// ─────────────────────────────────────────────────────────────
+// TASK 1 — UPDATED calcOpeningStructural
+// Now includes premium fabric surcharge ($35/LF width) when
+// Phifer SheerWeave Privacy or Twitchell Dimout is selected.
+// Effective fabric = opening override first, then area default.
+// ─────────────────────────────────────────────────────────────
 function calcOpeningStructural(opening, areaDefaults) {
   let total = 0;
   (opening.lChannels || []).forEach(lc => { total += calcLChannelCost(lc); });
@@ -660,6 +724,13 @@ function calcOpeningStructural(opening, areaDefaults) {
   total += calcStormRailCost(opening, effectiveTrackType);
   total += calcCustomColorCost(opening, effectiveTrackType, areaDefaults);
   total += calcMotorAdjustment(opening);
+
+  // TASK 1 — Premium fabric surcharge
+  const effectiveFabric = (opening.fabricSelection?.brand)
+    ? opening.fabricSelection
+    : (areaDefaults?.fabricSelection?.brand ? areaDefaults.fabricSelection : null);
+  total += calcPremiumFabricSurcharge(effectiveFabric, opening.width);
+
   return total;
 }
 
@@ -932,11 +1003,11 @@ function FabricTypeahead({ brand, value, onChange }) {
     if (!q) return fabrics.slice(0, 50);
     return fabrics.filter(f =>
       f.style_number.toLowerCase().includes(q) ||
-      f.color_name.toLowerCase().includes(q)
+      f.color_name.toLowerCase().includes(q) ||
+      (f.series && f.series.toLowerCase().includes(q))
     ).slice(0, 60);
   }, [query, brand]);
 
-  // Sync display when value changes externally (e.g. brand reset)
   useEffect(() => {
     if (value?.style_number) {
       setQuery(value.style_number + " - " + value.color_name);
@@ -948,13 +1019,18 @@ function FabricTypeahead({ brand, value, onChange }) {
   const select = (fabric) => {
     setQuery(fabric.style_number + " - " + fabric.color_name);
     setOpen(false);
-    onChange({ brand: fabric.brand, style_number: fabric.style_number, color_name: fabric.color_name });
+    onChange({
+      brand:        fabric.brand,
+      style_number: fabric.style_number,
+      color_name:   fabric.color_name,
+      series:       fabric.series || "",
+    });
   };
 
   const handleInput = (e) => {
     setQuery(e.target.value);
     setOpen(true);
-    if (value?.style_number) onChange({ brand, style_number: "", color_name: "" });
+    if (value?.style_number) onChange({ brand, style_number: "", color_name: "", series: "" });
   };
 
   const handleBlur = () => {
@@ -969,7 +1045,7 @@ function FabricTypeahead({ brand, value, onChange }) {
   const clearSelection = () => {
     setQuery("");
     setOpen(false);
-    onChange({ brand, style_number: "", color_name: "" });
+    onChange({ brand, style_number: "", color_name: "", series: "" });
     inputRef.current?.focus();
   };
 
@@ -1015,7 +1091,10 @@ function FabricTypeahead({ brand, value, onChange }) {
                   onMouseDown={() => select(f)}
                 >
                   <span className="fabric-typeahead-style">{f.style_number}</span>
-                  <span className="fabric-typeahead-color">{f.color_name}</span>
+                  <span className="fabric-typeahead-color">
+                    {f.color_name}
+                    {f.series && <span className="fabric-typeahead-series"> — {f.series}</span>}
+                  </span>
                 </button>
               ))}
             </>
@@ -1028,19 +1107,21 @@ function FabricTypeahead({ brand, value, onChange }) {
 
 // ─────────────────────────────────────────────────────────────
 // FABRIC SELECTOR — Brand picklist + Typeahead
-// Stores: { brand, style_number, color_name }
+// Stores: { brand, style_number, color_name, series }
 // ─────────────────────────────────────────────────────────────
 function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
-  const { brand = "", style_number = "", color_name = "" } = fabricSelection;
+  const { brand = "", style_number = "", color_name = "", series = "" } = fabricSelection;
   const fabricLabel = buildFabricLabel(fabricSelection);
 
   const handleBrandChange = (newBrand) => {
-    onChange({ brand: newBrand, style_number: "", color_name: "" });
+    onChange({ brand: newBrand, style_number: "", color_name: "", series: "" });
   };
 
   const handleFabricChange = (updated) => {
     onChange({ ...fabricSelection, ...updated });
   };
+
+  const hasSurcharge = isPremiumFabricSurcharge(fabricSelection);
 
   return (
     <div className="fabric-selector">
@@ -1048,6 +1129,12 @@ function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
         <span className="mps-label">{label}</span>
         {fabricLabel && style_number && (
           <span className="fabric-label-badge">{fabricLabel}</span>
+        )}
+        {/* TASK 1 — Premium surcharge indicator */}
+        {hasSurcharge && (
+          <span className="fabric-premium-badge" title="Premium fabric: +$35/LF (width) surcharge applies per opening">
+            ⚡ Premium +${PREMIUM_FABRIC_SURCHARGE_RATE}/LF
+          </span>
         )}
       </div>
       <div className="fabric-cascade-grid">
@@ -1066,19 +1153,30 @@ function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
             <label className="mps-label fabric-step-label"><span className="fabric-step-num">2</span> Fabric</label>
             <FabricTypeahead
               brand={brand}
-              value={{ brand, style_number, color_name }}
+              value={{ brand, style_number, color_name, series }}
               onChange={handleFabricChange}
             />
           </div>
         )}
       </div>
+
+      {/* TASK 1 — Surcharge explainer shown when premium series active */}
+      {hasSurcharge && (
+        <div className="fabric-surcharge-notice">
+          <span className="fabric-surcharge-notice-icon">💡</span>
+          <span>
+            <strong>{series || (style_number.startsWith("SWP-") ? "SheerWeave Privacy" : "Dimout")}</strong> fabric
+            includes a <strong>+${PREMIUM_FABRIC_SURCHARGE_RATE}/LF surcharge</strong> calculated from
+            each opening's width.
+          </span>
+        </div>
+      )}
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────
-// SKYLIGHT MRA FABRIC SELECTOR — same Brand + Typeahead pattern
-// Stores: { fabricBrand, style_number, color_name }
+// SKYLIGHT MRA FABRIC SELECTOR
 // ─────────────────────────────────────────────────────────────
 function SkylightFabricSelector({ fabricBrand, style_number, color_name, onChange }) {
   const fabricLabel = style_number ? (style_number + " - " + (color_name || "")) : "";
@@ -1111,7 +1209,7 @@ function SkylightFabricSelector({ fabricBrand, style_number, color_name, onChang
             <label className="mps-label fabric-step-label"><span className="fabric-step-num">2</span> Fabric</label>
             <FabricTypeahead
               brand={fabricBrand}
-              value={{ brand: fabricBrand, style_number: style_number || "", color_name: color_name || "" }}
+              value={{ brand: fabricBrand, style_number: style_number || "", color_name: color_name || "", series: "" }}
               onChange={handleFabricChange}
             />
           </div>
@@ -1174,71 +1272,54 @@ function LChannelItem({ lc, index, onChange, onRemove, showRemove }) {
 // ─────────────────────────────────────────────────────────────
 // BUILDOUT ITEM EDITOR
 // ─────────────────────────────────────────────────────────────
-function BuildoutItem({ bo, index, onChange, onRemove, showRemove }) {
-  const set  = (field, val) => onChange({ ...bo, [field]: val });
+function BuildoutItem({ bo, index, onChange, onRemove }) {
+  const set = (field, val) => onChange({ ...bo, [field]: val });
   const cost = calcBuildoutCost(bo);
-  const woodRate      = WOOD_BUILDOUT_RATES[bo.woodSize] || 0;
-  const isAlumitube   = bo.type === "Alumitube";
-  const isCustomAlumi = bo.isCustomAlumitubeSize;
+  const isWood = bo.type === "Wood";
+  const isCustomWood = isWood && bo.woodSize === "Custom";
+
   return (
     <div className="structural-item-card">
       <div className="structural-item-header">
-        <span className="structural-item-label">Buildout #{index + 1}</span>
-        {showRemove && <button type="button" className="structural-item-remove" onClick={onRemove}>✕ Remove</button>}
+        <span>Buildout #{index + 1}</span>
+        <button type="button" className="structural-item-remove" onClick={onRemove}>✕</button>
       </div>
       <div className="structural-fields-grid">
-        <Sel label="Type" value={bo.type} options={MPS_DEFAULTS.buildoutTypes} onChange={v => set("type", v)} />
-        {!isAlumitube && (
+        <Sel label="Type" value={bo.type} options={["Wood","Alumitube"]} onChange={v=>set("type",v)} />
+
+        {isWood ? (
           <div className="mps-field">
             <label className="mps-label">Wood Size</label>
-            <select className="mps-select" value={bo.woodSize} onChange={e => set("woodSize", e.target.value)}>
-              {MPS_DEFAULTS.woodSizes.map(s => <option key={s} value={s}>{s} — ${WOOD_BUILDOUT_RATES[s]}/LF</option>)}
+            <select className="mps-select" value={bo.woodSize} onChange={e=>set("woodSize",e.target.value)}>
+              {Object.keys(WOOD_BUILDOUT_RATES).map(s => <option key={s} value={s}>{s} — ${WOOD_BUILDOUT_RATES[s]}/LF</option>)}
+              <option value="Custom">Custom</option>
+            </select>
+          </div>
+        ) : (
+          <div className="mps-field">
+            <label className="mps-label">Alumitube Size</label>
+            <select className="mps-select" value={bo.isCustomAlumitubeSize ? "Custom" : "Standard"} 
+              onChange={e => set("isCustomAlumitubeSize", e.target.value === "Custom")}>
+              <option value="Standard">3" × 8" — $35/LF</option>
+              <option value="Custom">Custom Size</option>
             </select>
           </div>
         )}
-        {isAlumitube && (
-          <div className="mps-field">
-            <label className="mps-label">Alumitube Size</label>
-            <div className="alumitube-size-row">
-              <label className="alumitube-radio">
-                <input type="radio" checked={!isCustomAlumi} onChange={() => set("isCustomAlumitubeSize", false)} />
-                <span>3" × 8" (${ALUMITUBE_DEFAULT_RATE}/LF)</span>
-              </label>
-              <label className="alumitube-radio">
-                <input type="radio" checked={isCustomAlumi} onChange={() => set("isCustomAlumitubeSize", true)} />
-                <span>2" × 4"</span>
-              </label>
-              <label className="alumitube-radio">
-                <input type="radio" checked={isCustomAlumi} onChange={() => set("isCustomAlumitubeSize", true)} />
-                <span>2" × 6"</span>
-              </label>
-              <label className="alumitube-radio">
-                <input type="radio" checked={isCustomAlumi} onChange={() => set("isCustomAlumitubeSize", true)} />
-                <span>Custom Size</span>
-              </label>
-            </div>
-          </div>
+
+        {isCustomWood && (
+          <>
+            <Field label="Custom Wood Size" value={bo.customWoodSize || ""} onChange={v=>set("customWoodSize",v)} placeholder="e.g. 3x6" />
+            <Field label="Custom Rate $/LF" type="number" value={bo.customWoodRate || ""} onChange={v=>set("customWoodRate",v)} placeholder="e.g. 15" />
+          </>
         )}
-        {isAlumitube && isCustomAlumi && <Field label="Custom Alumitube Size" value={bo.customAlumitubeSize} onChange={v => set("customAlumitubeSize", v)} placeholder='e.g. 2"×2"' />}
-        {(!isAlumitube || !isCustomAlumi) && (
-          <Field
-            label={isAlumitube ? `Linear Feet (× $${ALUMITUBE_DEFAULT_RATE}/LF)` : `Linear Feet (× $${woodRate}/LF for ${bo.woodSize})`}
-            type="number" value={bo.lf} onChange={v => set("lf", v)} placeholder="e.g. 12" min="0" step="0.5"
-          />
-        )}
-        {isAlumitube && isCustomAlumi && <Field label="Manual Price ($)" type="number" value={bo.customRate} onChange={v => set("customRate", v)} placeholder="Enter total price for custom alumitube" min="0" />}
-        <Field label="Dimensions (optional)" value={bo.dims} onChange={v => set("dims", v)} placeholder='e.g. 2"×4"×96"' />
+
+        {bo.isCustomAlumitubeSize && <Field label="Custom Alumitube Size" value={bo.customAlumitubeSize || ""} onChange={v=>set("customAlumitubeSize",v)} />}
+
+        <Field label="Linear Feet" type="number" value={bo.lf} onChange={v=>set("lf",v)} placeholder="e.g. 12" />
+        {bo.isCustomAlumitubeSize && <Field label="Manual Price ($)" type="number" value={bo.customRate} onChange={v=>set("customRate",v)} />}
       </div>
-      {(bo.lf || bo.customRate) && (
-        <div className="structural-calc">
-          {isAlumitube && isCustomAlumi
-            ? <>Alumitube (custom size, manual price): <strong>{fmt(cost)}</strong></>
-            : isAlumitube ? <>Alumitube: {bo.lf} LF × ${ALUMITUBE_DEFAULT_RATE} = <strong>{fmt(cost)}</strong></>
-            : <>Wood ({bo.woodSize}): {bo.lf} LF × ${woodRate} = <strong>{fmt(cost)}</strong></>
-          }
-        </div>
-      )}
-      <PhotoUpload label="Buildout Photo (optional)" value={bo.photo} onChange={v => set("photo", v)} />
+      {cost > 0 && <div className="structural-calc">Cost: <strong>{fmt(cost)}</strong></div>}
+      <PhotoUpload label="Photo (optional)" value={bo.photo} onChange={v=>set("photo",v)} />
     </div>
   );
 }
@@ -1246,10 +1327,30 @@ function BuildoutItem({ bo, index, onChange, onRemove, showRemove }) {
 // ─────────────────────────────────────────────────────────────
 // OPENING EDITOR
 // ─────────────────────────────────────────────────────────────
-function OpeningEditor({ opening, index, areaDefaults, productName, onChange, onRemove, showRemove }) {
+function OpeningEditor({ opening, index, areaDefaults, productName, onChange, onRemove, showRemove, allOpenings }) {
+  
   const structural   = calcOpeningStructural(opening, areaDefaults);
   const openingPrice = calcOpeningBasePrice(opening, productName);
   const openingTotal = openingPrice + structural;
+
+  // TASK 1 — resolve effective fabric for surcharge display
+  const effectiveFabric = (opening.fabricSelection?.brand)
+    ? opening.fabricSelection
+    : (areaDefaults?.fabricSelection?.brand ? areaDefaults.fabricSelection : null);
+  const hasSurcharge     = isPremiumFabricSurcharge(effectiveFabric);
+  const surchargeAmount  = calcPremiumFabricSurcharge(effectiveFabric, opening.width);
+
+  const prevOpening = allOpenings && index > 0 ? allOpenings[index-1] : null;
+
+  const copyLChannels = () => {
+    if (!prevOpening?.lChannels?.length) return alert("No L-Channels to copy from previous opening.");
+    onChange({ ...opening, lChannels: prevOpening.lChannels.map(item => ({...item, id: uid()})) });
+  };
+
+  const copyBuildouts = () => {
+    if (!prevOpening?.buildouts?.length) return alert("No Buildouts to copy from previous opening.");
+    onChange({ ...opening, buildouts: prevOpening.buildouts.map(item => ({...item, id: uid()})) });
+  };
   const set = (field, val) => onChange({ ...opening, [field]: val });
 
   const effectiveMount      = opening.mountOverride      || areaDefaults.mountType      || "—";
@@ -1259,9 +1360,6 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
   const effectiveCassette   = opening.colorOverride      || areaDefaults.cassetteColor  || "";
   const effectiveTrackColor = opening.trackColorOverride || areaDefaults.trackColor     || "";
 
-  const effectiveFabric = (opening.fabricSelection?.brand)
-    ? opening.fabricSelection
-    : (areaDefaults.fabricSelection?.brand ? areaDefaults.fabricSelection : null);
   const effectiveFabricLabel = effectiveFabric ? buildFabricLabel(effectiveFabric) : "—";
 
   const stormRailCost    = calcStormRailCost(opening, effectiveTrack);
@@ -1308,6 +1406,24 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
       </div>
 
       <OpeningPriceBadge opening={opening} productName={productName} />
+
+      {/* TASK 1 — Premium fabric surcharge badge shown per opening */}
+      {hasSurcharge && opening.width && surchargeAmount > 0 && (
+        <div className="premium-fabric-surcharge-badge">
+          <span className="premium-fabric-surcharge-icon">⚡</span>
+          <span>
+            Premium fabric surcharge ({effectiveFabric?.series || effectiveFabric?.style_number}):&nbsp;
+            {toFeetKey(opening.width)}ft × ${PREMIUM_FABRIC_SURCHARGE_RATE}/LF =&nbsp;
+            <strong>{fmt(surchargeAmount)}</strong>
+          </span>
+        </div>
+      )}
+      {hasSurcharge && !opening.width && (
+        <div className="premium-fabric-surcharge-badge premium-fabric-surcharge-badge--pending">
+          <span className="premium-fabric-surcharge-icon">⚡</span>
+          <span>Premium fabric surcharge (+${PREMIUM_FABRIC_SURCHARGE_RATE}/LF) — enter width to calculate</span>
+        </div>
+      )}
 
       <div className="motor-selector-row">
         <MotorSelector motorId={effectiveMotorId} productName={productName} onChange={v => set("motorId", v)} />
@@ -1614,7 +1730,7 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
         <div className="area-fabric-section">
           <div className="area-defaults-label" style={{marginTop: "12px"}}>Area Default Fabric (openings inherit this unless overridden)</div>
           <FabricSelector
-            fabricSelection={area.fabricSelection || { brand: "", style_number: "", color_name: "" }}
+            fabricSelection={area.fabricSelection || { brand: "", style_number: "", color_name: "", series: "" }}
             onChange={v => setArea("fabricSelection", v)}
             label="Area Fabric Default"
           />
@@ -1635,6 +1751,7 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
             onChange={updated => setOpening(opening.id, updated)}
             onRemove={() => removeOpening(opening.id)}
             showRemove={area.openings.length > 1}
+            allOpenings={area.openings}
           />
         ))}
         <button type="button" className="add-opening-btn" onClick={addOpening}>+ Add Opening</button>
@@ -2632,7 +2749,7 @@ export default function ProductSummary() {
             {mraMatrixGrand          > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Awning Matrix Pricing</span><span className="ps-addon-highlight">{fmt(mraMatrixGrand)}</span></div>}
             {summaryAddonGrandTotal  > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Selected Add-ons</span><span className="ps-addon-highlight">+{fmt(summaryAddonGrandTotal)}</span></div>}
             {windSensorGrand         > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Wind Sensor(s)</span><span className="ps-addon-highlight">+{fmt(windSensorGrand)}</span></div>}
-            {mpsStructuralGrand      > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Structural Adjustments (L-Channel / Buildout / Storm Rail / Custom Color)</span><span className="ps-addon-highlight">+{fmt(mpsStructuralGrand)}</span></div>}
+            {mpsStructuralGrand      > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Structural Adjustments (L-Channel / Buildout / Storm Rail / Custom Color / Premium Fabric)</span><span className="ps-addon-highlight">+{fmt(mpsStructuralGrand)}</span></div>}
             <div className="ps-pricing-row ps-subtotal-addons-row"><span>Subtotal (incl. all adjustments)</span><span>{fmt(subtotalWithAddons)}</span></div>
             <div className="ps-pricing-row"><span>Discount ({discountPercent}%)</span><span className="ps-discount-value">−{fmt(discountAmount)}</span></div>
             {discount?.percent > 20 && <div className="ps-pricing-row ps-manager-row"><span>Manager Approval</span><span>{discount.managerName||"—"}</span></div>}
