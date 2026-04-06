@@ -31,6 +31,25 @@ const MRA_PROJECTION_OPTIONS = [
 ];
 
 // ─────────────────────────────────────────────────────────────
+// CHANGE 1: L-CHANNEL SIZE OPTIONS + TIERED PRICING
+// $25/LF: 1x1, 1.5x1.5, 1x2
+// $30/LF: 1x3, 4" Flat Stock
+// ─────────────────────────────────────────────────────────────
+const L_CHANNEL_SIZES = [
+  { label: "1x1",          rate: 25 },
+  { label: "1.5x1.5",      rate: 25 },
+  { label: "1x2",          rate: 25 },
+  { label: "1x3",          rate: 30 },
+  { label: '4" Flat Stock', rate: 30 },
+  { label: "Custom",        rate: null },
+];
+
+function getLChannelRate(size) {
+  const found = L_CHANNEL_SIZES.find(s => s.label === size);
+  return found?.rate ?? 25;
+}
+
+// ─────────────────────────────────────────────────────────────
 // MRA PRICING MATRICES
 // ─────────────────────────────────────────────────────────────
 const SKYLIGHT_MRA_PRICE_DATA = {
@@ -85,58 +104,95 @@ function getMRAPrice(productName, projection, widthFt) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// SUNBRELLA FABRIC DATA — 247 fabrics from CSV
+// SUNBRELLA FABRIC DATA — awnings only
 // ─────────────────────────────────────────────────────────────
 const SUNBRELLA_FABRICS = [{"brand":"Sunbrella","style_number":"4631-0000","color_name":"Burgundy"},{"brand":"Sunbrella","style_number":"4630-0000","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"4675-0000","color_name":"Capri"},{"brand":"Sunbrella","style_number":"4646-0000","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"4644-0000","color_name":"Charcoal Grey"},{"brand":"Sunbrella","style_number":"4607-0000","color_name":"Charcoal Tweed"},{"brand":"Sunbrella","style_number":"14609-0000","color_name":"Cloud"},{"brand":"Sunbrella","style_number":"4676-0000","color_name":"Cocoa"},{"brand":"Sunbrella","style_number":"4662-0000","color_name":"Crest Ash"},{"brand":"Sunbrella","style_number":"4660-0000","color_name":"Crest Birch"},{"brand":"Sunbrella","style_number":"4606-0000","color_name":"Dubonnet Tweed"},{"brand":"Sunbrella","style_number":"4600-0000","color_name":"Erin Green"},{"brand":"Sunbrella","style_number":"4671-0000","color_name":"Fern"},{"brand":"Sunbrella","style_number":"4637-0000","color_name":"Forest Green"},{"brand":"Sunbrella","style_number":"4672-0000","color_name":"Heather Beige"},{"brand":"Sunbrella","style_number":"4605-0000","color_name":"Hemlock Tweed"},{"brand":"Sunbrella","style_number":"14613-0000","color_name":"Hogan Admiral"},{"brand":"Sunbrella","style_number":"14612-0000","color_name":"Hogan Arctic"},{"brand":"Sunbrella","style_number":"14616-0000","color_name":"Hogan Carob"},{"brand":"Sunbrella","style_number":"14617-0000","color_name":"Hogan Flame"},{"brand":"Sunbrella","style_number":"14611-0000","color_name":"Hogan Marina"},{"brand":"Sunbrella","style_number":"14615-0000","color_name":"Hogan Sparrow"},{"brand":"Sunbrella","style_number":"14614-0000","color_name":"Hogan Walnut"},{"brand":"Sunbrella","style_number":"4632-0000","color_name":"Ivy"},{"brand":"Sunbrella","style_number":"4603-0000","color_name":"Jockey Red"},{"brand":"Sunbrella","style_number":"4633-0000","color_name":"Linen"},{"brand":"Sunbrella","style_number":"4654-0000","color_name":"Linen Tweed"},{"brand":"Sunbrella","style_number":"4666-0000","color_name":"Logo Red"},{"brand":"Sunbrella","style_number":"4678-0000","color_name":"Marine Blue"},{"brand":"Sunbrella","style_number":"4652-0000","color_name":"Mediterranean Blue"},{"brand":"Sunbrella","style_number":"4653-0000","color_name":"Mediterranean Blue Tweed"},{"brand":"Sunbrella","style_number":"4616-0000","color_name":"Mocha Tweed"},{"brand":"Sunbrella","style_number":"4604-0000","color_name":"Natural"},{"brand":"Sunbrella","style_number":"4626-0000","color_name":"Navy"},{"brand":"Sunbrella","style_number":"4679-0000","color_name":"Ocean Blue"},{"brand":"Sunbrella","style_number":"4609-0000","color_name":"Orange"},{"brand":"Sunbrella","style_number":"4642-0000","color_name":"Oyster"},{"brand":"Sunbrella","style_number":"4601-0000","color_name":"Pacific Blue"},{"brand":"Sunbrella","style_number":"4683-0000","color_name":"Parchment"},{"brand":"Sunbrella","style_number":"4617-0000","color_name":"Royal Blue Tweed"},{"brand":"Sunbrella","style_number":"4641-0000","color_name":"Sapphire Blue"},{"brand":"Sunbrella","style_number":"4664-0000","color_name":"Sea"},{"brand":"Sunbrella","style_number":"4897-0000","color_name":"Silica Charcoal"},{"brand":"Sunbrella","style_number":"4859-0000","color_name":"Silica Dune"},{"brand":"Sunbrella","style_number":"4833-0000","color_name":"Silica Gravel"},{"brand":"Sunbrella","style_number":"4860-0000","color_name":"Silica Sesame"},{"brand":"Sunbrella","style_number":"4612-0000","color_name":"Aruba"},{"brand":"Sunbrella","style_number":"4688-0000","color_name":"Aruba"},{"brand":"Sunbrella","style_number":"4620-0000","color_name":"Beige"},{"brand":"Sunbrella","style_number":"4608-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"6023-0000","color_name":"Aquamarine"},{"brand":"Sunbrella","style_number":"6012-0000","color_name":"Aruba"},{"brand":"Sunbrella","style_number":"6020-0000","color_name":"Beige"},{"brand":"Sunbrella","style_number":"6008-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"4862-0000","color_name":"Silica Silver"},{"brand":"Sunbrella","style_number":"4861-0000","color_name":"Silica Stone"},{"brand":"Sunbrella","style_number":"4651-0000","color_name":"Silver"},{"brand":"Sunbrella","style_number":"4624-0000","color_name":"Sky Blue"},{"brand":"Sunbrella","style_number":"4684-0000","color_name":"Slate"},{"brand":"Sunbrella","style_number":"4615-0000","color_name":"Smoke"},{"brand":"Sunbrella","style_number":"4636-0000","color_name":"Storm"},{"brand":"Sunbrella","style_number":"4602-0000","color_name":"Sunflower Yellow"},{"brand":"Sunbrella","style_number":"4648-0000","color_name":"Taupe"},{"brand":"Sunbrella","style_number":"4622-0000","color_name":"Terracotta"},{"brand":"Sunbrella","style_number":"4628-0000","color_name":"Toast"},{"brand":"Sunbrella","style_number":"14618-0000","color_name":"Toast Tweed"},{"brand":"Sunbrella","style_number":"4696-0000","color_name":"Tresco Birch"},{"brand":"Sunbrella","style_number":"4695-0000","color_name":"Tresco Linen"},{"brand":"Sunbrella","style_number":"4621-0000","color_name":"True Brown"},{"brand":"Sunbrella","style_number":"4610-0000","color_name":"Turquoise"},{"brand":"Sunbrella","style_number":"4677-0000","color_name":"Tuscan"},{"brand":"Sunbrella","style_number":"4618-0000","color_name":"Walnut Brown Tweed"},{"brand":"Sunbrella","style_number":"4634-0000","color_name":"White"},{"brand":"Sunbrella","style_number":"6095-0000","color_name":"Tresco Linen"},{"brand":"Sunbrella","style_number":"6021-0000","color_name":"True Brown"},{"brand":"Sunbrella","style_number":"6010-0000","color_name":"Turquoise"},{"brand":"Sunbrella","style_number":"6077-0000","color_name":"Tuscan"},{"brand":"Sunbrella","style_number":"6018-0000","color_name":"Walnut Brown Tweed"},{"brand":"Sunbrella","style_number":"6034-0000","color_name":"White"},{"brand":"Sunbrella","style_number":"6031-0000","color_name":"Burgundy"},{"brand":"Sunbrella","style_number":"6030-0000","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"6075-0000","color_name":"Capri"},{"brand":"Sunbrella","style_number":"6046-0000","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"6044-0000","color_name":"Charcoal Grey"},{"brand":"Sunbrella","style_number":"6007-0000","color_name":"Charcoal Tweed"},{"brand":"Sunbrella","style_number":"6064-0000","color_name":"Cloud"},{"brand":"Sunbrella","style_number":"6076-0000","color_name":"Cocoa"},{"brand":"Sunbrella","style_number":"6065-0000","color_name":"Concord"},{"brand":"Sunbrella","style_number":"6006-0000","color_name":"Dubonnet Tweed"},{"brand":"Sunbrella","style_number":"6000-0000","color_name":"Erin Green"},{"brand":"Sunbrella","style_number":"6071-0000","color_name":"Fern"},{"brand":"Sunbrella","style_number":"6037-0000","color_name":"Forest Green"},{"brand":"Sunbrella","style_number":"6072-0000","color_name":"Heather Beige"},{"brand":"Sunbrella","style_number":"6005-0000","color_name":"Hemlock Tweed"},{"brand":"Sunbrella","style_number":"6032-0000","color_name":"Ivy"},{"brand":"Sunbrella","style_number":"6003-0000","color_name":"Jockey Red"},{"brand":"Sunbrella","style_number":"6033-0000","color_name":"Linen"},{"brand":"Sunbrella","style_number":"6054-0000","color_name":"Linen Tweed"},{"brand":"Sunbrella","style_number":"6066-0000","color_name":"Logo Red"},{"brand":"Sunbrella","style_number":"6078-0000","color_name":"Marine Blue"},{"brand":"Sunbrella","style_number":"6052-0000","color_name":"Mediterranean Blue"},{"brand":"Sunbrella","style_number":"6053-0000","color_name":"Mediterranean Blue Tweed"},{"brand":"Sunbrella","style_number":"6036-0000","color_name":"Midnight"},{"brand":"Sunbrella","style_number":"6004-0000","color_name":"Natural"},{"brand":"Sunbrella","style_number":"6026-0000","color_name":"Navy"},{"brand":"Sunbrella","style_number":"6079-0000","color_name":"Ocean Blue"},{"brand":"Sunbrella","style_number":"6009-0000","color_name":"Orange"},{"brand":"Sunbrella","style_number":"6042-0000","color_name":"Oyster"},{"brand":"Sunbrella","style_number":"6001-0000","color_name":"Pacific Blue"},{"brand":"Sunbrella","style_number":"6083-0000","color_name":"Parchment"},{"brand":"Sunbrella","style_number":"6043-0000","color_name":"Persian Green"},{"brand":"Sunbrella","style_number":"6017-0000","color_name":"Royal Blue Tweed"},{"brand":"Sunbrella","style_number":"6041-0000","color_name":"Sapphire Blue"},{"brand":"Sunbrella","style_number":"6059-0000","color_name":"Silica Dune"},{"brand":"Sunbrella","style_number":"6063-0000","color_name":"Silica Gravel"},{"brand":"Sunbrella","style_number":"6062-0000","color_name":"Silica Silver"},{"brand":"Sunbrella","style_number":"6061-0000","color_name":"Silica Stone"},{"brand":"Sunbrella","style_number":"6051-0000","color_name":"Silver"},{"brand":"Sunbrella","style_number":"6024-0000","color_name":"Sky Blue"},{"brand":"Sunbrella","style_number":"6084-0000","color_name":"Slate"},{"brand":"Sunbrella","style_number":"6015-0000","color_name":"Smoke"},{"brand":"Sunbrella","style_number":"6002-0000","color_name":"Sunflower Yellow"},{"brand":"Sunbrella","style_number":"6048-0000","color_name":"Taupe"},{"brand":"Sunbrella","style_number":"6022-0000","color_name":"Terracotta"},{"brand":"Sunbrella","style_number":"6028-0000","color_name":"Toast"},{"brand":"Sunbrella","style_number":"2389-0060","color_name":"Toast Tweed"},{"brand":"Sunbrella","style_number":"6096-0000","color_name":"Tresco Birch"},{"brand":"Sunbrella","style_number":"80008-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"80030-0000","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"80046-0000","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"80001-0000","color_name":"Pacific Blue"},{"brand":"Sunbrella","style_number":"80028-0000","color_name":"Toast"},{"brand":"Sunbrella","style_number":"4888-0000","color_name":"Clinton Granite"},{"brand":"Sunbrella","style_number":"4856-0000","color_name":"Colonnade Juniper"},{"brand":"Sunbrella","style_number":"4857-0000","color_name":"Colonnade Redwood"},{"brand":"Sunbrella","style_number":"4835-0000","color_name":"Cooper Ash"},{"brand":"Sunbrella","style_number":"4988-0000","color_name":"Cooper Black"},{"brand":"Sunbrella","style_number":"4987-0000","color_name":"Cooper Navy"},{"brand":"Sunbrella","style_number":"4813-0000","color_name":"Eastland Redwood"},{"brand":"Sunbrella","style_number":"4994-0000","color_name":"Eastridge Cocoa"},{"brand":"Sunbrella","style_number":"4709-0000","color_name":"Equate Cashmere"},{"brand":"Sunbrella","style_number":"4766-0000","color_name":"Era Ash"},{"brand":"Sunbrella","style_number":"4959-0000","color_name":"Fern / Heather Beige Blockstripe"},{"brand":"Sunbrella","style_number":"4955-0000","color_name":"Fern Classic"},{"brand":"Sunbrella","style_number":"4932-0000","color_name":"Forest / Beige / Natural / Sage Fancy"},{"brand":"Sunbrella","style_number":"4790-0000","color_name":"Forest Green Fancy"},{"brand":"Sunbrella","style_number":"4949-0000","color_name":"Forest Vintage Bar Stripe"},{"brand":"Sunbrella","style_number":"4777-0000","color_name":"Grey / Beige Chip Fancy"},{"brand":"Sunbrella","style_number":"4799-0000","color_name":"Grey / Black / White"},{"brand":"Sunbrella","style_number":"4989-0000","color_name":"Hatteras Raven"},{"brand":"Sunbrella","style_number":"4985-0000","color_name":"Havelock Brick"},{"brand":"Sunbrella","style_number":"4954-0000","color_name":"Heather Beige Classic"},{"brand":"Sunbrella","style_number":"4751-0000","color_name":"Hemlock Tweed Fancy"},{"brand":"Sunbrella","style_number":"4969-0000","color_name":"Henna / Fern Vintage"},{"brand":"Sunbrella","style_number":"4868-0000","color_name":"Kiawah Spa"},{"brand":"Sunbrella","style_number":"4789-0000","color_name":"Manhattan Classic"},{"brand":"Sunbrella","style_number":"4876-0000","color_name":"Manhattan Fog"},{"brand":"Sunbrella","style_number":"4703-0000","color_name":"Marco Black"},{"brand":"Sunbrella","style_number":"4704-0000","color_name":"Marco Blue Grey"},{"brand":"Sunbrella","style_number":"4707-0000","color_name":"Marco Olive"},{"brand":"Sunbrella","style_number":"4706-0000","color_name":"Marco Sandstone"},{"brand":"Sunbrella","style_number":"4895-0000","color_name":"Motive Denim"},{"brand":"Sunbrella","style_number":"4916-0000","color_name":"Navy / Taupe Fancy"},{"brand":"Sunbrella","style_number":"4755-0000","color_name":"Pacific Blue Fancy"},{"brand":"Sunbrella","style_number":"4712-0000","color_name":"Paxton Dew"},{"brand":"Sunbrella","style_number":"4713-0000","color_name":"Paxton Marble"},{"brand":"Sunbrella","style_number":"4711-0000","color_name":"Paxton Stone"},{"brand":"Sunbrella","style_number":"4768-0000","color_name":"Preston Stone"},{"brand":"Sunbrella","style_number":"4961-0000","color_name":"Putty Regimental"},{"brand":"Sunbrella","style_number":"4884-0000","color_name":"Saxon Cascade"},{"brand":"Sunbrella","style_number":"4885-0000","color_name":"Saxon Chili"},{"brand":"Sunbrella","style_number":"4907-0000","color_name":"Taupe 5 Bar"},{"brand":"Sunbrella","style_number":"4945-0000","color_name":"Taupe Tailored Bar Stripe"},{"brand":"Sunbrella","style_number":"4836-0000","color_name":"Tillman Shale"},{"brand":"Sunbrella","style_number":"4817-0000","color_name":"Westfield Mushroom"},{"brand":"Sunbrella","style_number":"4995-0000","color_name":"Ashford Forest"},{"brand":"Sunbrella","style_number":"4993-0000","color_name":"Baycrest Pacific"},{"brand":"Sunbrella","style_number":"4992-0000","color_name":"Baycrest Sky"},{"brand":"Sunbrella","style_number":"5704-0000","color_name":"Beaufort Black / White 6 Bar"},{"brand":"Sunbrella","style_number":"4708-0000","color_name":"Beaufort Captain Navy"},{"brand":"Sunbrella","style_number":"4752-0000","color_name":"Beaufort Cloud"},{"brand":"Sunbrella","style_number":"4806-0000","color_name":"Beaufort Forest Green / Natural 6 Bar"},{"brand":"Sunbrella","style_number":"4753-0000","color_name":"Beaufort Mushroom"},{"brand":"Sunbrella","style_number":"4771-0000","color_name":"Beaufort Peacock"},{"brand":"Sunbrella","style_number":"4746-0000","color_name":"Beaufort Sagebrush"},{"brand":"Sunbrella","style_number":"5702-0000","color_name":"Beaufort Yellow / White 6 Bar"},{"brand":"Sunbrella","style_number":"4946-0000","color_name":"Black / Taupe Fancy"},{"brand":"Sunbrella","style_number":"4923-0000","color_name":"Black Forest Fancy"},{"brand":"Sunbrella","style_number":"4710-0000","color_name":"Boone Navy"},{"brand":"Sunbrella","style_number":"4798-0000","color_name":"Burgundy / Black / White"},{"brand":"Sunbrella","style_number":"4902-0000","color_name":"Captain Navy / Natural Classic"},{"brand":"Sunbrella","style_number":"4776-0000","color_name":"Chocolate Chip Fancy"},{"brand":"Sunbrella","style_number":"8750-0000","color_name":"Bay Brown"},{"brand":"Sunbrella","style_number":"8751-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"8756-0000","color_name":"Burgundy"},{"brand":"Sunbrella","style_number":"8752-0000","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"8753-0000","color_name":"Forest Green"},{"brand":"Sunbrella","style_number":"8754-0000","color_name":"Jockey Red"},{"brand":"Sunbrella","style_number":"8755-0000","color_name":"Pacific Blue"},{"brand":"Sunbrella","style_number":"8757-0000","color_name":"Terracotta"},{"brand":"Sunbrella","style_number":"6093-0000","color_name":"Pink"},{"brand":"Sunbrella","style_number":"4879-0000","color_name":"Rodanthe Metallic"},{"brand":"Sunbrella","style_number":"2079-0000","color_name":"Royal Navy"},{"brand":"Sunbrella","style_number":"6089-0000","color_name":"Rust"},{"brand":"Sunbrella","style_number":"6073-0000","color_name":"Spa"},{"brand":"Sunbrella","style_number":"6074-0000","color_name":"Wheat"},{"brand":"Sunbrella","style_number":"6069-0000","color_name":"Azure"},{"brand":"Sunbrella","style_number":"6091-0000","color_name":"Badger"},{"brand":"Sunbrella","style_number":"4982-0000","color_name":"Beaufort Classic"},{"brand":"Sunbrella","style_number":"1160-0060","color_name":"Beaufort Classic"},{"brand":"Sunbrella","style_number":"6040-0000","color_name":"Black Cherry"},{"brand":"Sunbrella","style_number":"4855-0000","color_name":"Colonnade Fossil"},{"brand":"Sunbrella","style_number":"4823-0000","color_name":"Colonnade Seaglass"},{"brand":"Sunbrella","style_number":"4822-0000","color_name":"Colonnade Stone"},{"brand":"Sunbrella","style_number":"4838-0000","color_name":"Emblem Badger"},{"brand":"Sunbrella","style_number":"4837-0000","color_name":"Emblem Beige"},{"brand":"Sunbrella","style_number":"4824-0000","color_name":"Emblem Classic"},{"brand":"Sunbrella","style_number":"4839-0000","color_name":"Emblem Dew"},{"brand":"Sunbrella","style_number":"4801-0000","color_name":"Emblem Fern"},{"brand":"Sunbrella","style_number":"4898-0000","color_name":"Emblem Navy"},{"brand":"Sunbrella","style_number":"6080-0000","color_name":"Fawn"},{"brand":"Sunbrella","style_number":"6085-0000","color_name":"Ginkgo"},{"brand":"Sunbrella","style_number":"4991-0000","color_name":"Manteo Cardinal"},{"brand":"Sunbrella","style_number":"4921-0000","color_name":"Mediterranean / Canvas Block Stripe"},{"brand":"Sunbrella","style_number":"4880-0000","color_name":"Moreland Taupe"},{"brand":"Sunbrella","style_number":"8408-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"8430-0000","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"8446-0000","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"8404-0000","color_name":"Natural"},{"brand":"Sunbrella","style_number":"8442-0000","color_name":"Oyster"},{"brand":"Sunbrella","style_number":"8428-0000","color_name":"Toast"},{"brand":"Sunbrella","style_number":"2095-0063","color_name":"Black"},{"brand":"Sunbrella","style_number":"2097-0063","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"2098-0063","color_name":"Captain Navy"},{"brand":"Sunbrella","style_number":"2110-0063","color_name":"Charcoal Grey"},{"brand":"Sunbrella","style_number":"2105-0063","color_name":"Charcoal Tweed"},{"brand":"Sunbrella","style_number":"2102-0063","color_name":"Dubonnet Tweed"},{"brand":"Sunbrella","style_number":"2099-0063","color_name":"Hemlock Tweed"},{"brand":"Sunbrella","style_number":"2104-0063","color_name":"Linen"},{"brand":"Sunbrella","style_number":"2096-0063","color_name":"Linen Tweed"},{"brand":"Sunbrella","style_number":"2107-0063","color_name":"Navy"},{"brand":"Sunbrella","style_number":"2101-0063","color_name":"Oyster"},{"brand":"Sunbrella","style_number":"2103-0063","color_name":"Royal Blue Tweed"},{"brand":"Sunbrella","style_number":"2100-0063","color_name":"Toast Tweed"},{"brand":"Sunbrella","style_number":"84008-0000","color_name":"Black"},{"brand":"Sunbrella","style_number":"84030-0000","color_name":"Cadet Grey"},{"brand":"Sunbrella","style_number":"84044-0000","color_name":"Charcoal Grey"}];
 
 // ─────────────────────────────────────────────────────────────
-// TASK 1 — PHIFER FABRICS
-// Brand: Phifer | Series: SheerWeave Privacy | Colors: Ebony, Ash, Chalk
+// PHIFER FABRICS — screen products only
 // ─────────────────────────────────────────────────────────────
 const PHIFER_FABRICS = [
-  { brand: "Phifer", series: "SheerWeave Privacy", style_number: "SWP-Ebony", color_name: "Ebony" },
-  { brand: "Phifer", series: "SheerWeave Privacy", style_number: "SWP-Ash",   color_name: "Ash"   },
-  { brand: "Phifer", series: "SheerWeave Privacy", style_number: "SWP-Chalk", color_name: "Chalk" },
+  { brand: "Phifer", series: "SheerWeave 2000",    style_number: "SW2000-Q000", color_name: "White/White" },
+  { brand: "Phifer", series: "SheerWeave 2000",    style_number: "SW2000-Q001", color_name: "Antique White" },
+  { brand: "Phifer", series: "SheerWeave 2000",    style_number: "SW2000-Q002", color_name: "Silver/White" },
+  { brand: "Phifer", series: "SheerWeave 2000",    style_number: "SW2000-Q003", color_name: "Beige/Linen" },
+  { brand: "Phifer", series: "SheerWeave 2000",    style_number: "SW2000-Q010", color_name: "Charcoal/Charcoal" },
+  { brand: "Phifer", series: "SheerWeave 2000",    style_number: "SW2000-Q020", color_name: "Bronze/Bronze" },
+  { brand: "Phifer", series: "SheerWeave 4000",    style_number: "SW4000-Q000", color_name: "White/White" },
+  { brand: "Phifer", series: "SheerWeave 4000",    style_number: "SW4000-Q001", color_name: "Antique White" },
+  { brand: "Phifer", series: "SheerWeave 4000",    style_number: "SW4000-Q002", color_name: "Silver/White" },
+  { brand: "Phifer", series: "SheerWeave 4000",    style_number: "SW4000-Q010", color_name: "Charcoal/Charcoal" },
+  { brand: "Phifer", series: "SheerWeave 4000",    style_number: "SW4000-Q020", color_name: "Bronze/Bronze" },
+  { brand: "Phifer", series: "SheerWeave 4000",    style_number: "SW4000-Q030", color_name: "Champagne/Champagne" },
+  { brand: "Phifer", series: "SheerWeave 5000",    style_number: "SW5000-Q000", color_name: "White/White" },
+  { brand: "Phifer", series: "SheerWeave 5000",    style_number: "SW5000-Q001", color_name: "Antique White" },
+  { brand: "Phifer", series: "SheerWeave 5000",    style_number: "SW5000-Q002", color_name: "Silver/White" },
+  { brand: "Phifer", series: "SheerWeave 5000",    style_number: "SW5000-Q010", color_name: "Charcoal/Charcoal" },
+  { brand: "Phifer", series: "SheerWeave 5000",    style_number: "SW5000-Q020", color_name: "Bronze/Bronze" },
+  { brand: "Phifer", series: "SheerWeave 5000",    style_number: "SW5000-Q041", color_name: "Linen/Linen" },
+  { brand: "Phifer", series: "SheerWeave 7000",    style_number: "SW7000-Q000", color_name: "White/White" },
+  { brand: "Phifer", series: "SheerWeave 7000",    style_number: "SW7000-Q001", color_name: "Antique White" },
+  { brand: "Phifer", series: "SheerWeave 7000",    style_number: "SW7000-Q002", color_name: "Silver/White" },
+  { brand: "Phifer", series: "SheerWeave 7000",    style_number: "SW7000-Q010", color_name: "Charcoal/Charcoal" },
+  { brand: "Phifer", series: "SheerWeave 7000",    style_number: "SW7000-Q020", color_name: "Bronze/Bronze" },
+  { brand: "Phifer", series: "SheerWeave Privacy", style_number: "SWP-Ebony",   color_name: "Ebony" },
+  { brand: "Phifer", series: "SheerWeave Privacy", style_number: "SWP-Ash",     color_name: "Ash" },
+  { brand: "Phifer", series: "SheerWeave Privacy", style_number: "SWP-Chalk",   color_name: "Chalk" },
+  { brand: "Phifer", series: "Nano",               style_number: "NANO-0001",   color_name: "White" },
+  { brand: "Phifer", series: "Nano",               style_number: "NANO-0002",   color_name: "Silver" },
+  { brand: "Phifer", series: "Nano",               style_number: "NANO-0010",   color_name: "Charcoal" },
+  { brand: "Phifer", series: "Nano",               style_number: "NANO-0020",   color_name: "Bronze" },
+  { brand: "Phifer", series: "Textilene Sunsure",  style_number: "TXL-S01",     color_name: "White" },
+  { brand: "Phifer", series: "Textilene Sunsure",  style_number: "TXL-S02",     color_name: "Silver" },
+  { brand: "Phifer", series: "Textilene Sunsure",  style_number: "TXL-S10",     color_name: "Charcoal" },
+  { brand: "Phifer", series: "Textilene Sunsure",  style_number: "TXL-S20",     color_name: "Bronze" },
+  { brand: "Phifer", series: "Textilene Sunsure",  style_number: "TXL-S41",     color_name: "Beige" },
 ];
 
 // ─────────────────────────────────────────────────────────────
-// TASK 1 — PREMIUM FABRIC SURCHARGE
-// Applies +$35 per linear foot (width) per opening when the
-// selected fabric series is one of:
-//   • Phifer → SheerWeave Privacy
-//   • Twitchell → Dimout
+// TWITCHELL FABRICS — screen products only
 // ─────────────────────────────────────────────────────────────
-const PREMIUM_FABRIC_SURCHARGE_RATE = 35; // $ per linear foot of width
+const TWITCHELL_FABRICS = [
+  { brand: "Twitchell", series: "Extrascreen",   style_number: "ES-100",     color_name: "White" },
+  { brand: "Twitchell", series: "Extrascreen",   style_number: "ES-101",     color_name: "Beige" },
+  { brand: "Twitchell", series: "Extrascreen",   style_number: "ES-102",     color_name: "Silver" },
+  { brand: "Twitchell", series: "Extrascreen",   style_number: "ES-110",     color_name: "Charcoal" },
+  { brand: "Twitchell", series: "Extrascreen",   style_number: "ES-120",     color_name: "Bronze" },
+  { brand: "Twitchell", series: "Nano 90",       style_number: "N90-000",    color_name: "White" },
+  { brand: "Twitchell", series: "Nano 90",       style_number: "N90-002",    color_name: "Silver" },
+  { brand: "Twitchell", series: "Nano 90",       style_number: "N90-010",    color_name: "Charcoal" },
+  { brand: "Twitchell", series: "Nano 90",       style_number: "N90-020",    color_name: "Bronze" },
+  { brand: "Twitchell", series: "Textilene 80",  style_number: "T80-000",    color_name: "White" },
+  { brand: "Twitchell", series: "Textilene 80",  style_number: "T80-001",    color_name: "Beige" },
+  { brand: "Twitchell", series: "Textilene 80",  style_number: "T80-010",    color_name: "Charcoal" },
+  { brand: "Twitchell", series: "Textilene 80",  style_number: "T80-020",    color_name: "Bronze" },
+  { brand: "Twitchell", series: "Textilene 80",  style_number: "T80-041",    color_name: "Sand" },
+  { brand: "Twitchell", series: "Textilene 90",  style_number: "T90-000",    color_name: "White" },
+  { brand: "Twitchell", series: "Textilene 90",  style_number: "T90-001",    color_name: "Beige" },
+  { brand: "Twitchell", series: "Textilene 90",  style_number: "T90-002",    color_name: "Silver" },
+  { brand: "Twitchell", series: "Textilene 90",  style_number: "T90-010",    color_name: "Charcoal" },
+  { brand: "Twitchell", series: "Textilene 90",  style_number: "T90-020",    color_name: "Bronze" },
+  { brand: "Twitchell", series: "Dimout",        style_number: "Dimout-000", color_name: "White" },
+  { brand: "Twitchell", series: "Dimout",        style_number: "Dimout-010", color_name: "Charcoal" },
+  { brand: "Twitchell", series: "Dimout",        style_number: "Dimout-020", color_name: "Bronze" },
+  { brand: "Twitchell", series: "Dimout",        style_number: "Dimout-041", color_name: "Sand" },
+];
 
-/**
- * Returns true when the fabricSelection triggers the $35/LF surcharge.
- * Checks brand + series (stored in style_number prefix for Phifer, or
- * series field; for Twitchell uses the series field if present or the
- * style_number convention "Dimout-*").
- */
+// ─────────────────────────────────────────────────────────────
+// PREMIUM FABRIC SURCHARGE
+// ─────────────────────────────────────────────────────────────
+const PREMIUM_FABRIC_SURCHARGE_RATE = 35;
+
 function isPremiumFabricSurcharge(fabricSelection) {
   if (!fabricSelection?.brand || !fabricSelection?.style_number) return false;
-  const brand  = fabricSelection.brand;
-  const series = fabricSelection.series || "";
+  const brand    = fabricSelection.brand;
+  const series   = fabricSelection.series || "";
   const styleNum = fabricSelection.style_number;
-
-  // Phifer → SheerWeave Privacy
-  if (brand === "Phifer" && (series === "SheerWeave Privacy" || styleNum.startsWith("SWP-"))) {
-    return true;
-  }
-  // Twitchell → Dimout  (supports both series field and style_number prefix convention)
-  if (brand === "Twitchell" && (series === "Dimout" || styleNum.startsWith("Dimout-"))) {
-    return true;
-  }
+  if (brand === "Phifer" && (series === "SheerWeave Privacy" || styleNum.startsWith("SWP-"))) return true;
+  if (brand === "Twitchell" && (series === "Dimout" || styleNum.startsWith("Dimout-"))) return true;
   return false;
 }
 
-/**
- * Calculates the premium fabric surcharge for a single opening.
- * @param {object} fabricSelection  - the resolved fabric for this opening
- * @param {string|number} widthRaw  - the raw width value entered (ft or inches)
- * @returns {number} dollar amount to add
- */
 function calcPremiumFabricSurcharge(fabricSelection, widthRaw) {
   if (!isPremiumFabricSurcharge(fabricSelection)) return 0;
   const widthFt = toFeetKey(widthRaw);
@@ -144,16 +200,27 @@ function calcPremiumFabricSurcharge(fabricSelection, widthRaw) {
   return widthFt * PREMIUM_FABRIC_SURCHARGE_RATE;
 }
 
-// ─────────────────────────────────────────────────────────────
-// FABRIC BRAND REGISTRY — add "Phifer" here
-// ─────────────────────────────────────────────────────────────
-const FABRIC_BRANDS = ["Sunbrella", "Phifer"];
+const SCREEN_FABRIC_BRANDS = ["Phifer", "Twitchell"];
+const AWNING_FABRIC_BRANDS = ["Sunbrella"];
+const FABRIC_BRANDS = AWNING_FABRIC_BRANDS;
 
-function getFabricsByBrand(brand) {
+function getScreenFabricsByBrand(brand) {
   if (!brand) return [];
   if (brand === "Phifer")    return PHIFER_FABRICS;
+  if (brand === "Twitchell") return TWITCHELL_FABRICS;
+  return [];
+}
+
+function getAwningFabricsByBrand(brand) {
+  if (!brand) return [];
   if (brand === "Sunbrella") return SUNBRELLA_FABRICS.filter(f => f.brand === "Sunbrella");
   return [];
+}
+
+function getFabricsByBrand(brand, fabricContext = "screen") {
+  return fabricContext === "awning"
+    ? getAwningFabricsByBrand(brand)
+    : getScreenFabricsByBrand(brand);
 }
 
 function buildFabricLabel(fabricSelection) {
@@ -233,7 +300,8 @@ const MPS_DEFAULTS = {
   mountTypes:       ["Surface", "Inside", "Soffit Mount"],
   trackTypes:       ["Zipper", "Wire Guide", "Storm Rail"],
   motorTypes:       ["Somfy (default)", "Somfy RTS", "Somfy WireFree", "Custom"],
-  lChannelSizes:    ["1.5", "1×2", "Custom"],
+  // CHANGE 1: Updated L-channel sizes — now derived from L_CHANNEL_SIZES constant
+  lChannelSizes:    L_CHANNEL_SIZES.map(s => s.label),
   lChannelLocs:     ["Left", "Right", "Top", "Bottom"],
   buildoutTypes:    ["Wood", "Alumitube"],
   woodSizes:        ["2x4", "2x6", "2x8", "2x10", "4x4", "4x6", "4x8", "4x10"],
@@ -250,6 +318,7 @@ const WOOD_BUILDOUT_RATES = {
 };
 
 const STORM_RAIL_RATE        = 40;
+// CHANGE 6: Base L_CHANNEL_RATE kept as fallback; per-size rates now used via getLChannelRate()
 const L_CHANNEL_RATE         = 25;
 const ALUMITUBE_DEFAULT_RATE = 35;
 
@@ -621,13 +690,17 @@ let _uid = 1;
 const uid = () => `id_${_uid++}`;
 
 function createLChannel() {
-  return { id: uid(), loc: "Left", size: "1×1", customSize: "", lf: "", manualPrice: "", photo: null };
+  // CHANGE 1: default size is now "1x1" (first in the updated list)
+  return { id: uid(), loc: "Left", size: "1x1", customSize: "", lf: "", manualPrice: "", photo: null };
 }
 
 function createBuildout() {
   return {
     id: uid(), type: "Wood", woodSize: "2x4", aluminubeSize: "1.5×1.5",
-    isCustomAlumitubeSize: false, customAlumitubeSize: "", dims: "", lf: "", customRate: "", photo: null,
+    isCustomAlumitubeSize: false, customAlumitubeSize: "", dims: "", lf: "", customRate: "",
+    // CHANGE 4: custom wood fields
+    isCustomWoodSize: false, customWoodSizeLabel: "", customWoodRate: "",
+    photo: null,
   };
 }
 
@@ -661,7 +734,6 @@ function createArea(productName = "") {
   };
 }
 
-// MRA config
 function createMRAConfig() {
   return {
     widthFt: "",
@@ -683,16 +755,24 @@ function calcStormRailCost(opening, effectiveTrackType) {
 
 function calcBuildoutCost(bo) {
   if (bo.type === "Wood") {
+    // CHANGE 4: support custom wood size with custom rate
+    if (bo.woodSize === "Custom" || bo.isCustomWoodSize) {
+      const customRate = parseFloat(bo.customWoodRate) || 0;
+      return (parseFloat(bo.lf) || 0) * customRate;
+    }
     const rate = WOOD_BUILDOUT_RATES[bo.woodSize] || 0;
     return (parseFloat(bo.lf) || 0) * rate;
   }
+  // CHANGE 5: Alumitube — custom size path unchanged
   if (bo.isCustomAlumitubeSize) return parseFloat(bo.customRate) || 0;
   return (parseFloat(bo.lf) || 0) * ALUMITUBE_DEFAULT_RATE;
 }
 
+// CHANGE 1: calcLChannelCost now uses per-size rate from L_CHANNEL_SIZES
 function calcLChannelCost(lc) {
   if (lc.manualPrice !== "" && !isNaN(parseFloat(lc.manualPrice))) return parseFloat(lc.manualPrice);
-  return (parseFloat(lc.lf) || 0) * L_CHANNEL_RATE;
+  const rate = lc.size === "Custom" ? 0 : getLChannelRate(lc.size);
+  return (parseFloat(lc.lf) || 0) * rate;
 }
 
 function calcCustomColorCost(opening, effectiveTrackType, areaDefaults) {
@@ -710,12 +790,6 @@ function calcMotorAdjustment(opening) {
   return getMotorPriceAdjustment(opening.motorId);
 }
 
-// ─────────────────────────────────────────────────────────────
-// TASK 1 — UPDATED calcOpeningStructural
-// Now includes premium fabric surcharge ($35/LF width) when
-// Phifer SheerWeave Privacy or Twitchell Dimout is selected.
-// Effective fabric = opening override first, then area default.
-// ─────────────────────────────────────────────────────────────
 function calcOpeningStructural(opening, areaDefaults) {
   let total = 0;
   (opening.lChannels || []).forEach(lc => { total += calcLChannelCost(lc); });
@@ -724,13 +798,10 @@ function calcOpeningStructural(opening, areaDefaults) {
   total += calcStormRailCost(opening, effectiveTrackType);
   total += calcCustomColorCost(opening, effectiveTrackType, areaDefaults);
   total += calcMotorAdjustment(opening);
-
-  // TASK 1 — Premium fabric surcharge
   const effectiveFabric = (opening.fabricSelection?.brand)
     ? opening.fabricSelection
     : (areaDefaults?.fabricSelection?.brand ? areaDefaults.fabricSelection : null);
   total += calcPremiumFabricSurcharge(effectiveFabric, opening.width);
-
   return total;
 }
 
@@ -952,7 +1023,7 @@ function Toggle({ label, checked, onChange }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// MOTOR SELECTOR COMPONENT
+// MOTOR SELECTOR
 // ─────────────────────────────────────────────────────────────
 function MotorSelector({ motorId, productName, onChange }) {
   const compatibleMotors = getCompatibleMotors(productName);
@@ -985,10 +1056,9 @@ function MotorSelector({ motorId, productName, onChange }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// FABRIC TYPEAHEAD — searchable autocomplete
-// Searches by style_number or color_name
+// FABRIC TYPEAHEAD
 // ─────────────────────────────────────────────────────────────
-function FabricTypeahead({ brand, value, onChange }) {
+function FabricTypeahead({ brand, value, onChange, fabricContext = "screen" }) {
   const [query, setQuery] = useState(
     value?.style_number ? (value.style_number + " - " + value.color_name) : ""
   );
@@ -996,7 +1066,7 @@ function FabricTypeahead({ brand, value, onChange }) {
   const [focused, setFocused] = useState(false);
   const inputRef = useRef(null);
 
-  const fabrics = getFabricsByBrand(brand);
+  const fabrics = getFabricsByBrand(brand, fabricContext);
 
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -1006,7 +1076,7 @@ function FabricTypeahead({ brand, value, onChange }) {
       f.color_name.toLowerCase().includes(q) ||
       (f.series && f.series.toLowerCase().includes(q))
     ).slice(0, 60);
-  }, [query, brand]);
+  }, [query, brand, fabricContext]);
 
   useEffect(() => {
     if (value?.style_number) {
@@ -1106,12 +1176,13 @@ function FabricTypeahead({ brand, value, onChange }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// FABRIC SELECTOR — Brand picklist + Typeahead
-// Stores: { brand, style_number, color_name, series }
+// FABRIC SELECTOR
 // ─────────────────────────────────────────────────────────────
-function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
+function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric", fabricContext = "screen" }) {
   const { brand = "", style_number = "", color_name = "", series = "" } = fabricSelection;
   const fabricLabel = buildFabricLabel(fabricSelection);
+
+  const brandList = fabricContext === "awning" ? AWNING_FABRIC_BRANDS : SCREEN_FABRIC_BRANDS;
 
   const handleBrandChange = (newBrand) => {
     onChange({ brand: newBrand, style_number: "", color_name: "", series: "" });
@@ -1130,7 +1201,6 @@ function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
         {fabricLabel && style_number && (
           <span className="fabric-label-badge">{fabricLabel}</span>
         )}
-        {/* TASK 1 — Premium surcharge indicator */}
         {hasSurcharge && (
           <span className="fabric-premium-badge" title="Premium fabric: +$35/LF (width) surcharge applies per opening">
             ⚡ Premium +${PREMIUM_FABRIC_SURCHARGE_RATE}/LF
@@ -1138,16 +1208,14 @@ function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
         )}
       </div>
       <div className="fabric-cascade-grid">
-        {/* Step 1: Brand */}
         <div className="mps-field">
           <label className="mps-label fabric-step-label"><span className="fabric-step-num">1</span> Brand</label>
           <select className="mps-select" value={brand} onChange={e => handleBrandChange(e.target.value)}>
             <option value="">Select Brand</option>
-            {FABRIC_BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
+            {brandList.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
         </div>
 
-        {/* Step 2: Fabric search — only shown after brand selected */}
         {brand && (
           <div className="mps-field fabric-typeahead-field">
             <label className="mps-label fabric-step-label"><span className="fabric-step-num">2</span> Fabric</label>
@@ -1155,12 +1223,12 @@ function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
               brand={brand}
               value={{ brand, style_number, color_name, series }}
               onChange={handleFabricChange}
+              fabricContext={fabricContext}
             />
           </div>
         )}
       </div>
 
-      {/* TASK 1 — Surcharge explainer shown when premium series active */}
       {hasSurcharge && (
         <div className="fabric-surcharge-notice">
           <span className="fabric-surcharge-notice-icon">💡</span>
@@ -1176,7 +1244,7 @@ function FabricSelector({ fabricSelection = {}, onChange, label = "Fabric" }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// SKYLIGHT MRA FABRIC SELECTOR
+// SKYLIGHT FABRIC SELECTOR
 // ─────────────────────────────────────────────────────────────
 function SkylightFabricSelector({ fabricBrand, style_number, color_name, onChange }) {
   const fabricLabel = style_number ? (style_number + " - " + (color_name || "")) : "";
@@ -1200,7 +1268,7 @@ function SkylightFabricSelector({ fabricBrand, style_number, color_name, onChang
           <label className="mps-label fabric-step-label"><span className="fabric-step-num">1</span> Fabric Brand</label>
           <select className="mps-select" value={fabricBrand} onChange={e => handleBrandChange(e.target.value)}>
             <option value="">Select Brand</option>
-            {FABRIC_BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
+            {AWNING_FABRIC_BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
         </div>
 
@@ -1211,6 +1279,7 @@ function SkylightFabricSelector({ fabricBrand, style_number, color_name, onChang
               brand={fabricBrand}
               value={{ brand: fabricBrand, style_number: style_number || "", color_name: color_name || "", series: "" }}
               onChange={handleFabricChange}
+              fabricContext="awning"
             />
           </div>
         )}
@@ -1237,30 +1306,82 @@ function OpeningPriceBadge({ opening, productName }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// L-CHANNEL ITEM EDITOR
+// CHANGE 1 + 6: L-CHANNEL ITEM EDITOR
+// — Updated size dropdown with tiered pricing
+// — Clean "Linear Feet" label, no long text
 // ─────────────────────────────────────────────────────────────
 function LChannelItem({ lc, index, onChange, onRemove, showRemove }) {
   const set  = (field, val) => onChange({ ...lc, [field]: val });
   const cost = calcLChannelCost(lc);
   const isManualOverride = lc.manualPrice !== "" && !isNaN(parseFloat(lc.manualPrice));
+  const currentRate = lc.size === "Custom" ? null : getLChannelRate(lc.size);
+
   return (
     <div className="structural-item-card">
       <div className="structural-item-header">
         <span className="structural-item-label">L-Channel #{index + 1}</span>
         {showRemove && <button type="button" className="structural-item-remove" onClick={onRemove}>✕ Remove</button>}
       </div>
+
+      {/* CHANGE 6: Clean row layout — no long pricing text in labels */}
       <div className="structural-fields-grid">
-        <Sel label="Location" value={lc.loc}  options={MPS_DEFAULTS.lChannelLocs}  onChange={v => set("loc", v)} />
-        <Sel label="Size"     value={lc.size} options={MPS_DEFAULTS.lChannelSizes} onChange={v => set("size", v)} />
-        {lc.size === "Custom" && <Field label="Custom Size" value={lc.customSize} onChange={v => set("customSize", v)} placeholder='e.g. 2"×3"' />}
-        <Field label={`Linear Feet (× $${L_CHANNEL_RATE}/LF)`} type="number" value={lc.lf} onChange={v => set("lf", v)} placeholder="e.g. 8" min="0" step="0.5" />
-        <Field label="Manual Price Override ($)" type="number" value={lc.manualPrice} onChange={v => set("manualPrice", v)} placeholder="Leave blank to use LF rate" min="0" />
+        {/* Location */}
+        <div className="mps-field">
+          <label className="mps-label">Location</label>
+          <select className="mps-select" value={lc.loc} onChange={e => set("loc", e.target.value)}>
+            {MPS_DEFAULTS.lChannelLocs.map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </div>
+
+        {/* CHANGE 1: Updated size dropdown with rate shown in option label */}
+        <div className="mps-field">
+          <label className="mps-label">
+            Size
+            {currentRate != null && <span className="lchannel-rate-badge">${currentRate}/LF</span>}
+          </label>
+          <select className="mps-select" value={lc.size} onChange={e => set("size", e.target.value)}>
+            {L_CHANNEL_SIZES.map(s => (
+              <option key={s.label} value={s.label}>
+                {s.label}{s.rate != null ? ` — $${s.rate}/LF` : " — custom price"}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Custom size input — only shown when Custom is selected */}
+        {lc.size === "Custom" && (
+          <Field label="Custom Size" value={lc.customSize} onChange={v => set("customSize", v)} placeholder='e.g. 2"×3"' />
+        )}
+
+        {/* CHANGE 6: Simple "Linear Feet" label */}
+        <Field
+          label="Linear Feet"
+          type="number"
+          value={lc.lf}
+          onChange={v => set("lf", v)}
+          placeholder="e.g. 8"
+          min="0"
+          step="0.5"
+        />
+
+        <Field
+          label="Manual Price Override ($)"
+          type="number"
+          value={lc.manualPrice}
+          onChange={v => set("manualPrice", v)}
+          placeholder="Leave blank to use rate"
+          min="0"
+        />
       </div>
+
+      {/* Cost display */}
       {(lc.lf || isManualOverride) && (
         <div className="structural-calc">
           {isManualOverride
             ? <>L-Channel (manual override): <strong>{fmt(cost)}</strong></>
-            : <>L-Channel: {lc.lf} LF × ${L_CHANNEL_RATE} = <strong>{fmt(cost)}</strong></>
+            : lc.size === "Custom"
+              ? <>L-Channel (Custom — enter manual price above): <strong>{fmt(cost)}</strong></>
+              : <>{lc.size}: {lc.lf} LF × ${currentRate}/LF = <strong>{fmt(cost)}</strong></>
           }
         </div>
       )}
@@ -1270,13 +1391,21 @@ function LChannelItem({ lc, index, onChange, onRemove, showRemove }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// BUILDOUT ITEM EDITOR
+// CHANGE 4 + 5 + 6: BUILDOUT ITEM EDITOR
+// — Wood: Custom option added (text + rate inputs)
+// — Alumitube: replaced radio with dropdown (CHANGE 5)
+// — Clean label, no long pricing text (CHANGE 6)
 // ─────────────────────────────────────────────────────────────
 function BuildoutItem({ bo, index, onChange, onRemove }) {
   const set = (field, val) => onChange({ ...bo, [field]: val });
   const cost = calcBuildoutCost(bo);
   const isWood = bo.type === "Wood";
-  const isCustomWood = isWood && bo.woodSize === "Custom";
+
+  // CHANGE 4: detect custom wood
+  const isCustomWood = isWood && (bo.woodSize === "Custom" || bo.isCustomWoodSize);
+
+  // Rate label for standard wood
+  const woodRate = (!isCustomWood && isWood) ? (WOOD_BUILDOUT_RATES[bo.woodSize] || 0) : null;
 
   return (
     <div className="structural-item-card">
@@ -1284,73 +1413,167 @@ function BuildoutItem({ bo, index, onChange, onRemove }) {
         <span>Buildout #{index + 1}</span>
         <button type="button" className="structural-item-remove" onClick={onRemove}>✕</button>
       </div>
-      <div className="structural-fields-grid">
-        <Sel label="Type" value={bo.type} options={["Wood","Alumitube"]} onChange={v=>set("type",v)} />
 
-        {isWood ? (
+      <div className="structural-fields-grid">
+
+        {/* Type dropdown */}
+        <Sel label="Type" value={bo.type} options={["Wood", "Alumitube"]} onChange={v => set("type", v)} />
+
+        {/* ── WOOD path ── */}
+        {isWood && (
           <div className="mps-field">
-            <label className="mps-label">Wood Size</label>
-            <select className="mps-select" value={bo.woodSize} onChange={e=>set("woodSize",e.target.value)}>
-              {Object.keys(WOOD_BUILDOUT_RATES).map(s => <option key={s} value={s}>{s} — ${WOOD_BUILDOUT_RATES[s]}/LF</option>)}
+            <label className="mps-label">
+              Wood Size
+              {woodRate != null && <span className="lchannel-rate-badge">${woodRate}/LF</span>}
+            </label>
+            {/* CHANGE 4: added "Custom" option to wood size dropdown */}
+            <select
+              className="mps-select"
+              value={bo.woodSize}
+              onChange={e => {
+                const val = e.target.value;
+                set("woodSize", val);
+                // toggle isCustomWoodSize flag
+                onChange({ ...bo, woodSize: val, isCustomWoodSize: val === "Custom" });
+              }}
+            >
+              {Object.keys(WOOD_BUILDOUT_RATES).map(s => (
+                <option key={s} value={s}>{s} — ${WOOD_BUILDOUT_RATES[s]}/LF</option>
+              ))}
+              {/* CHANGE 4: Custom option */}
               <option value="Custom">Custom</option>
             </select>
           </div>
-        ) : (
+        )}
+
+        {/* CHANGE 4: Custom wood size inputs */}
+        {isWood && isCustomWood && (
+          <>
+            <Field
+              label="Custom Wood Size"
+              value={bo.customWoodSizeLabel || ""}
+              onChange={v => set("customWoodSizeLabel", v)}
+              placeholder='e.g. 3×8, 6×6'
+            />
+            <Field
+              label="Custom Rate ($/LF)"
+              type="number"
+              value={bo.customWoodRate || ""}
+              onChange={v => set("customWoodRate", v)}
+              placeholder="e.g. 15"
+              min="0"
+            />
+          </>
+        )}
+
+        {/* ── ALUMITUBE path ── */}
+        {/* CHANGE 5: replaced radio buttons with a standard dropdown */}
+        {!isWood && (
           <div className="mps-field">
-            <label className="mps-label">Alumitube Size</label>
-            <select className="mps-select" value={bo.isCustomAlumitubeSize ? "Custom" : "Standard"} 
-              onChange={e => set("isCustomAlumitubeSize", e.target.value === "Custom")}>
-              <option value="Standard">3" × 8" — $35/LF</option>
+            <label className="mps-label">
+              Alumitube Size
+              {!bo.isCustomAlumitubeSize && <span className="lchannel-rate-badge">${ALUMITUBE_DEFAULT_RATE}/LF</span>}
+            </label>
+            <select
+              className="mps-select"
+              value={bo.isCustomAlumitubeSize ? "Custom" : "Standard"}
+              onChange={e => set("isCustomAlumitubeSize", e.target.value === "Custom")}
+            >
+              <option value="Standard">3″ × 8″ — ${ALUMITUBE_DEFAULT_RATE}/LF</option>
               <option value="Custom">Custom Size</option>
             </select>
           </div>
         )}
 
-        {isCustomWood && (
-          <>
-            <Field label="Custom Wood Size" value={bo.customWoodSize || ""} onChange={v=>set("customWoodSize",v)} placeholder="e.g. 3x6" />
-            <Field label="Custom Rate $/LF" type="number" value={bo.customWoodRate || ""} onChange={v=>set("customWoodRate",v)} placeholder="e.g. 15" />
-          </>
+        {/* Custom alumitube inputs */}
+        {!isWood && bo.isCustomAlumitubeSize && (
+          <Field
+            label="Custom Alumitube Size"
+            value={bo.customAlumitubeSize || ""}
+            onChange={v => set("customAlumitubeSize", v)}
+            placeholder='e.g. 4"×10"'
+          />
         )}
 
-        {bo.isCustomAlumitubeSize && <Field label="Custom Alumitube Size" value={bo.customAlumitubeSize || ""} onChange={v=>set("customAlumitubeSize",v)} />}
-
-        <Field label="Linear Feet" type="number" value={bo.lf} onChange={v=>set("lf",v)} placeholder="e.g. 12" />
-        {bo.isCustomAlumitubeSize && <Field label="Manual Price ($)" type="number" value={bo.customRate} onChange={v=>set("customRate",v)} />}
+        {/* CHANGE 6: Clean "Linear Feet" label for both types */}
+        {/* For custom alumitube, show manual price instead of LF */}
+        {(!isWood && bo.isCustomAlumitubeSize) ? (
+          <Field
+            label="Manual Price ($)"
+            type="number"
+            value={bo.customRate}
+            onChange={v => set("customRate", v)}
+            placeholder="Enter total price"
+            min="0"
+          />
+        ) : (
+          <Field
+            label="Linear Feet"
+            type="number"
+            value={bo.lf}
+            onChange={v => set("lf", v)}
+            placeholder="e.g. 12"
+            min="0"
+            step="0.5"
+          />
+        )}
       </div>
-      {cost > 0 && <div className="structural-calc">Cost: <strong>{fmt(cost)}</strong></div>}
-      <PhotoUpload label="Photo (optional)" value={bo.photo} onChange={v=>set("photo",v)} />
+
+      {/* Cost display */}
+      {cost > 0 && (
+        <div className="structural-calc">
+          {isWood && isCustomWood
+            ? <>Custom Wood ({bo.customWoodSizeLabel || "—"}) @ ${bo.customWoodRate || 0}/LF × {bo.lf || 0} LF = <strong>{fmt(cost)}</strong></>
+            : isWood
+              ? <>{bo.woodSize} @ ${woodRate}/LF × {bo.lf || 0} LF = <strong>{fmt(cost)}</strong></>
+              : bo.isCustomAlumitubeSize
+                ? <>Alumitube Custom (manual price): <strong>{fmt(cost)}</strong></>
+                : <>Alumitube 3″×8″ @ ${ALUMITUBE_DEFAULT_RATE}/LF × {bo.lf || 0} LF = <strong>{fmt(cost)}</strong></>
+          }
+        </div>
+      )}
+      <PhotoUpload label="Photo (optional)" value={bo.photo} onChange={v => set("photo", v)} />
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────
 // OPENING EDITOR
+// CHANGE 2 + 3: "Copy from Previous Opening" buttons for both
+//               L-Channels and Buildouts
 // ─────────────────────────────────────────────────────────────
 function OpeningEditor({ opening, index, areaDefaults, productName, onChange, onRemove, showRemove, allOpenings }) {
-  
+
   const structural   = calcOpeningStructural(opening, areaDefaults);
   const openingPrice = calcOpeningBasePrice(opening, productName);
   const openingTotal = openingPrice + structural;
 
-  // TASK 1 — resolve effective fabric for surcharge display
   const effectiveFabric = (opening.fabricSelection?.brand)
     ? opening.fabricSelection
     : (areaDefaults?.fabricSelection?.brand ? areaDefaults.fabricSelection : null);
-  const hasSurcharge     = isPremiumFabricSurcharge(effectiveFabric);
-  const surchargeAmount  = calcPremiumFabricSurcharge(effectiveFabric, opening.width);
+  const hasSurcharge    = isPremiumFabricSurcharge(effectiveFabric);
+  const surchargeAmount = calcPremiumFabricSurcharge(effectiveFabric, opening.width);
 
-  const prevOpening = allOpenings && index > 0 ? allOpenings[index-1] : null;
+  const prevOpening = allOpenings && index > 0 ? allOpenings[index - 1] : null;
 
+  // CHANGE 2 + 3: Copy L-Channels from previous opening — deep clone with new IDs
   const copyLChannels = () => {
-    if (!prevOpening?.lChannels?.length) return alert("No L-Channels to copy from previous opening.");
-    onChange({ ...opening, lChannels: prevOpening.lChannels.map(item => ({...item, id: uid()})) });
+    if (!prevOpening?.lChannels?.length) {
+      alert("No L-Channels to copy from the previous opening.");
+      return;
+    }
+    onChange({ ...opening, lChannels: prevOpening.lChannels.map(item => ({ ...item, id: uid() })) });
   };
 
+  // CHANGE 2 + 3: Copy Buildouts from previous opening — deep clone with new IDs
   const copyBuildouts = () => {
-    if (!prevOpening?.buildouts?.length) return alert("No Buildouts to copy from previous opening.");
-    onChange({ ...opening, buildouts: prevOpening.buildouts.map(item => ({...item, id: uid()})) });
+    if (!prevOpening?.buildouts?.length) {
+      alert("No Buildouts to copy from the previous opening.");
+      return;
+    }
+    onChange({ ...opening, buildouts: prevOpening.buildouts.map(item => ({ ...item, id: uid() })) });
   };
+
   const set = (field, val) => onChange({ ...opening, [field]: val });
 
   const effectiveMount      = opening.mountOverride      || areaDefaults.mountType      || "—";
@@ -1407,7 +1630,6 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
 
       <OpeningPriceBadge opening={opening} productName={productName} />
 
-      {/* TASK 1 — Premium fabric surcharge badge shown per opening */}
       {hasSurcharge && opening.width && surchargeAmount > 0 && (
         <div className="premium-fabric-surcharge-badge">
           <span className="premium-fabric-surcharge-icon">⚡</span>
@@ -1452,7 +1674,12 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
           <span className="override-hint">(Effective: <strong>{effectiveFabricLabel}</strong>)</span>
         </summary>
         <div className="override-resolved-info">Defaults to the Area fabric selection. Set here to override for this opening only.</div>
-        <FabricSelector fabricSelection={opening.fabricSelection} onChange={v => set("fabricSelection", v)} label="Opening Fabric Override" />
+        <FabricSelector
+          fabricSelection={opening.fabricSelection}
+          onChange={v => set("fabricSelection", v)}
+          label="Opening Fabric Override"
+          fabricContext="screen"
+        />
       </details>
 
       <details className="override-details" open>
@@ -1590,14 +1817,33 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
         </div>
       </details>
 
-      {/* L-Channels */}
+      {/* ── L-CHANNELS ── */}
       <div className="structural-section">
         <div className="structural-section-header">
           <span className="mps-label">L-Channels</span>
           {lChannelTotal > 0 && <span className="structural-section-total">{fmt(lChannelTotal)} total</span>}
-          <button type="button" className="structural-add-btn" onClick={addLChannel}>+ Add L-Channel</button>
+          {/* CHANGE 2: three buttons side-by-side */}
+          <div className="structural-section-actions">
+            <button type="button" className="structural-add-btn" onClick={addLChannel}>
+              + Add L-Channel
+            </button>
+            {/* CHANGE 2+3: Copy from Previous Opening — only shown when there is a previous opening */}
+            {prevOpening && (
+              <button
+                type="button"
+                className="structural-copy-btn"
+                onClick={copyLChannels}
+                title={`Copy ${prevOpening.lChannels?.length || 0} L-Channel(s) from Opening ${index}`}
+                disabled={!prevOpening.lChannels?.length}
+              >
+                ⧉ Copy from Prev Opening
+              </button>
+            )}
+          </div>
         </div>
-        {lChannels.length === 0 && <div className="structural-empty">No L-channels added. Click "Add L-Channel" if required.</div>}
+        {lChannels.length === 0 && (
+          <div className="structural-empty">No L-channels added. Click "Add L-Channel" if required.</div>
+        )}
         {lChannels.map((lc, idx) => (
           <LChannelItem key={lc.id} lc={lc} index={idx}
             onChange={updated => updateLChannel(lc.id, updated)}
@@ -1605,14 +1851,33 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
         ))}
       </div>
 
-      {/* Buildouts */}
+      {/* ── BUILDOUTS ── */}
       <div className="structural-section">
         <div className="structural-section-header">
           <span className="mps-label">Buildouts</span>
           {buildoutTotal > 0 && <span className="structural-section-total">{fmt(buildoutTotal)} total</span>}
-          <button type="button" className="structural-add-btn" onClick={addBuildout}>+ Add Buildout</button>
+          {/* CHANGE 2: three buttons side-by-side */}
+          <div className="structural-section-actions">
+            <button type="button" className="structural-add-btn" onClick={addBuildout}>
+              + Add Buildout
+            </button>
+            {/* CHANGE 2+3: Copy from Previous Opening */}
+            {prevOpening && (
+              <button
+                type="button"
+                className="structural-copy-btn"
+                onClick={copyBuildouts}
+                title={`Copy ${prevOpening.buildouts?.length || 0} Buildout(s) from Opening ${index}`}
+                disabled={!prevOpening.buildouts?.length}
+              >
+                ⧉ Copy from Prev Opening
+              </button>
+            )}
+          </div>
         </div>
-        {buildouts.length === 0 && <div className="structural-empty">No buildouts added. Click "Add Buildout" if required.</div>}
+        {buildouts.length === 0 && (
+          <div className="structural-empty">No buildouts added. Click "Add Buildout" if required.</div>
+        )}
         {buildouts.map((bo, idx) => (
           <BuildoutItem key={bo.id} bo={bo} index={idx}
             onChange={updated => updateBuildout(bo.id, updated)}
@@ -1733,6 +1998,7 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
             fabricSelection={area.fabricSelection || { brand: "", style_number: "", color_name: "", series: "" }}
             onChange={v => setArea("fabricSelection", v)}
             label="Area Fabric Default"
+            fabricContext="screen"
           />
         </div>
 
@@ -1889,7 +2155,7 @@ function SignaturePad({ value, onChange }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// FIELD ADDON RENDERER (shared helper)
+// FIELD ADDON RENDERER
 // ─────────────────────────────────────────────────────────────
 function FieldAddonSection({ productName, fieldAddonValues, onFieldAddonChange, lineId }) {
   const fieldAddonDefs = getFieldAddonsForProduct(productName);
@@ -2120,7 +2386,7 @@ function MPSProductCard({
 }
 
 // ─────────────────────────────────────────────────────────────
-// GENERIC MRA CARD (Skyline MRA + Open Roll MRA)
+// GENERIC MRA CARD (Skyline + Open Roll)
 // ─────────────────────────────────────────────────────────────
 function GenericMRACard({
   line, index, snapshot,
