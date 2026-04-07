@@ -112,41 +112,79 @@ const SUNBRELLA_FABRICS = [{"brand":"Sunbrella","style_number":"4631-0000","colo
 // PHIFER FABRICS — screen products only
 // ─────────────────────────────────────────────────────────────
 const PHIFER_FABRICS = [
-  { brand: "Phifer", series: "SheerWeave 2000",    style_number: "SW2000-Q000", color_name: "White/White" },
-  { brand: "Phifer", series: "SheerWeave 2000",    style_number: "SW2000-Q001", color_name: "Antique White" },
-  { brand: "Phifer", series: "SheerWeave 2000",    style_number: "SW2000-Q002", color_name: "Silver/White" },
-  { brand: "Phifer", series: "SheerWeave 2000",    style_number: "SW2000-Q003", color_name: "Beige/Linen" },
-  { brand: "Phifer", series: "SheerWeave 2000",    style_number: "SW2000-Q010", color_name: "Charcoal/Charcoal" },
-  { brand: "Phifer", series: "SheerWeave 2000",    style_number: "SW2000-Q020", color_name: "Bronze/Bronze" },
-  { brand: "Phifer", series: "SheerWeave 4000",    style_number: "SW4000-Q000", color_name: "White/White" },
-  { brand: "Phifer", series: "SheerWeave 4000",    style_number: "SW4000-Q001", color_name: "Antique White" },
-  { brand: "Phifer", series: "SheerWeave 4000",    style_number: "SW4000-Q002", color_name: "Silver/White" },
-  { brand: "Phifer", series: "SheerWeave 4000",    style_number: "SW4000-Q010", color_name: "Charcoal/Charcoal" },
-  { brand: "Phifer", series: "SheerWeave 4000",    style_number: "SW4000-Q020", color_name: "Bronze/Bronze" },
-  { brand: "Phifer", series: "SheerWeave 4000",    style_number: "SW4000-Q030", color_name: "Champagne/Champagne" },
-  { brand: "Phifer", series: "SheerWeave 5000",    style_number: "SW5000-Q000", color_name: "White/White" },
-  { brand: "Phifer", series: "SheerWeave 5000",    style_number: "SW5000-Q001", color_name: "Antique White" },
-  { brand: "Phifer", series: "SheerWeave 5000",    style_number: "SW5000-Q002", color_name: "Silver/White" },
-  { brand: "Phifer", series: "SheerWeave 5000",    style_number: "SW5000-Q010", color_name: "Charcoal/Charcoal" },
-  { brand: "Phifer", series: "SheerWeave 5000",    style_number: "SW5000-Q020", color_name: "Bronze/Bronze" },
-  { brand: "Phifer", series: "SheerWeave 5000",    style_number: "SW5000-Q041", color_name: "Linen/Linen" },
-  { brand: "Phifer", series: "SheerWeave 7000",    style_number: "SW7000-Q000", color_name: "White/White" },
-  { brand: "Phifer", series: "SheerWeave 7000",    style_number: "SW7000-Q001", color_name: "Antique White" },
-  { brand: "Phifer", series: "SheerWeave 7000",    style_number: "SW7000-Q002", color_name: "Silver/White" },
-  { brand: "Phifer", series: "SheerWeave 7000",    style_number: "SW7000-Q010", color_name: "Charcoal/Charcoal" },
-  { brand: "Phifer", series: "SheerWeave 7000",    style_number: "SW7000-Q020", color_name: "Bronze/Bronze" },
-  { brand: "Phifer", series: "SheerWeave Privacy", style_number: "SWP-Ebony",   color_name: "Ebony" },
-  { brand: "Phifer", series: "SheerWeave Privacy", style_number: "SWP-Ash",     color_name: "Ash" },
-  { brand: "Phifer", series: "SheerWeave Privacy", style_number: "SWP-Chalk",   color_name: "Chalk" },
-  { brand: "Phifer", series: "Nano",               style_number: "NANO-0001",   color_name: "White" },
-  { brand: "Phifer", series: "Nano",               style_number: "NANO-0002",   color_name: "Silver" },
-  { brand: "Phifer", series: "Nano",               style_number: "NANO-0010",   color_name: "Charcoal" },
-  { brand: "Phifer", series: "Nano",               style_number: "NANO-0020",   color_name: "Bronze" },
-  { brand: "Phifer", series: "Textilene Sunsure",  style_number: "TXL-S01",     color_name: "White" },
-  { brand: "Phifer", series: "Textilene Sunsure",  style_number: "TXL-S02",     color_name: "Silver" },
-  { brand: "Phifer", series: "Textilene Sunsure",  style_number: "TXL-S10",     color_name: "Charcoal" },
-  { brand: "Phifer", series: "Textilene Sunsure",  style_number: "TXL-S20",     color_name: "Bronze" },
-  { brand: "Phifer", series: "Textilene Sunsure",  style_number: "TXL-S41",     color_name: "Beige" },
+  // SunTex 80
+  { brand: "Phifer", series: "SunTex", openness: "80", style_number: "ST80-Black",       color_name: "Black" },
+  { brand: "Phifer", series: "SunTex", openness: "80", style_number: "ST80-Brown",       color_name: "Brown" },
+  { brand: "Phifer", series: "SunTex", openness: "80", style_number: "ST80-Grey",        color_name: "Grey" },
+  { brand: "Phifer", series: "SunTex", openness: "80", style_number: "ST80-Beige",       color_name: "Beige" },
+  { brand: "Phifer", series: "SunTex", openness: "80", style_number: "ST80-Stucco",      color_name: "Stucco" },
+  { brand: "Phifer", series: "SunTex", openness: "80", style_number: "ST80-DarkBronze",  color_name: "Dark Bronze" },
+
+  // SunTex 90
+  { brand: "Phifer", series: "SunTex", openness: "90", style_number: "ST90-Black",       color_name: "Black" },
+  { brand: "Phifer", series: "SunTex", openness: "90", style_number: "ST90-Brown",       color_name: "Brown" },
+  { brand: "Phifer", series: "SunTex", openness: "90", style_number: "ST90-Grey",        color_name: "Grey" },
+  { brand: "Phifer", series: "SunTex", openness: "90", style_number: "ST90-Beige",       color_name: "Beige" },
+  { brand: "Phifer", series: "SunTex", openness: "90", style_number: "ST90-Stucco",      color_name: "Stucco" },
+  { brand: "Phifer", series: "SunTex", openness: "90", style_number: "ST90-DarkBronze",  color_name: "Dark Bronze" },
+
+  // SunTex 95
+  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-DarkBronze",  color_name: "Dark Bronze" },
+  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-White",       color_name: "White" },
+  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-WhiteGrey",   color_name: "White/Grey" },
+  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-Stucco",      color_name: "Stucco" },
+  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-Sand",        color_name: "Sand" },
+  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-Alpaca",      color_name: "Alpaca" },
+  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-Chestnut",    color_name: "Chestnut" },
+  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-Mocha",       color_name: "Mocha" },
+  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-Carbon",      color_name: "Carbon" },
+  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-Black",       color_name: "Black" },
+
+  // SunTex 97
+  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-DarkBronze",  color_name: "Dark Bronze" },
+  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-White",       color_name: "White" },
+  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-WhiteGrey",   color_name: "White/Grey" },
+  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-Stucco",      color_name: "Stucco" },
+  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-Sand",        color_name: "Sand" },
+  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-Alpaca",      color_name: "Alpaca" },
+  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-Chestnut",    color_name: "Chestnut" },
+  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-Mocha",       color_name: "Mocha" },
+  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-Carbon",      color_name: "Carbon" },
+  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-Black",       color_name: "Black" },
+
+  // SunTex 99
+  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-DarkBronze",  color_name: "Dark Bronze" },
+  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-White",       color_name: "White" },
+  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-WhiteGrey",   color_name: "White/Grey" },
+  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-Stucco",      color_name: "Stucco" },
+  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-Sand",        color_name: "Sand" },
+  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-Alpaca",      color_name: "Alpaca" },
+  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-Chestnut",    color_name: "Chestnut" },
+  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-Mocha",       color_name: "Mocha" },
+  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-Carbon",      color_name: "Carbon" },
+  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-Black",       color_name: "Black" },
+
+  // SunTex Matte 95
+  { brand: "Phifer", series: "SunTex Matte", openness: "95", style_number: "STM95-DarkBronze", color_name: "Matte Dark Bronze" },
+  { brand: "Phifer", series: "SunTex Matte", openness: "95", style_number: "STM95-Niko",       color_name: "Matte Niko" },
+  { brand: "Phifer", series: "SunTex Matte", openness: "95", style_number: "STM95-IronGrey",   color_name: "Matte Iron Grey" },
+  { brand: "Phifer", series: "SunTex Matte", openness: "95", style_number: "STM95-Black",      color_name: "Matte Black" },
+
+  // SunTex Matte 97
+  { brand: "Phifer", series: "SunTex Matte", openness: "97", style_number: "STM97-DarkBronze", color_name: "Matte Dark Bronze" },
+  { brand: "Phifer", series: "SunTex Matte", openness: "97", style_number: "STM97-Niko",       color_name: "Matte Niko" },
+  { brand: "Phifer", series: "SunTex Matte", openness: "97", style_number: "STM97-IronGrey",   color_name: "Matte Iron Grey" },
+  { brand: "Phifer", series: "SunTex Matte", openness: "97", style_number: "STM97-Black",      color_name: "Matte Black" },
+
+  // SheerWeave 95
+  { brand: "Phifer", series: "SheerWeave", openness: "95", style_number: "SW95-EcoChalk", color_name: "Eco Chalk" },
+  { brand: "Phifer", series: "SheerWeave", openness: "95", style_number: "SW95-EcoAsh",   color_name: "Eco Ash" },
+  { brand: "Phifer", series: "SheerWeave", openness: "95", style_number: "SW95-EcoEbony", color_name: "Eco Ebony" },
+
+  // SheerWeave 97
+  { brand: "Phifer", series: "SheerWeave", openness: "97", style_number: "SW97-EcoChalk", color_name: "Eco Chalk" },
+  { brand: "Phifer", series: "SheerWeave", openness: "97", style_number: "SW97-EcoAsh",   color_name: "Eco Ash" },
+  { brand: "Phifer", series: "SheerWeave", openness: "97", style_number: "SW97-EcoEbony", color_name: "Eco Ebony" },
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -172,10 +210,16 @@ const TWITCHELL_FABRICS = [
   { brand: "Twitchell", series: "Textilene 90",  style_number: "T90-002",    color_name: "Silver" },
   { brand: "Twitchell", series: "Textilene 90",  style_number: "T90-010",    color_name: "Charcoal" },
   { brand: "Twitchell", series: "Textilene 90",  style_number: "T90-020",    color_name: "Bronze" },
-  { brand: "Twitchell", series: "Dimout",        style_number: "Dimout-000", color_name: "White" },
-  { brand: "Twitchell", series: "Dimout",        style_number: "Dimout-010", color_name: "Charcoal" },
-  { brand: "Twitchell", series: "Dimout",        style_number: "Dimout-020", color_name: "Bronze" },
-  { brand: "Twitchell", series: "Dimout",        style_number: "Dimout-041", color_name: "Sand" },
+  { brand: "Twitchell", series: "Dim Out", style_number: "T90-021", color_name: "Tan" },
+  { brand: "Twitchell", series: "Dim Out", style_number: "T90-030", color_name: "Stone Texture" },
+  { brand: "Twitchell", series: "Dim Out", style_number: "T90-022", color_name: "Putty" },
+  { brand: "Twitchell", series: "Dim Out", style_number: "T90-023", color_name: "Tobacco" },
+  { brand: "Twitchell", series: "Dim Out", style_number: "T90-024", color_name: "Light Grey" },
+  { brand: "Twitchell", series: "Dim Out", style_number: "T90-025", color_name: "Shadow Texture" },
+  { brand: "Twitchell", series: "Dim Out", style_number: "T90-026", color_name: "Grey" },
+  { brand: "Twitchell", series: "Dim Out", style_number: "T90-027", color_name: "Charcoal" },
+  { brand: "Twitchell", series: "Dim Out", style_number: "T90-028", color_name: "Espresso Texture" },
+  { brand: "Twitchell", series: "Dim Out", style_number: "T90-029", color_name: "Flat Black" }
 ];
 
 // ─────────────────────────────────────────────────────────────
@@ -226,7 +270,8 @@ function getFabricsByBrand(brand, fabricContext = "screen") {
 function buildFabricLabel(fabricSelection) {
   if (!fabricSelection?.brand) return "";
   if (fabricSelection.style_number) {
-    return fabricSelection.style_number + " - " + (fabricSelection.color_name || "");
+    const opennessPart = fabricSelection.openness ? ` (${fabricSelection.openness}% open)` : "";
+    return fabricSelection.style_number + " - " + (fabricSelection.color_name || "") + opennessPart;
   }
   return fabricSelection.brand;
 }
@@ -257,17 +302,15 @@ const MOTOR_CATALOG = [
   },
   {
     id: "dooya",
-    name: "Dooya Motor",
-    displayName: "Dooya Motor",
+    name: "Dooya M50R",
+    displayName: "Dooya M50R",
     brand: "Dooya",
-    priceAdjustment: 0,
+    priceAdjustment: -550,
     includedInBase: false,
     compatibleProducts: [
-      "Motorized Power Screen 5in Cassette",
-      "Motorized Power Screen 6in Cassette",
-      "Motorized Power Screen open roll",
+      "Motorized Power Screen 5in Cassette"
     ],
-    notes: "Alternative motor — pricing TBD (may apply credit from base)",
+    notes: "Alternative motor —$550 pricing TBD (may apply credit from base)",
   },
 ];
 
@@ -1069,14 +1112,15 @@ function FabricTypeahead({ brand, value, onChange, fabricContext = "screen" }) {
   const fabrics = getFabricsByBrand(brand, fabricContext);
 
   const matches = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return fabrics.slice(0, 50);
-    return fabrics.filter(f =>
-      f.style_number.toLowerCase().includes(q) ||
-      f.color_name.toLowerCase().includes(q) ||
-      (f.series && f.series.toLowerCase().includes(q))
-    ).slice(0, 60);
-  }, [query, brand, fabricContext]);
+  const q = query.trim().toLowerCase();
+  if (!q) return fabrics.slice(0, 50);
+  return fabrics.filter(f =>
+    f.style_number.toLowerCase().includes(q) ||
+    f.color_name.toLowerCase().includes(q) ||
+    (f.series && f.series.toLowerCase().includes(q)) ||
+    (f.openness && f.openness.includes(q))   // ← ADD THIS LINE
+  ).slice(0, 60);
+}, [query, brand, fabricContext]);
 
   useEffect(() => {
     if (value?.style_number) {
@@ -1155,17 +1199,18 @@ function FabricTypeahead({ brand, value, onChange, fabricContext = "screen" }) {
               )}
               {matches.map(f => (
                 <button
-                  key={f.style_number}
-                  type="button"
-                  className="fabric-typeahead-option"
-                  onMouseDown={() => select(f)}
-                >
-                  <span className="fabric-typeahead-style">{f.style_number}</span>
-                  <span className="fabric-typeahead-color">
-                    {f.color_name}
-                    {f.series && <span className="fabric-typeahead-series"> — {f.series}</span>}
-                  </span>
-                </button>
+  key={f.style_number}
+  type="button"
+  className="fabric-typeahead-option"
+  onMouseDown={() => select(f)}
+>
+  <span className="fabric-typeahead-style">{f.style_number}</span>
+  <span className="fabric-typeahead-color">
+    {f.color_name}
+    {f.series && <span className="fabric-typeahead-series"> — {f.series}</span>}
+    {f.openness && <span className="fabric-typeahead-series"> ({f.openness}% open)</span>}  {/* ← ADD THIS */}
+  </span>
+</button>
               ))}
             </>
           )}
