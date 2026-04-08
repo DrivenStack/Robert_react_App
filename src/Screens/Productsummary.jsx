@@ -113,113 +113,161 @@ const SUNBRELLA_FABRICS = [{"brand":"Sunbrella","style_number":"4631-0000","colo
 // ─────────────────────────────────────────────────────────────
 const PHIFER_FABRICS = [
   // SunTex 80
-  { brand: "Phifer", series: "SunTex", openness: "80", style_number: "ST80-Black",       color_name: "Black" },
-  { brand: "Phifer", series: "SunTex", openness: "80", style_number: "ST80-Brown",       color_name: "Brown" },
-  { brand: "Phifer", series: "SunTex", openness: "80", style_number: "ST80-Grey",        color_name: "Grey" },
-  { brand: "Phifer", series: "SunTex", openness: "80", style_number: "ST80-Beige",       color_name: "Beige" },
-  { brand: "Phifer", series: "SunTex", openness: "80", style_number: "ST80-Stucco",      color_name: "Stucco" },
-  { brand: "Phifer", series: "SunTex", openness: "80", style_number: "ST80-DarkBronze",  color_name: "Dark Bronze" },
+  { brand: "Phifer", series: "SunTex", openness: "80", style_number: "ST80-Black", color_name: "Black" },
+  { brand: "Phifer", series: "SunTex", openness: "80", style_number: "ST80-Brown", color_name: "Brown" },
+  { brand: "Phifer", series: "SunTex", openness: "80", style_number: "ST80-Grey", color_name: "Grey" },
+  { brand: "Phifer", series: "SunTex", openness: "80", style_number: "ST80-Beige", color_name: "Beige" },
+  { brand: "Phifer", series: "SunTex", openness: "80", style_number: "ST80-Stucco", color_name: "Stucco" },
+  { brand: "Phifer", series: "SunTex", openness: "80", style_number: "ST80-DarkBronze", color_name: "Dark Bronze" },
 
   // SunTex 90
-  { brand: "Phifer", series: "SunTex", openness: "90", style_number: "ST90-Black",       color_name: "Black" },
-  { brand: "Phifer", series: "SunTex", openness: "90", style_number: "ST90-Brown",       color_name: "Brown" },
-  { brand: "Phifer", series: "SunTex", openness: "90", style_number: "ST90-Grey",        color_name: "Grey" },
-  { brand: "Phifer", series: "SunTex", openness: "90", style_number: "ST90-Beige",       color_name: "Beige" },
-  { brand: "Phifer", series: "SunTex", openness: "90", style_number: "ST90-Stucco",      color_name: "Stucco" },
-  { brand: "Phifer", series: "SunTex", openness: "90", style_number: "ST90-DarkBronze",  color_name: "Dark Bronze" },
+  { brand: "Phifer", series: "SunTex", openness: "90", style_number: "ST90-Black", color_name: "Black" },
+  { brand: "Phifer", series: "SunTex", openness: "90", style_number: "ST90-Brown", color_name: "Brown" },
+  { brand: "Phifer", series: "SunTex", openness: "90", style_number: "ST90-Grey", color_name: "Grey" },
+  { brand: "Phifer", series: "SunTex", openness: "90", style_number: "ST90-Beige", color_name: "Beige" },
+  { brand: "Phifer", series: "SunTex", openness: "90", style_number: "ST90-Stucco", color_name: "Stucco" },
+  { brand: "Phifer", series: "SunTex", openness: "90", style_number: "ST90-DarkBronze", color_name: "Dark Bronze" },
 
   // SunTex 95
-  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-DarkBronze",  color_name: "Dark Bronze" },
-  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-White",       color_name: "White" },
-  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-WhiteGrey",   color_name: "White/Grey" },
-  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-Stucco",      color_name: "Stucco" },
-  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-Sand",        color_name: "Sand" },
-  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-Alpaca",      color_name: "Alpaca" },
-  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-Chestnut",    color_name: "Chestnut" },
-  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-Mocha",       color_name: "Mocha" },
-  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-Carbon",      color_name: "Carbon" },
-  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-Black",       color_name: "Black" },
+  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-DarkBronze", color_name: "Dark Bronze" },
+  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-White", color_name: "White" },
+  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-WhiteGrey", color_name: "White/Grey" },
+  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-Stucco", color_name: "Stucco" },
+  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-Sand", color_name: "Sand" },
+  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-Alpaca", color_name: "Alpaca" },
+  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-Chestnut", color_name: "Chestnut" },
+  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-Mocha", color_name: "Mocha" },
+  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-Carbon", color_name: "Carbon" },
+  { brand: "Phifer", series: "SunTex", openness: "95", style_number: "ST95-Black", color_name: "Black" },
 
   // SunTex 97
-  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-DarkBronze",  color_name: "Dark Bronze" },
-  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-White",       color_name: "White" },
-  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-WhiteGrey",   color_name: "White/Grey" },
-  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-Stucco",      color_name: "Stucco" },
-  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-Sand",        color_name: "Sand" },
-  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-Alpaca",      color_name: "Alpaca" },
-  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-Chestnut",    color_name: "Chestnut" },
-  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-Mocha",       color_name: "Mocha" },
-  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-Carbon",      color_name: "Carbon" },
-  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-Black",       color_name: "Black" },
+  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-DarkBronze", color_name: "Dark Bronze" },
+  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-White", color_name: "White" },
+  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-WhiteGrey", color_name: "White/Grey" },
+  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-Stucco", color_name: "Stucco" },
+  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-Sand", color_name: "Sand" },
+  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-Alpaca", color_name: "Alpaca" },
+  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-Chestnut", color_name: "Chestnut" },
+  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-Mocha", color_name: "Mocha" },
+  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-Carbon", color_name: "Carbon" },
+  { brand: "Phifer", series: "SunTex", openness: "97", style_number: "ST97-Black", color_name: "Black" },
 
   // SunTex 99
-  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-DarkBronze",  color_name: "Dark Bronze" },
-  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-White",       color_name: "White" },
-  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-WhiteGrey",   color_name: "White/Grey" },
-  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-Stucco",      color_name: "Stucco" },
-  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-Sand",        color_name: "Sand" },
-  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-Alpaca",      color_name: "Alpaca" },
-  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-Chestnut",    color_name: "Chestnut" },
-  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-Mocha",       color_name: "Mocha" },
-  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-Carbon",      color_name: "Carbon" },
-  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-Black",       color_name: "Black" },
+  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-DarkBronze", color_name: "Dark Bronze" },
+  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-White", color_name: "White" },
+  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-WhiteGrey", color_name: "White/Grey" },
+  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-Stucco", color_name: "Stucco" },
+  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-Sand", color_name: "Sand" },
+  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-Alpaca", color_name: "Alpaca" },
+  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-Chestnut", color_name: "Chestnut" },
+  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-Mocha", color_name: "Mocha" },
+  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-Carbon", color_name: "Carbon" },
+  { brand: "Phifer", series: "SunTex", openness: "99", style_number: "ST99-Black", color_name: "Black" },
 
   // SunTex Matte 95
   { brand: "Phifer", series: "SunTex Matte", openness: "95", style_number: "STM95-DarkBronze", color_name: "Matte Dark Bronze" },
-  { brand: "Phifer", series: "SunTex Matte", openness: "95", style_number: "STM95-Niko",       color_name: "Matte Niko" },
-  { brand: "Phifer", series: "SunTex Matte", openness: "95", style_number: "STM95-IronGrey",   color_name: "Matte Iron Grey" },
-  { brand: "Phifer", series: "SunTex Matte", openness: "95", style_number: "STM95-Black",      color_name: "Matte Black" },
+  { brand: "Phifer", series: "SunTex Matte", openness: "95", style_number: "STM95-Niko", color_name: "Matte Niko" },
+  { brand: "Phifer", series: "SunTex Matte", openness: "95", style_number: "STM95-IronGrey", color_name: "Matte Iron Grey" },
+  { brand: "Phifer", series: "SunTex Matte", openness: "95", style_number: "STM95-Black", color_name: "Matte Black" },
 
   // SunTex Matte 97
   { brand: "Phifer", series: "SunTex Matte", openness: "97", style_number: "STM97-DarkBronze", color_name: "Matte Dark Bronze" },
-  { brand: "Phifer", series: "SunTex Matte", openness: "97", style_number: "STM97-Niko",       color_name: "Matte Niko" },
-  { brand: "Phifer", series: "SunTex Matte", openness: "97", style_number: "STM97-IronGrey",   color_name: "Matte Iron Grey" },
-  { brand: "Phifer", series: "SunTex Matte", openness: "97", style_number: "STM97-Black",      color_name: "Matte Black" },
+  { brand: "Phifer", series: "SunTex Matte", openness: "97", style_number: "STM97-Niko", color_name: "Matte Niko" },
+  { brand: "Phifer", series: "SunTex Matte", openness: "97", style_number: "STM97-IronGrey", color_name: "Matte Iron Grey" },
+  { brand: "Phifer", series: "SunTex Matte", openness: "97", style_number: "STM97-Black", color_name: "Matte Black" },
 
-  // SheerWeave 95
-  { brand: "Phifer", series: "SheerWeave", openness: "95", style_number: "SW95-EcoChalk", color_name: "Eco Chalk" },
-  { brand: "Phifer", series: "SheerWeave", openness: "95", style_number: "SW95-EcoAsh",   color_name: "Eco Ash" },
-  { brand: "Phifer", series: "SheerWeave", openness: "95", style_number: "SW95-EcoEbony", color_name: "Eco Ebony" },
-
-  // SheerWeave 97
-  { brand: "Phifer", series: "SheerWeave", openness: "97", style_number: "SW97-EcoChalk", color_name: "Eco Chalk" },
-  { brand: "Phifer", series: "SheerWeave", openness: "97", style_number: "SW97-EcoAsh",   color_name: "Eco Ash" },
-  { brand: "Phifer", series: "SheerWeave", openness: "97", style_number: "SW97-EcoEbony", color_name: "Eco Ebony" },
+  // SheerWeave Privacy
+  { brand: "Phifer", series: "SheerWeave", openness: "Privacy", style_number: "SWP-EcoChalk", color_name: "Eco Chalk" },
+  { brand: "Phifer", series: "SheerWeave", openness: "Privacy", style_number: "SWP-EcoAsh", color_name: "Eco Ash" },
+  { brand: "Phifer", series: "SheerWeave", openness: "Privacy", style_number: "SWP-EcoEbony", color_name: "Eco Ebony" },
 ];
 
 // ─────────────────────────────────────────────────────────────
 // TWITCHELL FABRICS — screen products only
 // ─────────────────────────────────────────────────────────────
-const TWITCHELL_FABRICS = [
-  { brand: "Twitchell", series: "Extrascreen",   style_number: "ES-100",     color_name: "White" },
-  { brand: "Twitchell", series: "Extrascreen",   style_number: "ES-101",     color_name: "Beige" },
-  { brand: "Twitchell", series: "Extrascreen",   style_number: "ES-102",     color_name: "Silver" },
-  { brand: "Twitchell", series: "Extrascreen",   style_number: "ES-110",     color_name: "Charcoal" },
-  { brand: "Twitchell", series: "Extrascreen",   style_number: "ES-120",     color_name: "Bronze" },
-  { brand: "Twitchell", series: "Nano 90",       style_number: "N90-000",    color_name: "White" },
-  { brand: "Twitchell", series: "Nano 90",       style_number: "N90-002",    color_name: "Silver" },
-  { brand: "Twitchell", series: "Nano 90",       style_number: "N90-010",    color_name: "Charcoal" },
-  { brand: "Twitchell", series: "Nano 90",       style_number: "N90-020",    color_name: "Bronze" },
-  { brand: "Twitchell", series: "Textilene 80",  style_number: "T80-000",    color_name: "White" },
-  { brand: "Twitchell", series: "Textilene 80",  style_number: "T80-001",    color_name: "Beige" },
-  { brand: "Twitchell", series: "Textilene 80",  style_number: "T80-010",    color_name: "Charcoal" },
-  { brand: "Twitchell", series: "Textilene 80",  style_number: "T80-020",    color_name: "Bronze" },
-  { brand: "Twitchell", series: "Textilene 80",  style_number: "T80-041",    color_name: "Sand" },
-  { brand: "Twitchell", series: "Textilene 90",  style_number: "T90-000",    color_name: "White" },
-  { brand: "Twitchell", series: "Textilene 90",  style_number: "T90-001",    color_name: "Beige" },
-  { brand: "Twitchell", series: "Textilene 90",  style_number: "T90-002",    color_name: "Silver" },
-  { brand: "Twitchell", series: "Textilene 90",  style_number: "T90-010",    color_name: "Charcoal" },
-  { brand: "Twitchell", series: "Textilene 90",  style_number: "T90-020",    color_name: "Bronze" },
-  { brand: "Twitchell", series: "Dim Out", style_number: "T90-021", color_name: "Tan" },
-  { brand: "Twitchell", series: "Dim Out", style_number: "T90-030", color_name: "Stone Texture" },
-  { brand: "Twitchell", series: "Dim Out", style_number: "T90-022", color_name: "Putty" },
-  { brand: "Twitchell", series: "Dim Out", style_number: "T90-023", color_name: "Tobacco" },
-  { brand: "Twitchell", series: "Dim Out", style_number: "T90-024", color_name: "Light Grey" },
-  { brand: "Twitchell", series: "Dim Out", style_number: "T90-025", color_name: "Shadow Texture" },
-  { brand: "Twitchell", series: "Dim Out", style_number: "T90-026", color_name: "Grey" },
-  { brand: "Twitchell", series: "Dim Out", style_number: "T90-027", color_name: "Charcoal" },
-  { brand: "Twitchell", series: "Dim Out", style_number: "T90-028", color_name: "Espresso Texture" },
-  { brand: "Twitchell", series: "Dim Out", style_number: "T90-029", color_name: "Flat Black" }
+const TWITCHELL_FABRICS_EXTENDED = [
+  // Nano 50
+  { brand: "Twitchell", series: "Nano 50", style_number: "N50-White", color_name: "White" },
+  { brand: "Twitchell", series: "Nano 50", style_number: "N50-Black", color_name: "Black" },
+
+  // Nano 55
+  { brand: "Twitchell", series: "Nano 55", style_number: "N55-White", color_name: "White" },
+  { brand: "Twitchell", series: "Nano 55", style_number: "N55-Black", color_name: "Black" },
+
+  // Nano 60
+  { brand: "Twitchell", series: "Nano 60", style_number: "N60-Black", color_name: "Black" },
+
+  // Nano 70
+  { brand: "Twitchell", series: "Nano 70", style_number: "N70-Black", color_name: "Black" },
+
+  // Textilene 80
+  { brand: "Twitchell", series: "Textilene 80", style_number: "T80-White", color_name: "White" },
+  { brand: "Twitchell", series: "Textilene 80", style_number: "T80-DesertSand", color_name: "Desert Sand" },
+  { brand: "Twitchell", series: "Textilene 80", style_number: "T80-Sandstone", color_name: "Sandstone" },
+  { brand: "Twitchell", series: "Textilene 80", style_number: "T80-DuskGrey", color_name: "Dusk Grey" },
+  { brand: "Twitchell", series: "Textilene 80", style_number: "T80-Brown", color_name: "Brown" },
+  { brand: "Twitchell", series: "Textilene 80", style_number: "T80-BlackBrown", color_name: "Black/Brown" },
+  { brand: "Twitchell", series: "Textilene 80", style_number: "T80-Black", color_name: "Black" },
+
+  // Textilene 90
+  { brand: "Twitchell", series: "Textilene 90", style_number: "T90-White", color_name: "White" },
+  { brand: "Twitchell", series: "Textilene 90", style_number: "T90-DesertSand", color_name: "Desert Sand" },
+  { brand: "Twitchell", series: "Textilene 90", style_number: "T90-Sandstone", color_name: "Sandstone" },
+  { brand: "Twitchell", series: "Textilene 90", style_number: "T90-DuskGrey", color_name: "Dusk Grey" },
+  { brand: "Twitchell", series: "Textilene 90", style_number: "T90-Brown", color_name: "Brown" },
+  { brand: "Twitchell", series: "Textilene 90", style_number: "T90-BlackBrown", color_name: "Black/Brown" },
+  { brand: "Twitchell", series: "Textilene 90", style_number: "T90-Black", color_name: "Black" },
+
+  // Textilene Nano 95
+  { brand: "Twitchell", series: "Textilene Nano 95", style_number: "TN95-White", color_name: "White" },
+  { brand: "Twitchell", series: "Textilene Nano 95", style_number: "TN95-Bone", color_name: "Bone" },
+  { brand: "Twitchell", series: "Textilene Nano 95", style_number: "TN95-Sable", color_name: "Sable" },
+  { brand: "Twitchell", series: "Textilene Nano 95", style_number: "TN95-DesertSand", color_name: "Desert Sand" },
+  { brand: "Twitchell", series: "Textilene Nano 95", style_number: "TN95-Almond", color_name: "Almond" },
+  { brand: "Twitchell", series: "Textilene Nano 95", style_number: "TN95-Cafe", color_name: "Cafe" },
+  { brand: "Twitchell", series: "Textilene Nano 95", style_number: "TN95-StoneTexture", color_name: "Stone Texture" },
+  { brand: "Twitchell", series: "Textilene Nano 95", style_number: "TN95-ShadowTexture", color_name: "Shadow Texture" },
+  { brand: "Twitchell", series: "Textilene Nano 95", style_number: "TN95-Tumbleweed", color_name: "Tumbleweed" },
+  { brand: "Twitchell", series: "Textilene Nano 95", style_number: "TN95-EspressoTexture", color_name: "Espresso Texture" },
+  { brand: "Twitchell", series: "Textilene Nano 95", style_number: "TN95-Granite", color_name: "Granite" },
+  { brand: "Twitchell", series: "Textilene Nano 95", style_number: "TN95-Tobacco", color_name: "Tobacco" },
+  { brand: "Twitchell", series: "Textilene Nano 95", style_number: "TN95-Charcoal", color_name: "Charcoal" },
+  { brand: "Twitchell", series: "Textilene Nano 95", style_number: "TN95-FlatBlack", color_name: "Flat Black" },
+
+  // Textilene Nano 97
+  { brand: "Twitchell", series: "Textilene Nano 97", style_number: "TN97-White", color_name: "White" },
+  { brand: "Twitchell", series: "Textilene Nano 97", style_number: "TN97-Bone", color_name: "Bone" },
+  { brand: "Twitchell", series: "Textilene Nano 97", style_number: "TN97-Sable", color_name: "Sable" },
+  { brand: "Twitchell", series: "Textilene Nano 97", style_number: "TN97-DesertSand", color_name: "Desert Sand" },
+  { brand: "Twitchell", series: "Textilene Nano 97", style_number: "TN97-Almond", color_name: "Almond" },
+  { brand: "Twitchell", series: "Textilene Nano 97", style_number: "TN97-Cafe", color_name: "Cafe" },
+  { brand: "Twitchell", series: "Textilene Nano 97", style_number: "TN97-StoneTexture", color_name: "Stone Texture" },
+  { brand: "Twitchell", series: "Textilene Nano 97", style_number: "TN97-ShadowTexture", color_name: "Shadow Texture" },
+  { brand: "Twitchell", series: "Textilene Nano 97", style_number: "TN97-Tumbleweed", color_name: "Tumbleweed" },
+  { brand: "Twitchell", series: "Textilene Nano 97", style_number: "TN97-EspressoTexture", color_name: "Espresso Texture" },
+  { brand: "Twitchell", series: "Textilene Nano 97", style_number: "TN97-Granite", color_name: "Granite" },
+  { brand: "Twitchell", series: "Textilene Nano 97", style_number: "TN97-Tobacco", color_name: "Tobacco" },
+  { brand: "Twitchell", series: "Textilene Nano 97", style_number: "TN97-Charcoal", color_name: "Charcoal" },
+  { brand: "Twitchell", series: "Textilene Nano 97", style_number: "TN97-FlatBlack", color_name: "Flat Black" },
+
+  // Textilene Nano 99
+  { brand: "Twitchell", series: "Textilene Nano 99", style_number: "TN99-FlatBlack", color_name: "Flat Black" },
+  { brand: "Twitchell", series: "Textilene Nano 99", style_number: "TN99-Charcoal", color_name: "Charcoal" },
+  { brand: "Twitchell", series: "Textilene Nano 99", style_number: "TN99-EspressoTexture", color_name: "Espresso Texture" },
+  { brand: "Twitchell", series: "Textilene Nano 99", style_number: "TN99-Granite", color_name: "Granite" },
+  { brand: "Twitchell", series: "Textilene Nano 99", style_number: "TN99-Tobacco", color_name: "Tobacco" },
+
+  // Textilene Dimout
+  { brand: "Twitchell", series: "Textilene Dimout", style_number: "TD-Tan", color_name: "Tan" },
+  { brand: "Twitchell", series: "Textilene Dimout", style_number: "TD-StoneTexture", color_name: "Stone Texture" },
+  { brand: "Twitchell", series: "Textilene Dimout", style_number: "TD-Putty", color_name: "Putty" },
+  { brand: "Twitchell", series: "Textilene Dimout", style_number: "TD-Tobacco", color_name: "Tobacco" },
+  { brand: "Twitchell", series: "Textilene Dimout", style_number: "TD-LightGrey", color_name: "Light Grey" },
+  { brand: "Twitchell", series: "Textilene Dimout", style_number: "TD-ShadowTexture", color_name: "Shadow Texture" },
+  { brand: "Twitchell", series: "Textilene Dimout", style_number: "TD-Grey", color_name: "Grey" },
+  { brand: "Twitchell", series: "Textilene Dimout", style_number: "TD-Charcoal", color_name: "Charcoal" },
+  { brand: "Twitchell", series: "Textilene Dimout", style_number: "TD-EspressoTexture", color_name: "Espresso Texture" },
+  { brand: "Twitchell", series: "Textilene Dimout", style_number: "TD-FlatBlack", color_name: "Flat Black" },
 ];
 
 // ─────────────────────────────────────────────────────────────
