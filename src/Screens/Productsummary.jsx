@@ -299,7 +299,7 @@ const FABRIC_BRANDS = AWNING_FABRIC_BRANDS;
 function getScreenFabricsByBrand(brand) {
   if (!brand) return [];
   if (brand === "Phifer")    return PHIFER_FABRICS;
-  if (brand === "Twitchell") return TWITCHELL_FABRICS;
+  if (brand === "Twitchell") return TWITCHELL_FABRICS_EXTENDED;
   return [];
 }
 
@@ -1649,7 +1649,6 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
 
   const prevOpening = allOpenings && index > 0 ? allOpenings[index - 1] : null;
 
-  // CHANGE 2 + 3: Copy L-Channels from previous opening — deep clone with new IDs
   const copyLChannels = () => {
     if (!prevOpening?.lChannels?.length) {
       alert("No L-Channels to copy from the previous opening.");
@@ -1658,7 +1657,6 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
     onChange({ ...opening, lChannels: prevOpening.lChannels.map(item => ({ ...item, id: uid() })) });
   };
 
-  // CHANGE 2 + 3: Copy Buildouts from previous opening — deep clone with new IDs
   const copyBuildouts = () => {
     if (!prevOpening?.buildouts?.length) {
       alert("No Buildouts to copy from the previous opening.");
@@ -1761,7 +1759,7 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
         </div>
       )}
 
-      <details className="override-details" open>
+      <details className="override-details">
         <summary className="override-summary">
           🧵 Fabric Selection
           <span className="override-hint">(Effective: <strong>{effectiveFabricLabel}</strong>)</span>
@@ -1775,7 +1773,7 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
         />
       </details>
 
-      <details className="override-details" open>
+      <details className="override-details">
         <summary className="override-summary">
           ⚙ Opening Settings
           <span className="override-hint">(Mount: <strong>{effectiveMount}</strong> · Track: <strong>{effectiveTrack}</strong> · Motor: <strong>{effectiveMotor}</strong>)</span>
@@ -1915,12 +1913,10 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
         <div className="structural-section-header">
           <span className="mps-label">L-Channels</span>
           {lChannelTotal > 0 && <span className="structural-section-total">{fmt(lChannelTotal)} total</span>}
-          {/* CHANGE 2: three buttons side-by-side */}
           <div className="structural-section-actions">
             <button type="button" className="structural-add-btn" onClick={addLChannel}>
               + Add L-Channel
             </button>
-            {/* CHANGE 2+3: Copy from Previous Opening — only shown when there is a previous opening */}
             {prevOpening && (
               <button
                 type="button"
@@ -1949,12 +1945,10 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
         <div className="structural-section-header">
           <span className="mps-label">Buildouts</span>
           {buildoutTotal > 0 && <span className="structural-section-total">{fmt(buildoutTotal)} total</span>}
-          {/* CHANGE 2: three buttons side-by-side */}
           <div className="structural-section-actions">
             <button type="button" className="structural-add-btn" onClick={addBuildout}>
               + Add Buildout
             </button>
-            {/* CHANGE 2+3: Copy from Previous Opening */}
             {prevOpening && (
               <button
                 type="button"
@@ -2041,62 +2035,70 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
         </div>
       </div>
 
-      <div className="area-defaults">
-        <div className="area-defaults-label">Area Defaults (auto-populated per opening — override per opening below)</div>
-        <div className="area-defaults-grid">
-          <div className="mps-field">
-            <label className="mps-label">Product</label>
-            <div className="mps-input mps-input--readonly">{productName}</div>
-          </div>
-          <Sel label="Mount Type"  value={area.mountType}  options={MPS_DEFAULTS.mountTypes}  onChange={v=>setArea("mountType",v)} />
-          <Sel label="Track Type"  value={area.trackType}  options={MPS_DEFAULTS.trackTypes}  onChange={v=>setArea("trackType",v)} />
+      <details className="override-details">
+        <summary className="override-summary">
+          ⚙ Area Defaults
+          <span className="override-hint">(Mount: <strong>{area.mountType || "not set"}</strong> · Track: <strong>{area.trackType || "not set"}</strong> · Cassette: <strong>{area.cassetteColor || "not set"}</strong>)</span>
+        </summary>
 
-          <div className="mps-field">
-            <label className="mps-label">Cassette Color</label>
-            <select className="mps-select" value={area.cassetteColor || ""} onChange={e => setArea("cassetteColor", e.target.value)}>
-              <option value="">Select Cassette Color</option>
-              {MPS_DEFAULTS.cassetteColors.map(o => <option key={o} value={o}>{o}</option>)}
-            </select>
-          </div>
-
-          {showAreaTrackColor ? (
+        <div className="area-defaults">
+          <div className="area-defaults-label">Area Defaults (auto-populated per opening — override per opening below)</div>
+          <div className="area-defaults-grid">
             <div className="mps-field">
-              <label className="mps-label">Track Color</label>
-              <select className="mps-select" value={area.trackColor || ""} onChange={e => setArea("trackColor", e.target.value)}>
-                <option value="">Select Track Color</option>
-                {MPS_DEFAULTS.trackColors.map(o => <option key={o} value={o}>{o}</option>)}
+              <label className="mps-label">Product</label>
+              <div className="mps-input mps-input--readonly">{productName}</div>
+            </div>
+            <Sel label="Mount Type"  value={area.mountType}  options={MPS_DEFAULTS.mountTypes}  onChange={v=>setArea("mountType",v)} />
+            <Sel label="Track Type"  value={area.trackType}  options={MPS_DEFAULTS.trackTypes}  onChange={v=>setArea("trackType",v)} />
+
+            <div className="mps-field">
+              <label className="mps-label">Cassette Color</label>
+              <select className="mps-select" value={area.cassetteColor || ""} onChange={e => setArea("cassetteColor", e.target.value)}>
+                <option value="">Select Cassette Color</option>
+                {MPS_DEFAULTS.cassetteColors.map(o => <option key={o} value={o}>{o}</option>)}
               </select>
             </div>
-          ) : (
-            <div className="mps-field">
-              <label className="mps-label">Track Color</label>
-              <div className="wire-guide-notice-inline">N/A — Wire Guide selected</div>
-            </div>
-          )}
 
-          <div className="mps-field">
-            <label className="mps-label">Motor Type (Default)</label>
-            <div className="mps-input mps-input--readonly">
-              {defaultMotorDisplayName || area.motorType || "Somfy (default)"}
-              {defaultMotorDisplayName && <span className="motor-badge motor-badge--included" style={{marginLeft:"8px",fontSize:"0.7em"}}>✓ Included</span>}
+            {showAreaTrackColor ? (
+              <div className="mps-field">
+                <label className="mps-label">Track Color</label>
+                <select className="mps-select" value={area.trackColor || ""} onChange={e => setArea("trackColor", e.target.value)}>
+                  <option value="">Select Track Color</option>
+                  {MPS_DEFAULTS.trackColors.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+            ) : (
+              <div className="mps-field">
+                <label className="mps-label">Track Color</label>
+                <div className="wire-guide-notice-inline">N/A — Wire Guide selected</div>
+              </div>
+            )}
+
+            <div className="mps-field">
+              <label className="mps-label">Motor Type (Default)</label>
+              <div className="mps-input mps-input--readonly">
+                {defaultMotorDisplayName || area.motorType || "Somfy (default)"}
+                {defaultMotorDisplayName && <span className="motor-badge motor-badge--included" style={{marginLeft:"8px",fontSize:"0.7em"}}>✓ Included</span>}
+              </div>
             </div>
+
+            <Sel label="Weight Bar Color" value={area.weightBar || ""} options={MPS_DEFAULTS.weightBarTypes} onChange={v=>setArea("weightBar",v)} placeholder="Select Weight Bar Color" />
           </div>
 
-          <Sel label="Weight Bar Color" value={area.weightBar || ""} options={MPS_DEFAULTS.weightBarTypes} onChange={v=>setArea("weightBar",v)} placeholder="Select Weight Bar Color" />
+          <div className="area-fabric-section">
+            <div className="area-defaults-label" style={{marginTop: "12px"}}>Area Default Fabric (openings inherit this unless overridden)</div>
+            <FabricSelector
+              fabricSelection={area.fabricSelection || { brand: "", style_number: "", color_name: "", series: "" }}
+              onChange={v => setArea("fabricSelection", v)}
+              label="Area Fabric Default"
+              fabricContext="screen"
+            />
+          </div>
+
+          <PhotoUpload label="Area Photo (wide shot)" value={area.areaPhoto} onChange={v=>setArea("areaPhoto",v)} />
         </div>
 
-        <div className="area-fabric-section">
-          <div className="area-defaults-label" style={{marginTop: "12px"}}>Area Default Fabric (openings inherit this unless overridden)</div>
-          <FabricSelector
-            fabricSelection={area.fabricSelection || { brand: "", style_number: "", color_name: "", series: "" }}
-            onChange={v => setArea("fabricSelection", v)}
-            label="Area Fabric Default"
-            fabricContext="screen"
-          />
-        </div>
-
-        <PhotoUpload label="Area Photo (wide shot)" value={area.areaPhoto} onChange={v=>setArea("areaPhoto",v)} />
-      </div>
+      </details>
 
       <div className="openings-container">
         <div className="openings-heading">
