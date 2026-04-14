@@ -360,7 +360,70 @@ const MOTOR_CATALOG = [
     ],
     notes: "Alternative motor —$550 pricing TBD (may apply credit from base)",
   },
+  {
+  id: "dooya_m60mrs",
+  name: "Dooya M60MRS",
+  displayName: "Dooya M60MRS",
+  brand: "Dooya",
+  priceAdjustment: -750,
+  includedInBase: false,
+  compatibleProducts: ["Motorized Power Screen 6in Cassette"],
+  notes: "Swap for Somfy 550 — applies -$750 deduct",
+},
 ];
+
+const CONTROL_CATALOG = [
+  // ── Somfy Remotes ──
+  { id: "somfy_remote_1ch",  brand: "Somfy", type: "remote",      name: "1 Channel Somfy Remote",           channels: 1,  price: 125 },
+  { id: "somfy_remote_5ch",  brand: "Somfy", type: "remote",      name: "5 Channel Somfy Remote",           channels: 5,  price: 180 },
+  { id: "somfy_remote_16ch", brand: "Somfy", type: "remote",      name: "16 Channel Somfy Remote",          channels: 16, price: 320 },
+  // ── Somfy Wall Switches ──
+  { id: "somfy_wall_1ch",    brand: "Somfy", type: "wall_switch", name: "Somfy DecoFlex WireFree 1 Channel", channels: 1,  price: 175 },
+  { id: "somfy_wall_5ch",    brand: "Somfy", type: "wall_switch", name: "Somfy DecoFlex WireFree 5 Channel", channels: 5,  price: 250 },
+  // ── Dooya Remotes ──
+  { id: "dooya_remote_1ch",  brand: "Dooya", type: "remote",      name: "1 Channel Dooya Remote",           channels: 1,  price: 100 },
+  { id: "dooya_remote_5ch",  brand: "Dooya", type: "remote",      name: "5 Channel Dooya Remote",           channels: 5,  price: 125 },
+  { id: "dooya_remote_15ch", brand: "Dooya", type: "remote",      name: "15 Channel Dooya Remote",          channels: 15, price: 200 },
+];
+
+// Credit applied when the included control is replaced
+const INCLUDED_CONTROL_CREDIT = {
+  somfy: { 1: 125, 5: 180, 16: 320 },
+  dooya: { 1: 100, 5: 125, 15: 200 },
+};
+
+function getMotorBrand(motorId) {
+  const motor = MOTOR_CATALOG.find(m => m.id === motorId);
+  if (!motor) return "Somfy";
+  return motor.brand; // "Somfy" or "Dooya"
+}
+
+function getIncludedControlId(motorBrand, totalOpenings) {
+  if (motorBrand === "Dooya") {
+    if (totalOpenings <= 1)  return "dooya_remote_1ch";
+    if (totalOpenings <= 5)  return "dooya_remote_5ch";
+    return "dooya_remote_15ch"; // max 15
+  }
+  // Somfy
+  if (totalOpenings <= 1)  return "somfy_remote_1ch";
+  if (totalOpenings <= 5)  return "somfy_remote_5ch";
+  return "somfy_remote_16ch"; // max 16
+}
+
+function getIncludedControlCredit(motorBrand, totalOpenings) {
+  if (motorBrand === "Dooya") {
+    if (totalOpenings <= 1) return INCLUDED_CONTROL_CREDIT.dooya[1];
+    if (totalOpenings <= 5) return INCLUDED_CONTROL_CREDIT.dooya[5];
+    return INCLUDED_CONTROL_CREDIT.dooya[15];
+  }
+  if (totalOpenings <= 1) return INCLUDED_CONTROL_CREDIT.somfy[1];
+  if (totalOpenings <= 5) return INCLUDED_CONTROL_CREDIT.somfy[5];
+  return INCLUDED_CONTROL_CREDIT.somfy[16];
+}
+
+function getAvailableControls(motorBrand) {
+  return CONTROL_CATALOG.filter(c => c.brand === motorBrand);
+}
 
 function getDefaultMotorId(productName) {
   const motor = MOTOR_CATALOG.find(m => m.compatibleProducts.includes(productName) && m.includedInBase);
@@ -1116,12 +1179,42 @@ function Toggle({ label, checked, onChange }) {
 // ─────────────────────────────────────────────────────────────
 // MOTOR SELECTOR
 // ─────────────────────────────────────────────────────────────
-function MotorSelector({ motorId, productName, onChange }) {
+function MotorSelector({ 
+  motorId, 
+  productName, 
+  onChange, 
+  currentOpeningId,
+  allOpenings = [], // All openings in this product group
+  currentMotorBrand // Pass the existing motor brand from parent
+}) {
   const compatibleMotors = getCompatibleMotors(productName);
-  const defaultMotorId   = getDefaultMotorId(productName);
-  const selectedMotor    = MOTOR_CATALOG.find(m => m.id === motorId);
-  const isDefault        = motorId === defaultMotorId || (!motorId && !!defaultMotorId);
-  const adjustment       = selectedMotor?.priceAdjustment || 0;
+  const defaultMotorId = getDefaultMotorId(productName);
+  const selectedMotor = MOTOR_CATALOG.find(m => m.id === motorId);
+  const isDefault = motorId === defaultMotorId || (!motorId && !!defaultMotorId);
+  const adjustment = selectedMotor?.priceAdjustment || 0;
+
+  // Get the existing motor brand from all openings (excluding current opening)
+  const getExistingMotorBrand = () => {
+    for (const opening of allOpenings) {
+      if (opening.id !== currentOpeningId && opening.motorId) {
+        return getMotorBrand(opening.motorId);
+      }
+    }
+    return null;
+  };
+
+  const handleMotorChange = (newMotorId) => {
+    const newMotorBrand = getMotorBrand(newMotorId);
+    const existingBrand = getExistingMotorBrand();
+    
+    // Check if trying to mix motor types within same product group
+    if (existingBrand && existingBrand !== newMotorBrand) {
+      alert("⚠️ This product already uses a different motor type.\n\nTo use another motor type, please create a new product group.");
+      return;
+    }
+    
+    onChange(newMotorId);
+  };
 
   return (
     <div className="motor-selector-field mps-field">
@@ -1131,7 +1224,11 @@ function MotorSelector({ motorId, productName, onChange }) {
         {!isDefault && adjustment < 0 && <span className="motor-badge motor-badge--credit">Credit: {fmt(adjustment)}</span>}
         {!isDefault && adjustment > 0 && <span className="motor-badge motor-badge--extra">+{fmt(adjustment)}</span>}
       </label>
-      <select className="mps-select motor-select" value={motorId || defaultMotorId || ""} onChange={e => onChange(e.target.value)}>
+      <select 
+        className="mps-select motor-select" 
+        value={motorId || defaultMotorId || ""} 
+        onChange={e => handleMotorChange(e.target.value)}
+      >
         {compatibleMotors.map(motor => (
           <option key={motor.id} value={motor.id}>
             {motor.displayName}
@@ -1635,16 +1732,26 @@ function BuildoutItem({ bo, index, onChange, onRemove }) {
 // CHANGE 2 + 3: "Copy from Previous Opening" buttons for both
 //               L-Channels and Buildouts
 // ─────────────────────────────────────────────────────────────
-function OpeningEditor({ opening, index, areaDefaults, productName, onChange, onRemove, showRemove, allOpenings }) {
+function OpeningEditor({ 
+  opening, 
+  index, 
+  areaDefaults, 
+  productName, 
+  onChange, 
+  onRemove, 
+  showRemove, 
+  allOpenings,
+  motorBrandCache // Pass the consistent motor brand for this product group
+}) {
 
-  const structural   = calcOpeningStructural(opening, areaDefaults);
+  const structural = calcOpeningStructural(opening, areaDefaults);
   const openingPrice = calcOpeningBasePrice(opening, productName);
   const openingTotal = openingPrice + structural;
 
   const effectiveFabric = (opening.fabricSelection?.brand)
     ? opening.fabricSelection
     : (areaDefaults?.fabricSelection?.brand ? areaDefaults.fabricSelection : null);
-  const hasSurcharge    = isPremiumFabricSurcharge(effectiveFabric);
+  const hasSurcharge = isPremiumFabricSurcharge(effectiveFabric);
   const surchargeAmount = calcPremiumFabricSurcharge(effectiveFabric, opening.width);
 
   const prevOpening = allOpenings && index > 0 ? allOpenings[index - 1] : null;
@@ -1667,28 +1774,28 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
 
   const set = (field, val) => onChange({ ...opening, [field]: val });
 
-  const effectiveMount      = opening.mountOverride      || areaDefaults.mountType      || "—";
-  const effectiveTrack      = opening.trackOverride      || areaDefaults.trackType      || "—";
-  const effectiveMotor      = opening.motorOverride      || areaDefaults.motorType      || "—";
-  const effectiveWeightBar  = opening.weightBarOverride  || areaDefaults.weightBar      || "—";
-  const effectiveCassette   = opening.colorOverride      || areaDefaults.cassetteColor  || "";
-  const effectiveTrackColor = opening.trackColorOverride || areaDefaults.trackColor     || "";
+  const effectiveMount = opening.mountOverride || areaDefaults.mountType || "—";
+  const effectiveTrack = opening.trackOverride || areaDefaults.trackType || "—";
+  const effectiveMotor = opening.motorOverride || areaDefaults.motorType || "—";
+  const effectiveWeightBar = opening.weightBarOverride || areaDefaults.weightBar || "—";
+  const effectiveCassette = opening.colorOverride || areaDefaults.cassetteColor || "";
+  const effectiveTrackColor = opening.trackColorOverride || areaDefaults.trackColor || "";
 
   const effectiveFabricLabel = effectiveFabric ? buildFabricLabel(effectiveFabric) : "—";
 
-  const stormRailCost    = calcStormRailCost(opening, effectiveTrack);
-  const cassIsCustom     = effectiveCassette.toLowerCase().includes("custom");
-  const trackIsCustom    = effectiveTrackColor.toLowerCase().includes("custom");
+  const stormRailCost = calcStormRailCost(opening, effectiveTrack);
+  const cassIsCustom = effectiveCassette.toLowerCase().includes("custom");
+  const trackIsCustom = effectiveTrackColor.toLowerCase().includes("custom");
   const effectiveMotorId = opening.motorId || getDefaultMotorId(productName) || "";
-  const motorObj         = MOTOR_CATALOG.find(m => m.id === effectiveMotorId);
-  const motorAdj         = motorObj?.priceAdjustment || 0;
+  const motorObj = MOTOR_CATALOG.find(m => m.id === effectiveMotorId);
+  const motorAdj = motorObj?.priceAdjustment || 0;
 
   const showTrackColor = effectiveTrack !== "Wire Guide";
 
-  const addLChannel    = () => set("lChannels", [...(opening.lChannels || []), createLChannel()]);
+  const addLChannel = () => set("lChannels", [...(opening.lChannels || []), createLChannel()]);
   const updateLChannel = (id, updated) => set("lChannels", (opening.lChannels || []).map(lc => lc.id === id ? updated : lc));
   const removeLChannel = (id) => set("lChannels", (opening.lChannels || []).filter(lc => lc.id !== id));
-  const addBuildout    = () => set("buildouts", [...(opening.buildouts || []), createBuildout()]);
+  const addBuildout = () => set("buildouts", [...(opening.buildouts || []), createBuildout()]);
   const updateBuildout = (id, updated) => set("buildouts", (opening.buildouts || []).map(bo => bo.id === id ? updated : bo));
   const removeBuildout = (id) => set("buildouts", (opening.buildouts || []).filter(bo => bo.id !== id));
 
@@ -1739,7 +1846,14 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
       )}
 
       <div className="motor-selector-row">
-        <MotorSelector motorId={effectiveMotorId} productName={productName} onChange={v => set("motorId", v)} />
+        <MotorSelector 
+          motorId={effectiveMotorId} 
+          productName={productName} 
+          onChange={v => set("motorId", v)}
+          currentOpeningId={opening.id}
+          allOpenings={allOpenings}
+          currentMotorBrand={motorBrandCache}
+        />
         {motorAdj < 0 && (
           <div className="motor-adjustment-badge motor-adjustment-badge--credit">
             Motor credit applied: <strong>{fmt(motorAdj)}</strong> (deducted from total)
@@ -1992,17 +2106,29 @@ function OpeningEditor({ opening, index, areaDefaults, productName, onChange, on
 // ─────────────────────────────────────────────────────────────
 // AREA EDITOR
 // ─────────────────────────────────────────────────────────────
-function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemove }) {
-  const areaBaseTotal       = area.openings.reduce((s,o) => s + calcOpeningBasePrice(o, productName), 0);
+function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemove, allAreaOpenings }) {
+  const areaBaseTotal = area.openings.reduce((s, o) => s + calcOpeningBasePrice(o, productName), 0);
   const areaStructuralTotal = calcAreaStructuralOnly(area);
-  const areaGrandTotal      = areaBaseTotal + areaStructuralTotal;
+  const areaGrandTotal = areaBaseTotal + areaStructuralTotal;
   const setArea = (field, val) => onChange({ ...area, [field]: val });
+
+  // Get consistent motor brand across all openings in this area
+  const getConsistentMotorBrand = () => {
+    for (const opening of area.openings) {
+      if (opening.motorId) {
+        return getMotorBrand(opening.motorId);
+      }
+    }
+    return null;
+  };
+  
+  const motorBrandCache = getConsistentMotorBrand();
 
   const setOpening = useCallback((openingId, updated) => {
     onChange({ ...area, openings: area.openings.map(o => o.id === openingId ? updated : o) });
   }, [area, onChange]);
 
-  const addOpening    = () => onChange({ ...area, openings: [...area.openings, createOpening(productName, { motorSide: "Left" })] });
+  const addOpening = () => onChange({ ...area, openings: [...area.openings, createOpening(productName, { motorSide: "Left" })] });
   const removeOpening = (id) => onChange({ ...area, openings: area.openings.filter(o => o.id !== id) });
 
   const areaEffectiveTrack = area.trackType || "";
@@ -2048,8 +2174,8 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
               <label className="mps-label">Product</label>
               <div className="mps-input mps-input--readonly">{productName}</div>
             </div>
-            <Sel label="Mount Type"  value={area.mountType}  options={MPS_DEFAULTS.mountTypes}  onChange={v=>setArea("mountType",v)} />
-            <Sel label="Track Type"  value={area.trackType}  options={MPS_DEFAULTS.trackTypes}  onChange={v=>setArea("trackType",v)} />
+            <Sel label="Mount Type" value={area.mountType} options={MPS_DEFAULTS.mountTypes} onChange={v => setArea("mountType", v)} />
+            <Sel label="Track Type" value={area.trackType} options={MPS_DEFAULTS.trackTypes} onChange={v => setArea("trackType", v)} />
 
             <div className="mps-field">
               <label className="mps-label">Cassette Color</label>
@@ -2078,15 +2204,15 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
               <label className="mps-label">Motor Type (Default)</label>
               <div className="mps-input mps-input--readonly">
                 {defaultMotorDisplayName || area.motorType || "Somfy (default)"}
-                {defaultMotorDisplayName && <span className="motor-badge motor-badge--included" style={{marginLeft:"8px",fontSize:"0.7em"}}>✓ Included</span>}
+                {defaultMotorDisplayName && <span className="motor-badge motor-badge--included" style={{ marginLeft: "8px", fontSize: "0.7em" }}>✓ Included</span>}
               </div>
             </div>
 
-            <Sel label="Weight Bar Color" value={area.weightBar || ""} options={MPS_DEFAULTS.weightBarTypes} onChange={v=>setArea("weightBar",v)} placeholder="Select Weight Bar Color" />
+            <Sel label="Weight Bar Color" value={area.weightBar || ""} options={MPS_DEFAULTS.weightBarTypes} onChange={v => setArea("weightBar", v)} placeholder="Select Weight Bar Color" />
           </div>
 
           <div className="area-fabric-section">
-            <div className="area-defaults-label" style={{marginTop: "12px"}}>Area Default Fabric (openings inherit this unless overridden)</div>
+            <div className="area-defaults-label" style={{ marginTop: "12px" }}>Area Default Fabric (openings inherit this unless overridden)</div>
             <FabricSelector
               fabricSelection={area.fabricSelection || { brand: "", style_number: "", color_name: "", series: "" }}
               onChange={v => setArea("fabricSelection", v)}
@@ -2095,7 +2221,7 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
             />
           </div>
 
-          <PhotoUpload label="Area Photo (wide shot)" value={area.areaPhoto} onChange={v=>setArea("areaPhoto",v)} />
+          <PhotoUpload label="Area Photo (wide shot)" value={area.areaPhoto} onChange={v => setArea("areaPhoto", v)} />
         </div>
 
       </details>
@@ -2107,12 +2233,17 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
           {areaBaseTotal > 0 && <span className="openings-price-total">= {fmt(areaBaseTotal)} product price</span>}
         </div>
         {area.openings.map((opening, idx) => (
-          <OpeningEditor key={opening.id} opening={opening} index={idx} areaDefaults={area}
+          <OpeningEditor 
+            key={opening.id} 
+            opening={opening} 
+            index={idx} 
+            areaDefaults={area}
             productName={productName}
             onChange={updated => setOpening(opening.id, updated)}
             onRemove={() => removeOpening(opening.id)}
             showRemove={area.openings.length > 1}
             allOpenings={area.openings}
+            motorBrandCache={motorBrandCache}
           />
         ))}
         <button type="button" className="add-opening-btn" onClick={addOpening}>+ Add Opening</button>
@@ -2324,39 +2455,94 @@ function MPSProductCard({
   addonSelections, onAddonToggle,
   windSensorSelections, onWindSensorChange,
   productNotes, onProductNoteChange,
+  controlState, onControlChange,
 }) {
-  const qty   = parseInt(line.quantity, 10) || 1;
+  const qty = parseInt(line.quantity, 10) || 1;
   const areas = mpsData[line.id] || [];
-  const setAreas   = (a) => onMPSChange(line.id, a);
-  const addArea    = () => setAreas([...areas, createArea(line.product)]);
+  const setAreas = (a) => onMPSChange(line.id, a);
+  const addArea = () => setAreas([...areas, createArea(line.product)]);
   const updateArea = (id, u) => setAreas(areas.map(a => a.id === id ? u : a));
   const removeArea = (id) => setAreas(areas.filter(a => a.id !== id));
 
-  const openingsProductTotal = calcMPSOpeningsTotal(areas, line.product);
-  const structuralTotal      = areas.reduce((s,a) => s + calcAreaStructuralOnly(a), 0);
-  const selected             = addonSelections[line.id] || {};
-  const totalOpenings        = countTotalOpenings(areas);
-  const autoRemoteName       = getAutoRemote(totalOpenings > 0 ? totalOpenings : 1);
+  const totalOpenings = countTotalOpenings(areas);
 
+  // Get consistent motor brand across ALL openings in this product group
+  const getConsistentMotorBrand = () => {
+    let foundBrand = null;
+    for (const area of areas) {
+      for (const opening of area.openings) {
+        if (opening.motorId) {
+          const brand = getMotorBrand(opening.motorId);
+          if (!foundBrand) {
+            foundBrand = brand;
+          } else if (foundBrand !== brand) {
+            // Mixed motors detected - this shouldn't happen due to validation
+            console.warn("Mixed motor types detected in product group");
+            return null;
+          }
+        }
+      }
+    }
+    return foundBrand;
+  };
+
+  const dominantMotorBrand = getConsistentMotorBrand();
+  const dominantMotorId = useMemo(() => {
+    for (const area of areas) {
+      for (const opening of area.openings) {
+        if (opening.motorId) return opening.motorId;
+      }
+    }
+    return getDefaultMotorId(line.product) || "";
+  }, [areas, line.product]);
+
+  const controlCost = useMemo(() => {
+    const motorBrand = getMotorBrand(dominantMotorId);
+    const includedCredit = getIncludedControlCredit(motorBrand, totalOpenings > 0 ? totalOpenings : 1);
+    const { includedReplaced = false, replacementControlId = "", additionalControls = [] } = controlState || {};
+
+    let cost = 0;
+    if (includedReplaced && replacementControlId) {
+      const replacement = CONTROL_CATALOG.find(c => c.id === replacementControlId);
+      if (replacement) cost += Math.max(0, replacement.price - includedCredit);
+    }
+    additionalControls.forEach(ac => {
+      const ctrl = CONTROL_CATALOG.find(c => c.id === ac.controlId);
+      if (ctrl) cost += ctrl.price * (parseInt(ac.qty, 10) || 1);
+    });
+    return cost;
+  }, [dominantMotorId, totalOpenings, controlState]);
+
+  const selected = addonSelections[line.id] || {};
+  const openingsProductTotal = calcMPSOpeningsTotal(areas, line.product);
+  const structuralTotal = areas.reduce((s, a) => s + calcAreaStructuralOnly(a), 0);
+  const autoRemoteName = getAutoRemote(totalOpenings > 0 ? totalOpenings : 1);
   const simpleAddonTotal = MPS_SIMPLE_ADDONS.reduce((s, a) => selected[a.id] ? s + a.price * qty : s, 0);
   const windTotal = calcWindSensorTotal(windSensorSelections[line.id], totalOpenings);
 
-  const enriched              = snapshot.productLines.find(l => l.id === line.id);
-  const appBaseTotal          = enriched?.pricing?.lineSubtotal || 0;
+  const enriched = snapshot.productLines.find(l => l.id === line.id);
+  const appBaseTotal = enriched?.pricing?.lineSubtotal || 0;
   const effectiveProductTotal = openingsProductTotal > 0 ? openingsProductTotal : appBaseTotal;
-  const grandLineTotal        = effectiveProductTotal + structuralTotal + simpleAddonTotal + windTotal;
-  const hasUnpriced = areas.some(a => a.openings.some(o => (o.width || o.height) && !getMPSOpeningPrice(line.product, o.width, o.height).ok));
+  const grandLineTotal = effectiveProductTotal + structuralTotal + simpleAddonTotal + windTotal + controlCost;
+
+  const hasUnpriced = areas.some(a =>
+    a.openings.some(o => (o.width || o.height) && !getMPSOpeningPrice(line.product, o.width, o.height).ok)
+  );
 
   const handleReset = () => {
     if (window.confirm("Reset all areas, openings, and add-ons for this product? This cannot be undone.")) {
       onMPSChange(line.id, []);
       onAddonToggle(line.id, "__RESET__");
       onWindSensorChange(line.id, {});
+      onControlChange({ includedReplaced: false, replacementControlId: "", additionalControls: [] });
     }
   };
 
   const defaultMotorId = getDefaultMotorId(line.product);
-  const defaultMotor   = MOTOR_CATALOG.find(m => m.id === defaultMotorId);
+  const defaultMotor = MOTOR_CATALOG.find(m => m.id === defaultMotorId);
+
+  // Show warning if mixed motors detected
+  const hasMixedMotors = dominantMotorBrand === null && areas.length > 0;
 
   return (
     <div className="ps-product-card mps-product-card">
@@ -2365,6 +2551,21 @@ function MPSProductCard({
         <div className="ps-product-name">{line.product}</div>
         <div className="ps-product-price">{fmt(grandLineTotal)}</div>
       </div>
+
+      {hasMixedMotors && (
+        <div className="motor-mix-warning" style={{
+          backgroundColor: "#fff3cd",
+          border: "1px solid #ffc107",
+          borderRadius: "8px",
+          padding: "12px",
+          marginBottom: "16px",
+          color: "#856404"
+        }}>
+          <span style={{ fontSize: "20px", marginRight: "8px" }}>⚠️</span>
+          <strong>Mixed motor types detected!</strong> All openings in a product group must use the same motor type.
+          Please update motors to be consistent or create separate product groups.
+        </div>
+      )}
 
       <div className="quote-tool-controls">
         <span className="quote-tool-controls-label">🛠 Quote Tool Controls</span>
@@ -2383,15 +2584,15 @@ function MPSProductCard({
 
       <div className="ps-detail-grid">
         {[
-          {label:"Product Name", value:line.product},
-          {label:"Category",     value:line.category},
-          {label:"Base Size",    value:`${line.width||"—"} × ${line.height||"—"}`},
-          {label:"Quantity",     value:line.quantity},
-          {label:"Operation",    value:line.operation, capitalize:true}
-        ].map(({label,value,capitalize}) => (
+          { label: "Product Name", value: line.product },
+          { label: "Category", value: line.category },
+          { label: "Base Size", value: `${line.width || "—"} × ${line.height || "—"}` },
+          { label: "Quantity", value: line.quantity },
+          { label: "Operation", value: line.operation, capitalize: true }
+        ].map(({ label, value, capitalize }) => (
           <div className="ps-detail-item" key={label}>
             <span className="ps-detail-label">{label}</span>
-            <span className="ps-detail-value" style={capitalize?{textTransform:"capitalize"}:{}}>{value}</span>
+            <span className="ps-detail-value" style={capitalize ? { textTransform: "capitalize" } : {}}>{value}</span>
           </div>
         ))}
       </div>
@@ -2403,14 +2604,21 @@ function MPSProductCard({
           value={productNotes || ""} onChange={e => onProductNoteChange(line.id, e.target.value)} rows={3} />
       </div>
 
-      {enriched?.pricing?.priceNote && <div className="ps-price-note">💡 Reference (from intake form): {enriched.pricing.priceNote}</div>}
-      {hasUnpriced && <div className="ps-price-note ps-price-note--warn">⚠ Some openings have dimensions that don't match the price matrix.</div>}
+      {enriched?.pricing?.priceNote && (
+        <div className="ps-price-note">💡 Reference (from intake form): {enriched.pricing.priceNote}</div>
+      )}
+      {hasUnpriced && (
+        <div className="ps-price-note ps-price-note--warn">⚠ Some openings have dimensions that don't match the price matrix.</div>
+      )}
 
-      {totalOpenings > 0 && (
+      {totalOpenings > 0 && dominantMotorBrand && (
         <div className="auto-remote-badge">
           <span className="auto-remote-icon">🎛</span>
           <span className="auto-remote-text">
             Recommended Remote: <strong>{autoRemoteName}</strong> ({totalOpenings} opening{totalOpenings !== 1 ? "s" : ""}) — <em>included, no extra charge</em>
+            <span className="motor-brand-indicator" style={{ marginLeft: "12px", fontSize: "0.85em", opacity: 0.7 }}>
+              ({dominantMotorBrand} motor system)
+            </span>
           </span>
         </div>
       )}
@@ -2422,19 +2630,26 @@ function MPSProductCard({
             <span className="mps-builder-hint">— Enter width &amp; height per opening to auto-price from matrix</span>
           </div>
           <div className="mps-totals-row">
-            {openingsProductTotal > 0 && <div className="mps-structural-total mps-product-from-openings">Openings product total: <strong>{fmt(openingsProductTotal)}</strong></div>}
-            {structuralTotal      > 0 && <div className="mps-structural-total">Structural: <strong>{fmt(structuralTotal)}</strong></div>}
+            {openingsProductTotal > 0 && (
+              <div className="mps-structural-total mps-product-from-openings">
+                Openings product total: <strong>{fmt(openingsProductTotal)}</strong>
+              </div>
+            )}
+            {structuralTotal > 0 && (
+              <div className="mps-structural-total">Structural: <strong>{fmt(structuralTotal)}</strong></div>
+            )}
           </div>
         </div>
         {areas.length === 0
           ? <div className="mps-empty-state"><p>No areas configured yet. Add an area to specify openings.</p></div>
           : areas.map((area, idx) => (
-              <AreaEditor key={area.id} area={area} areaIndex={idx} productName={line.product}
-                onChange={u => updateArea(area.id, u)}
-                onRemove={() => removeArea(area.id)}
-                showRemove={areas.length > 1}
-              />
-            ))
+            <AreaEditor key={area.id} area={area} areaIndex={idx} productName={line.product}
+              onChange={u => updateArea(area.id, u)}
+              onRemove={() => removeArea(area.id)}
+              showRemove={areas.length > 1}
+              allAreaOpenings={area.openings}
+            />
+          ))
         }
         <button type="button" className="add-area-btn" onClick={addArea}>+ Add Area</button>
       </div>
@@ -2446,6 +2661,17 @@ function MPSProductCard({
         totalOpenings={totalOpenings}
       />
 
+      {/* Controls Section - only show if we have a consistent motor brand */}
+      {dominantMotorBrand && (
+        <MPSControlSection
+          productName={line.product}
+          motorId={dominantMotorId}
+          totalOpenings={totalOpenings > 0 ? totalOpenings : 1}
+          controlState={controlState || { includedReplaced: false, replacementControlId: "", additionalControls: [] }}
+          onControlChange={onControlChange}
+        />
+      )}
+
       <div className="mps-simple-addons">
         <div className="mps-simple-addons-title">
           <span className="ps-addons-icon">✦</span> Accessories &amp; Add-ons
@@ -2456,10 +2682,14 @@ function MPSProductCard({
             const isChecked = !!selected[addon.id];
             return (
               <label key={addon.id} className={`ps-addon-item ${isChecked ? "ps-addon-checked" : ""}`}>
-                <input type="checkbox" className="ps-addon-checkbox" checked={isChecked} onChange={() => onAddonToggle(line.id, addon.id)} />
+                <input type="checkbox" className="ps-addon-checkbox" checked={isChecked}
+                  onChange={() => onAddonToggle(line.id, addon.id)} />
                 <div className="ps-addon-content">
                   <span className="ps-addon-name">{addon.name}</span>
-                  <span className="ps-addon-price">+{fmt(addon.price)}{qty > 1 && <span className="ps-addon-per-unit"> × {qty} = {fmt(addon.price*qty)}</span>}</span>
+                  <span className="ps-addon-price">
+                    +{fmt(addon.price)}
+                    {qty > 1 && <span className="ps-addon-per-unit"> × {qty} = {fmt(addon.price * qty)}</span>}
+                  </span>
                 </div>
                 {isChecked && <span className="ps-addon-check-mark">✓</span>}
               </label>
@@ -2469,16 +2699,186 @@ function MPSProductCard({
       </div>
 
       <div className="mps-line-total">
-        {openingsProductTotal > 0 ? <span>Openings Price: {fmt(openingsProductTotal)}</span> : <span>Base Price (from form): {fmt(appBaseTotal)}</span>}
+        {openingsProductTotal > 0
+          ? <span>Openings Price: {fmt(openingsProductTotal)}</span>
+          : <span>Base Price (from form): {fmt(appBaseTotal)}</span>
+        }
         {simpleAddonTotal > 0 && <span>+ Add-ons: {fmt(simpleAddonTotal)}</span>}
-        {windTotal        > 0 && <span>+ Wind Sensor(s): {fmt(windTotal)}</span>}
-        {structuralTotal  > 0 && <span>+ Structural: {fmt(structuralTotal)}</span>}
-        {totalOpenings > 0 && <span className="mps-remote-info-line">Remote included: {autoRemoteName}</span>}
+        {windTotal > 0 && <span>+ Wind Sensor(s): {fmt(windTotal)}</span>}
+        {controlCost > 0 && <span>+ Controls: {fmt(controlCost)}</span>}
+        {structuralTotal > 0 && <span>+ Structural: {fmt(structuralTotal)}</span>}
+        {totalOpenings > 0 && (
+          <span className="mps-remote-info-line">Remote included: {autoRemoteName}</span>
+        )}
         <span className="mps-line-grand">Line Total: {fmt(grandLineTotal)}</span>
       </div>
     </div>
   );
 }
+
+function MPSControlSection({ productName, motorId, totalOpenings, controlState, onControlChange }) {
+  const motorBrand = getMotorBrand(motorId);
+  const includedControlId = getIncludedControlId(motorBrand, totalOpenings);
+  const includedControl = CONTROL_CATALOG.find(c => c.id === includedControlId);
+  const includedCredit = getIncludedControlCredit(motorBrand, totalOpenings);
+  const availableControls = getAvailableControls(motorBrand);
+
+  const { includedReplaced, replacementControlId, additionalControls = [] } = controlState;
+
+  const replacementControl = CONTROL_CATALOG.find(c => c.id === replacementControlId);
+
+  const setField = (field, val) => onControlChange({ ...controlState, [field]: val });
+
+  const addAdditionalControl = () => {
+    onControlChange({
+      ...controlState,
+      additionalControls: [...additionalControls, { id: uid(), controlId: "", qty: 1 }],
+    });
+  };
+
+  const updateAdditionalControl = (itemId, updates) => {
+    onControlChange({
+      ...controlState,
+      additionalControls: additionalControls.map(ac =>
+        ac.id === itemId ? { ...ac, ...updates } : ac
+      ),
+    });
+  };
+
+  const removeAdditionalControl = (itemId) => {
+    onControlChange({
+      ...controlState,
+      additionalControls: additionalControls.filter(ac => ac.id !== itemId),
+    });
+  };
+
+  // Cost calculation
+  const replacementCost = includedReplaced && replacementControl
+    ? Math.max(0, replacementControl.price - includedCredit)
+    : 0;
+
+  const additionalCost = additionalControls.reduce((sum, ac) => {
+    const ctrl = CONTROL_CATALOG.find(c => c.id === ac.controlId);
+    return sum + (ctrl ? ctrl.price * (parseInt(ac.qty, 10) || 1) : 0);
+  }, 0);
+
+  const totalControlCost = (includedReplaced ? replacementCost : 0) + additionalCost;
+
+  // Filter out wall switches for Dooya motors
+  const filteredControls = availableControls.filter(ctrl => {
+    if (motorBrand === "Dooya" && ctrl.type === "wall_switch") return false;
+    return true;
+  });
+
+  return (
+    <div className="mps-control-section">
+      <div className="mps-control-section-title">
+        <span className="ps-addons-icon">🎛</span> Controls
+        {totalControlCost > 0 && (
+          <span className="ps-addons-running-total">+{fmt(totalControlCost)}</span>
+        )}
+        <span className="motor-brand-badge" style={{ marginLeft: "12px", fontSize: "0.8em", opacity: 0.7 }}>
+          ({motorBrand} system)
+        </span>
+      </div>
+
+      {/* Included Control Banner */}
+      <div className="mps-included-control-banner">
+        <span className="mps-included-icon">✅</span>
+        <div>
+          <strong>Included: </strong>{includedControl?.name || "—"}
+          <span className="mps-included-hint"> (auto-assigned for {totalOpenings} opening{totalOpenings !== 1 ? "s" : ""})</span>
+        </div>
+      </div>
+
+      {/* Replace Included Control Toggle */}
+      <Toggle
+        label="Replace included control?"
+        checked={includedReplaced}
+        onChange={(val) => setField("includedReplaced", val)}
+      />
+
+      {includedReplaced && (
+        <div className="mps-replacement-control">
+          <div className="mps-field">
+            <label className="mps-label">Replacement Control</label>
+            <select
+              className="mps-select"
+              value={replacementControlId}
+              onChange={e => setField("replacementControlId", e.target.value)}
+            >
+              <option value="">— Select replacement —</option>
+              {filteredControls.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.name} — {fmt(c.price)}
+                </option>
+              ))}
+            </select>
+          </div>
+          {replacementControl && (
+            <div className="mps-control-credit-info">
+              <span>{replacementControl.name}: {fmt(replacementControl.price)}</span>
+              <span className="mps-credit-badge">− {fmt(includedCredit)} credit (included control value)</span>
+              <strong>Net cost: {fmt(replacementCost)}</strong>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Additional Controls */}
+      <div className="mps-additional-controls">
+        <div className="mps-additional-controls-header">
+          <span className="mps-label">Additional Controls</span>
+          <button type="button" className="structural-add-btn" onClick={addAdditionalControl}>
+            + Add Control
+          </button>
+        </div>
+        {additionalControls.length === 0 && (
+          <div className="structural-empty">No additional controls added.</div>
+        )}
+        {additionalControls.map((ac) => {
+          const ctrl = CONTROL_CATALOG.find(c => c.id === ac.controlId);
+          const lineTotal = ctrl ? ctrl.price * (parseInt(ac.qty, 10) || 1) : 0;
+          return (
+            <div key={ac.id} className="structural-item-card">
+              <div className="structural-item-header">
+                <span>Additional Control</span>
+                <button type="button" className="structural-item-remove"
+                  onClick={() => removeAdditionalControl(ac.id)}>✕ Remove</button>
+              </div>
+              <div className="structural-fields-grid">
+                <div className="mps-field">
+                  <label className="mps-label">Control</label>
+                  <select className="mps-select" value={ac.controlId}
+                    onChange={e => updateAdditionalControl(ac.id, { controlId: e.target.value })}>
+                    <option value="">— Select control —</option>
+                    {filteredControls.map(c => (
+                      <option key={c.id} value={c.id}>{c.name} — {fmt(c.price)}</option>
+                    ))}
+                  </select>
+                </div>
+                <Field
+                  label="Quantity"
+                  type="number"
+                  value={String(ac.qty)}
+                  onChange={v => updateAdditionalControl(ac.id, { qty: parseInt(v, 10) || 1 })}
+                  min="1"
+                  placeholder="1"
+                />
+              </div>
+              {lineTotal > 0 && (
+                <div className="structural-calc">
+                  {ctrl?.name} × {ac.qty} = <strong>{fmt(lineTotal)}</strong>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 
 // ─────────────────────────────────────────────────────────────
 // GENERIC MRA CARD (Skyline + Open Roll)
@@ -2883,15 +3283,19 @@ export default function ProductSummary() {
   const [signature,            setSignature]            = useState(() => loadFromSession()?.signature            || null);
   const [windSensorSelections, setWindSensorSelections] = useState(() => loadFromSession()?.windSensorSelections || {});
   const [mraConfig,            setMraConfig]            = useState(() => loadFromSession()?.mraConfig            || {});
+  const [mpsControls, setMpsControls] = useState(() => loadFromSession()?.mpsControls || {});
 
   useEffect(() => {
-    saveToSession({ addonSelections, mpsData, fieldAddonValues, productNotes, signature, windSensorSelections, mraConfig });
+    saveToSession({ addonSelections, mpsData, fieldAddonValues, productNotes, signature, windSensorSelections, mraConfig, mpsControls });
   }, [addonSelections, mpsData, fieldAddonValues, productNotes, signature, windSensorSelections, mraConfig]);
 
   const handleProductNoteChange = (lineId, note) => setProductNotes(prev => ({ ...prev, [lineId]: note }));
 
   const handleFieldAddonChange = (lineId, addonId, val) =>
     setFieldAddonValues(prev => ({...prev, [lineId]: {...(prev[lineId]||{}), [addonId]: val}}));
+
+  const handleMpsControlsChange = (lineId, updated) =>
+  setMpsControls(prev => ({ ...prev, [lineId]: updated }));
 
   const handleAddonToggle = (lineId, addonId) => {
     if (addonId === "__RESET__") { setAddonSelections(prev => ({ ...prev, [lineId]: {} })); return; }
@@ -2911,6 +3315,7 @@ export default function ProductSummary() {
       setSignature(null);
       setWindSensorSelections({});
       setMraConfig({});
+      setMpsControls({});
     }
   };
 
@@ -2930,10 +3335,11 @@ export default function ProductSummary() {
     .filter(l => AWNING_PRODUCTS.includes(l.product))
     .reduce((sum, l) => sum + (parseInt(l.quantity, 10) || 1), 0);
 
-  const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand, windSensorGrand, mraMatrixGrand } = useMemo(() => {
-    if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0, mpsOpeningsProductGrand:0, windSensorGrand:0, mraMatrixGrand:0 };
+  const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand, windSensorGrand, mraMatrixGrand, controlsGrand } = useMemo(() => {
+    if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0, mpsOpeningsProductGrand:0, windSensorGrand:0, mraMatrixGrand:0, controlsGrand:0 };
     const configured = snapshot.productLines.filter(l => l.category && l.product);
-    let addonGrand=0, structuralGrand=0, openingsGrand=0, appBaseMPSGrand=0, windGrand=0, mraGrand=0;
+
+    let addonGrand=0, structuralGrand=0, openingsGrand=0, appBaseMPSGrand=0, windGrand=0, mraGrand=0, ctrlGrand=0;
 
     configured.forEach(line => {
       if (MPS_PRODUCTS.includes(line.product)) {
@@ -2945,8 +3351,32 @@ export default function ProductSummary() {
         MPS_SIMPLE_ADDONS.forEach(a => { if(sel[a.id]) addonGrand += a.price*qty; });
         const totalOpenings = countTotalOpenings(areas);
         windGrand += calcWindSensorTotal(windSensorSelections[line.id], totalOpenings);
+
+        // Control cost
+        const lineControlState = mpsControls[line.id] || {};
+        let dominantMotorId = "";
+        for (const area of areas) {
+          for (const opening of area.openings) {
+            if (opening.motorId) { dominantMotorId = opening.motorId; break; }
+          }
+          if (dominantMotorId) break;
+        }
+        if (!dominantMotorId) dominantMotorId = getDefaultMotorId(line.product) || "";
+        const motorBrand = getMotorBrand(dominantMotorId);
+        const includedCredit = getIncludedControlCredit(motorBrand, totalOpenings > 0 ? totalOpenings : 1);
+        const { includedReplaced=false, replacementControlId="", additionalControls=[] } = lineControlState;
+        if (includedReplaced && replacementControlId) {
+          const rep = CONTROL_CATALOG.find(c => c.id === replacementControlId);
+          if (rep) ctrlGrand += Math.max(0, rep.price - includedCredit);
+        }
+        additionalControls.forEach(ac => {
+          const ctrl = CONTROL_CATALOG.find(c => c.id === ac.controlId);
+          if (ctrl) ctrlGrand += ctrl.price * (parseInt(ac.qty,10)||1);
+        });
+
         if (openingsTotal > 0) openingsGrand += openingsTotal;
         else { const e = snapshot.productLines.find(l2=>l2.id===line.id); appBaseMPSGrand += e?.pricing?.lineSubtotal||0; }
+
       } else if (AWNING_PRODUCTS.includes(line.product)) {
         const cfg = mraConfig[line.id] || {};
         const qty = parseInt(line.quantity,10)||1;
@@ -2977,9 +3407,10 @@ export default function ProductSummary() {
       mpsOpeningsProductGrand: openingsGrand,
       windSensorGrand:         windGrand,
       mraMatrixGrand:          mraGrand,
-      subtotalWithAddons: nonMPSNonMRAOriginal + openingsGrand + appBaseMPSGrand + addonGrand + structuralGrand + windGrand + mraGrand,
+      controlsGrand:           ctrlGrand,
+      subtotalWithAddons: nonMPSNonMRAOriginal + openingsGrand + appBaseMPSGrand + addonGrand + structuralGrand + windGrand + mraGrand + ctrlGrand,
     };
-  }, [snapshot, addonSelections, mpsData, fieldAddonValues, windSensorSelections, mraConfig]);
+  }, [snapshot, addonSelections, mpsData, fieldAddonValues, windSensorSelections, mraConfig, mpsControls]);
 
   const discountPercent = snapshot?.pricingSummary?.discountPercent || 0;
   const discountAmount  = subtotalWithAddons * (discountPercent / 100);
@@ -3067,19 +3498,21 @@ export default function ProductSummary() {
                 if (MPS_PRODUCTS.includes(line.product)) {
                   return (
                     <MPSProductCard
-                      key={line.id}
-                      line={line}
-                      index={idx}
-                      snapshot={snapshot}
-                      mpsData={mpsData}
-                      onMPSChange={handleMPSChange}
-                      addonSelections={addonSelections}
-                      onAddonToggle={handleAddonToggle}
-                      windSensorSelections={windSensorSelections}
-                      onWindSensorChange={handleWindSensorChange}
-                      productNotes={productNotes[line.id]}
-                      onProductNoteChange={handleProductNoteChange}
-                    />
+  key={line.id}
+  line={line}
+  index={idx}
+  snapshot={snapshot}
+  mpsData={mpsData}
+  onMPSChange={handleMPSChange}
+  addonSelections={addonSelections}
+  onAddonToggle={handleAddonToggle}
+  windSensorSelections={windSensorSelections}
+  onWindSensorChange={handleWindSensorChange}
+  productNotes={productNotes[line.id]}
+  onProductNoteChange={handleProductNoteChange}
+  controlState={mpsControls[line.id] || { includedReplaced: false, replacementControlId: "", additionalControls: [] }}
+  onControlChange={(updated) => handleMpsControlsChange(line.id, updated)}
+/>
                   );
                 }
 
@@ -3111,6 +3544,7 @@ export default function ProductSummary() {
             {summaryAddonGrandTotal  > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Selected Add-ons</span><span className="ps-addon-highlight">+{fmt(summaryAddonGrandTotal)}</span></div>}
             {windSensorGrand         > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Wind Sensor(s)</span><span className="ps-addon-highlight">+{fmt(windSensorGrand)}</span></div>}
             {mpsStructuralGrand      > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Structural Adjustments (L-Channel / Buildout / Storm Rail / Custom Color / Premium Fabric)</span><span className="ps-addon-highlight">+{fmt(mpsStructuralGrand)}</span></div>}
+            {controlsGrand           > 0 && ( <div className="ps-pricing-row ps-addon-total-row"><span>Controls</span> <span className="ps-addon-highlight">+{fmt(controlsGrand)}</span></div>)}
             <div className="ps-pricing-row ps-subtotal-addons-row"><span>Subtotal (incl. all adjustments)</span><span>{fmt(subtotalWithAddons)}</span></div>
             <div className="ps-pricing-row"><span>Discount ({discountPercent}%)</span><span className="ps-discount-value">−{fmt(discountAmount)}</span></div>
             {discount?.percent > 20 && <div className="ps-pricing-row ps-manager-row"><span>Manager Approval</span><span>{discount.managerName||"—"}</span></div>}
