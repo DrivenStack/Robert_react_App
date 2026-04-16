@@ -79,6 +79,117 @@ const OPEN_ROLL_MRA_PRICE_DATA = {
   "13'1\"": { 7:3960,8:4180,9:4400,10:4620,11:4840,12:5060,13:6215,14:6490,15:6765,16:7040,17:7315,18:7590,19:7865,20:8140 },
 };
 
+// ─────────────────────────────────────────────────────────────
+// FRACTION CONVERSION UTILITIES
+// ─────────────────────────────────────────────────────────────
+function fractionToDecimal(fractionStr) {
+  if (!fractionStr || typeof fractionStr !== 'string') return null;
+  
+  const trimmed = fractionStr.trim();
+  if (trimmed === '') return null;
+  
+  // Check if it's already a decimal number
+  const decimalMatch = trimmed.match(/^-?\d*\.?\d+$/);
+  if (decimalMatch) {
+    const num = parseFloat(trimmed);
+    return isNaN(num) ? null : num;
+  }
+  
+  // Handle mixed numbers like "16 1/4" or "10 1/2"
+  const mixedMatch = trimmed.match(/^(-?\d+)\s+(\d+)\/(\d+)$/);
+  if (mixedMatch) {
+    const whole = parseInt(mixedMatch[1], 10);
+    const numerator = parseInt(mixedMatch[2], 10);
+    const denominator = parseInt(mixedMatch[3], 10);
+    if (denominator === 0) return null;
+    const result = whole + (numerator / denominator);
+    return parseFloat(result.toFixed(4));
+  }
+  
+  // Handle simple fractions like "1/2", "3/4"
+  const fractionMatch = trimmed.match(/^(-?\d+)\/(\d+)$/);
+  if (fractionMatch) {
+    const numerator = parseInt(fractionMatch[1], 10);
+    const denominator = parseInt(fractionMatch[2], 10);
+    if (denominator === 0) return null;
+    const result = numerator / denominator;
+    return parseFloat(result.toFixed(4));
+  }
+  
+  // Handle decimal with fraction (invalid format)
+  const invalidMatch = trimmed.match(/^-?\d*\.\d+\s+\d+\/\d+/);
+  if (invalidMatch) return null; // Invalid: mixing decimal and fraction
+  
+  return null;
+}
+
+function isValidFractionFormat(inputStr) {
+  if (!inputStr || typeof inputStr !== 'string') return false;
+  
+  const trimmed = inputStr.trim();
+  if (trimmed === '') return true; // Empty is allowed (optional field)
+  
+  // Allow decimal numbers
+  if (/^-?\d*\.?\d+$/.test(trimmed)) return true;
+  
+  // Allow mixed numbers: whole number + space + fraction
+  if (/^-?\d+\s+\d+\/\d+$/.test(trimmed)) {
+    const parts = trimmed.match(/^-?\d+\s+(\d+)\/(\d+)$/);
+    if (parts) {
+      const numerator = parseInt(parts[1], 10);
+      const denominator = parseInt(parts[2], 10);
+      return denominator !== 0 && numerator < denominator;
+    }
+  }
+  
+  // Allow simple fractions
+  if (/^-?\d+\/\d+$/.test(trimmed)) {
+    const parts = trimmed.match(/^-?(\d+)\/(\d+)$/);
+    if (parts) {
+      const numerator = parseInt(parts[1], 10);
+      const denominator = parseInt(parts[2], 10);
+      return denominator !== 0 && numerator < denominator;
+    }
+  }
+  
+  return false;
+}
+
+function parseMeasurementInput(inputValue) {
+  if (!inputValue || inputValue === '') return null;
+  const decimal = fractionToDecimal(inputValue);
+  return decimal !== null ? decimal : null;
+}
+
+// Store both display value and decimal value
+class MeasurementValue {
+  constructor(displayValue, decimalValue) {
+    this.display = displayValue;  // What user sees
+    this.decimal = decimalValue;  // For calculations
+  }
+  
+  static fromInput(inputStr) {
+    if (!inputStr || inputStr === '') return new MeasurementValue('', null);
+    const decimal = fractionToDecimal(inputStr);
+    if (decimal !== null) {
+      return new MeasurementValue(inputStr, decimal);
+    }
+    return new MeasurementValue(inputStr, null);
+  }
+  
+  static fromDecimal(decimal, originalDisplay = null) {
+    if (decimal === null || decimal === undefined || decimal === '') {
+      return new MeasurementValue('', null);
+    }
+    // If we have original display that's valid, keep it
+    if (originalDisplay && isValidFractionFormat(originalDisplay)) {
+      return new MeasurementValue(originalDisplay, decimal);
+    }
+    // Otherwise convert to decimal string for display
+    return new MeasurementValue(decimal.toString(), decimal);
+  }
+}
+
 function getMRAPrice(productName, projection, widthFt) {
   let matrix;
   if (productName === "Skylight Plus MRA" || productName === "Motor B Retractable Awning") {
@@ -588,9 +699,16 @@ const MPS_PRICE_DATA = {
 // MPS PRICING LOGIC
 // ─────────────────────────────────────────────────────────────
 function toFeetKey(value) {
-  const n = parseFloat(value);
-  if (!Number.isFinite(n) || n <= 0) return null;
-  const feet = n > 30 ? n / 12 : n;
+  // Handle MeasurementValue object
+  let decimalValue;
+  if (value && typeof value === 'object' && 'decimal' in value) {
+    decimalValue = value.decimal;
+  } else {
+    decimalValue = parseFloat(value);
+  }
+  
+  if (!Number.isFinite(decimalValue) || decimalValue <= 0) return null;
+  const feet = decimalValue > 30 ? decimalValue / 12 : decimalValue;
   return Math.ceil(feet);
 }
 
@@ -860,7 +978,9 @@ function createBuildout() {
 
 function createOpening(productName = "", areaDefaults = {}) {
   return {
-    id: uid(), label: "", width: "", height: "",
+    id: uid(), label: "", 
+    width: new MeasurementValue('', null), 
+    height: new MeasurementValue('', null),
     motorSide: areaDefaults.motorSide || "Left",
     motorId: getDefaultMotorId(productName) || "",
     fabricSelection: { brand: "", style_number: "", color_name: "", series: "" },
@@ -890,8 +1010,8 @@ function createArea(productName = "") {
 
 function createMRAConfig() {
   return {
-    widthFt: "",
-    widthIn: "",
+    widthFt: new MeasurementValue('', null),
+    widthIn: new MeasurementValue('', null),
     projection: "",
     fabricBrand: "",
     style_number: "",
@@ -1154,12 +1274,73 @@ function Sel({ label, value, options, onChange, placeholder, required }) {
   );
 }
 
-function Field({ label, type = "text", value, onChange, placeholder, min, step, required }) {
+function Field({ label, type = "text", value, onChange, placeholder, min, step, required, allowFractions = true }) {
+  const [displayValue, setDisplayValue] = useState(() => {
+    // If value is a MeasurementValue object
+    if (value && typeof value === 'object' && 'display' in value) {
+      return value.display;
+    }
+    // If value is a string/number
+    return value?.toString() || '';
+  });
+  
+  const [isValid, setIsValid] = useState(true);
+  
+  const handleChange = (e) => {
+    const inputStr = e.target.value;
+    setDisplayValue(inputStr);
+    
+    if (!allowFractions) {
+      // Standard number input behavior
+      onChange(inputStr);
+      setIsValid(true);
+      return;
+    }
+    
+    // Validate fraction format
+    if (inputStr === '') {
+      setIsValid(true);
+      onChange(new MeasurementValue('', null));
+      return;
+    }
+    
+    const decimal = fractionToDecimal(inputStr);
+    if (decimal !== null) {
+      setIsValid(true);
+      onChange(new MeasurementValue(inputStr, decimal));
+    } else {
+      setIsValid(false);
+      // Still pass the invalid value but mark as invalid
+      onChange(new MeasurementValue(inputStr, null));
+    }
+  };
+  
+  const handleBlur = () => {
+    // Optional: Auto-format fraction on blur (e.g., "1/2" stays as "1/2")
+    if (allowFractions && displayValue && isValidFractionFormat(displayValue)) {
+      // Keep the fraction format as entered
+      setDisplayValue(displayValue);
+    }
+  };
+  
   return (
     <div className="mps-field">
       <label className="mps-label">{label}{required && <span className="mps-req">*</span>}</label>
-      <input className="mps-input" type={type} value={value} onChange={e => onChange(e.target.value)}
-        placeholder={placeholder} min={min} step={step} />
+      <input 
+        className={`mps-input ${!isValid ? 'mps-input-invalid' : ''}`} 
+        type={allowFractions ? "text" : type} 
+        value={displayValue} 
+        onChange={handleChange}
+        onBlur={handleBlur}
+        placeholder={placeholder || (allowFractions ? "e.g. 16.25 or 16 1/4" : "")} 
+        min={min} 
+        step={step} 
+      />
+      {!isValid && (
+        <div className="mps-field-error">
+          ⚠️ Invalid format. Use decimal (16.25) or fraction (16 1/4, 1/2)
+        </div>
+      )}
     </div>
   );
 }
@@ -1772,7 +1953,28 @@ function OpeningEditor({
     onChange({ ...opening, buildouts: prevOpening.buildouts.map(item => ({ ...item, id: uid() })) });
   };
 
-  const set = (field, val) => onChange({ ...opening, [field]: val });
+  const set = (field, val) => {
+  if ((field === "width" || field === "height") && val && typeof val === 'object' && 'decimal' in val) {
+    // Store both display and decimal
+    onChange({ ...opening, [field]: val });
+  } else if ((field === "width" || field === "height") && (!val || val === '')) {
+    onChange({ ...opening, [field]: new MeasurementValue('', null) });
+  } else {
+    onChange({ ...opening, [field]: val });
+  }
+};
+
+// Helper to get decimal value for calculations
+const getDecimalValue = (measurement) => {
+  if (measurement && typeof measurement === 'object' && 'decimal' in measurement) {
+    return measurement.decimal;
+  }
+  return measurement || null;
+};
+
+// When using width/height for calculations, get decimal:
+const widthDecimal = getDecimalValue(opening.width);
+const heightDecimal = getDecimalValue(opening.height);
 
   const effectiveMount = opening.mountOverride || areaDefaults.mountType || "—";
   const effectiveTrack = opening.trackOverride || areaDefaults.trackType || "—";
@@ -1821,8 +2023,24 @@ function OpeningEditor({
       </div>
 
       <div className="opening-grid-3">
-        <Field label="Width (ft or inches)" type="number" value={opening.width} onChange={v => set("width", v)} placeholder='e.g. 10 (ft) or 120 (in)' min="0" required />
-        <Field label="Height (ft or inches)" type="number" value={opening.height} onChange={v => set("height", v)} placeholder='e.g. 8 (ft) or 96 (in)' min="0" required />
+      <Field 
+  label="Width (ft or inches)" 
+  type="text" 
+  value={opening.width} 
+  onChange={v => set("width", v)} 
+  placeholder='e.g. 10, 120, 16 1/4' 
+  required 
+  allowFractions={true} 
+/>
+       <Field 
+  label="Height (ft or inches)" 
+  type="text" 
+  value={opening.height} 
+  onChange={v => set("height", v)} 
+  placeholder='e.g. 8, 96, 10 1/2' 
+  required 
+  allowFractions={true} 
+/>
         <Sel label="Motor Side" value={opening.motorSide} options={MPS_DEFAULTS.motorSides} onChange={v => set("motorSide", v)} required />
       </div>
 
@@ -2881,7 +3099,7 @@ function MPSControlSection({ productName, motorId, totalOpenings, controlState, 
 
 
 // ─────────────────────────────────────────────────────────────
-// GENERIC MRA CARD (Skyline + Open Roll)
+// GENERIC MRA CARD (Skyline + Open Roll) WITH FRACTION SUPPORT
 // ─────────────────────────────────────────────────────────────
 function GenericMRACard({
   line, index, snapshot,
@@ -2891,30 +3109,61 @@ function GenericMRACard({
   totalAwningQty,
 }) {
   const cfg = mraConfig[line.id] || createMRAConfig();
-  const setConfig = (updates) => onMRAConfigChange(line.id, { ...cfg, ...updates });
+  
+  // Helper to get decimal from measurement object
+  const getMeasurementDecimal = (measurement) => {
+    if (measurement && typeof measurement === 'object' && 'decimal' in measurement) {
+      return measurement.decimal;
+    }
+    return parseFloat(measurement) || 0;
+  };
+  
+  const setConfig = (updates) => {
+    const newUpdates = { ...updates };
+    
+    // Handle widthFt if it's coming from Field component
+    if (updates.widthFt !== undefined && typeof updates.widthFt === 'object' && 'display' in updates.widthFt) {
+      newUpdates.widthFt = updates.widthFt;
+    }
+    if (updates.widthIn !== undefined && typeof updates.widthIn === 'object' && 'display' in updates.widthIn) {
+      newUpdates.widthIn = updates.widthIn;
+    }
+    
+    onMRAConfigChange(line.id, { ...cfg, ...newUpdates });
+  };
 
   const qty = parseInt(line.quantity, 10) || 1;
 
-  const totalWidthFt = (parseInt(cfg.widthFt, 10) || 0) + ((parseInt(cfg.widthIn, 10) || 0) / 12);
-  const widthFtKey   = totalWidthFt > 0 ? Math.ceil(totalWidthFt) : null;
+  // Get decimal values for calculations
+  const widthFtDecimal = getMeasurementDecimal(cfg.widthFt);
+  const widthInDecimal = getMeasurementDecimal(cfg.widthIn);
+  const totalWidthFt = widthFtDecimal + (widthInDecimal / 12);
+  const widthFtKey = totalWidthFt > 0 ? Math.ceil(totalWidthFt) : null;
 
-  const priceResult  = widthFtKey && cfg.projection
+  const priceResult = widthFtKey && cfg.projection
     ? getMRAPrice(line.product, cfg.projection, widthFtKey)
     : { ok: false, price: 0, message: "" };
-  const unitPrice    = priceResult.ok ? priceResult.price : 0;
-  const matrixTotal  = unitPrice * qty;
+  const unitPrice = priceResult.ok ? priceResult.price : 0;
+  const matrixTotal = unitPrice * qty;
 
-  const fieldTotal     = calcFieldAddonTotal(fieldAddonValues, line.product);
+  const fieldTotal = calcFieldAddonTotal(fieldAddonValues, line.product);
   const grandLineTotal = matrixTotal + fieldTotal;
 
   const matrixRef = line.product === "Skyline Motorized Retractable Awning"
     ? SKYLINE_MRA_PRICE_DATA
     : OPEN_ROLL_MRA_PRICE_DATA;
-  const sampleRow    = cfg.projection ? matrixRef[cfg.projection] : null;
-  const validWidths  = sampleRow ? Object.keys(sampleRow).map(Number).sort((a,b)=>a-b) : [];
+  const sampleRow = cfg.projection ? matrixRef[cfg.projection] : null;
+  const validWidths = sampleRow ? Object.keys(sampleRow).map(Number).sort((a,b)=>a-b) : [];
 
   const isSkylightType = line.product === "Skyline Motorized Retractable Awning";
-  const badgeLabel     = isSkylightType ? "Motor A + B Merged" : "Open Roll";
+  const badgeLabel = isSkylightType ? "Motor A + B Merged" : "Open Roll";
+
+  // Format display values for width
+  const getWidthDisplay = () => {
+    const ftDisplay = cfg.widthFt?.display || cfg.widthFt || '0';
+    const inDisplay = cfg.widthIn?.display || cfg.widthIn || '0';
+    return `${ftDisplay}' ${inDisplay}"`;
+  };
 
   return (
     <div className="ps-product-card skylight-mra-card">
@@ -2955,19 +3204,33 @@ function GenericMRACard({
             <label className="mps-label">Width <span className="mps-req">*</span></label>
             <div className="skylight-width-inputs">
               <div className="skylight-width-input-wrap">
-                <input className="mps-input skylight-dim-input" type="number" value={cfg.widthFt}
-                  onChange={e => setConfig({ widthFt: e.target.value })} placeholder="0" min="0" />
+                <Field 
+                  label="" 
+                  type="text" 
+                  value={cfg.widthFt} 
+                  onChange={v => setConfig({ widthFt: v })} 
+                  placeholder="0" 
+                  allowFractions={true}
+                />
                 <span className="skylight-dim-unit">ft</span>
               </div>
               <div className="skylight-width-input-wrap">
-                <input className="mps-input skylight-dim-input" type="number" value={cfg.widthIn}
-                  onChange={e => setConfig({ widthIn: e.target.value })} placeholder="0" min="0" max="11" />
+                <Field 
+                  label="" 
+                  type="text" 
+                  value={cfg.widthIn} 
+                  onChange={v => setConfig({ widthIn: v })} 
+                  placeholder="0" 
+                  min="0" 
+                  max="11" 
+                  allowFractions={true}
+                />
                 <span className="skylight-dim-unit">in</span>
               </div>
             </div>
             {(cfg.widthFt || cfg.widthIn) && (
               <div className="skylight-width-display">
-                Width: <strong>{cfg.widthFt || 0}' {cfg.widthIn || 0}"</strong>
+                Width: <strong>{getWidthDisplay()}</strong>
                 {widthFtKey && <span style={{marginLeft:"6px",color:"var(--ps-text-muted,#888)"}}>(→ {widthFtKey}ft bracket)</span>}
               </div>
             )}
@@ -3023,7 +3286,7 @@ function GenericMRACard({
 }
 
 // ─────────────────────────────────────────────────────────────
-// SKYLIGHT PLUS MRA CARD
+// SKYLIGHT PLUS MRA CARD (UPDATED WITH FRACTION SUPPORT)
 // ─────────────────────────────────────────────────────────────
 function SkylightMRACard({
   line, index, snapshot,
@@ -3033,24 +3296,56 @@ function SkylightMRACard({
   totalAwningQty,
 }) {
   const cfg = mraConfig[line.id] || createMRAConfig();
-  const setConfig = (updates) => onMRAConfigChange(line.id, { ...cfg, ...updates });
+  
+  // Helper to get decimal from measurement object
+  const getMeasurementDecimal = (measurement) => {
+    if (measurement && typeof measurement === 'object' && 'decimal' in measurement) {
+      return measurement.decimal;
+    }
+    return parseFloat(measurement) || 0;
+  };
+  
+  const setConfig = (updates) => {
+    const newUpdates = { ...updates };
+    
+    // Handle widthFt if it's coming from Field component
+    if (updates.widthFt !== undefined && typeof updates.widthFt === 'object' && 'display' in updates.widthFt) {
+      newUpdates.widthFt = updates.widthFt;
+    }
+    if (updates.widthIn !== undefined && typeof updates.widthIn === 'object' && 'display' in updates.widthIn) {
+      newUpdates.widthIn = updates.widthIn;
+    }
+    
+    onMRAConfigChange(line.id, { ...cfg, ...newUpdates });
+  };
 
   const qty = parseInt(line.quantity, 10) || 1;
   const autoTransmitter = getAutoTransmitter(totalAwningQty);
 
-  const totalWidthFt = (parseInt(cfg.widthFt, 10) || 0) + ((parseInt(cfg.widthIn, 10) || 0) / 12);
-  const widthFtKey   = totalWidthFt > 0 ? Math.ceil(totalWidthFt) : null;
-  const priceResult  = widthFtKey && cfg.projection
+  // Get decimal values for calculations
+  const widthFtDecimal = getMeasurementDecimal(cfg.widthFt);
+  const widthInDecimal = getMeasurementDecimal(cfg.widthIn);
+  const totalWidthFt = widthFtDecimal + (widthInDecimal / 12);
+  const widthFtKey = totalWidthFt > 0 ? Math.ceil(totalWidthFt) : null;
+  
+  const priceResult = widthFtKey && cfg.projection
     ? getMRAPrice("Skylight Plus MRA", cfg.projection, widthFtKey)
     : { ok: false, price: 0, message: "" };
-  const unitPrice    = priceResult.ok ? priceResult.price : 0;
-  const matrixTotal  = unitPrice * qty;
+  const unitPrice = priceResult.ok ? priceResult.price : 0;
+  const matrixTotal = unitPrice * qty;
 
-  const sampleRow   = cfg.projection ? SKYLIGHT_MRA_PRICE_DATA[cfg.projection] : null;
+  const sampleRow = cfg.projection ? SKYLIGHT_MRA_PRICE_DATA[cfg.projection] : null;
   const validWidths = sampleRow ? Object.keys(sampleRow).map(Number).sort((a,b)=>a-b) : [];
 
-  const fieldTotal     = calcFieldAddonTotal(fieldAddonValues, "Skylight Plus MRA");
+  const fieldTotal = calcFieldAddonTotal(fieldAddonValues, "Skylight Plus MRA");
   const grandLineTotal = matrixTotal + fieldTotal;
+
+  // Format display values for width
+  const getWidthDisplay = () => {
+    const ftDisplay = cfg.widthFt?.display || cfg.widthFt || '0';
+    const inDisplay = cfg.widthIn?.display || cfg.widthIn || '0';
+    return `${ftDisplay}' ${inDisplay}"`;
+  };
 
   return (
     <div className="ps-product-card skylight-mra-card">
@@ -3115,19 +3410,33 @@ function SkylightMRACard({
             <label className="mps-label">Width <span className="mps-req">*</span></label>
             <div className="skylight-width-inputs">
               <div className="skylight-width-input-wrap">
-                <input className="mps-input skylight-dim-input" type="number" value={cfg.widthFt}
-                  onChange={e => setConfig({ widthFt: e.target.value })} placeholder="0" min="0" />
+                <Field 
+                  label="" 
+                  type="text" 
+                  value={cfg.widthFt} 
+                  onChange={v => setConfig({ widthFt: v })} 
+                  placeholder="0" 
+                  allowFractions={true}
+                />
                 <span className="skylight-dim-unit">ft</span>
               </div>
               <div className="skylight-width-input-wrap">
-                <input className="mps-input skylight-dim-input" type="number" value={cfg.widthIn}
-                  onChange={e => setConfig({ widthIn: e.target.value })} placeholder="0" min="0" max="11" />
+                <Field 
+                  label="" 
+                  type="text" 
+                  value={cfg.widthIn} 
+                  onChange={v => setConfig({ widthIn: v })} 
+                  placeholder="0" 
+                  min="0" 
+                  max="11" 
+                  allowFractions={true}
+                />
                 <span className="skylight-dim-unit">in</span>
               </div>
             </div>
             {(cfg.widthFt || cfg.widthIn) && (
               <div className="skylight-width-display">
-                Width: <strong>{cfg.widthFt || 0}' {cfg.widthIn || 0}"</strong>
+                Width: <strong>{getWidthDisplay()}</strong>
                 {widthFtKey && <span style={{marginLeft:"6px",color:"var(--ps-text-muted,#888)"}}>(→ {widthFtKey}ft bracket)</span>}
               </div>
             )}
@@ -3181,7 +3490,6 @@ function SkylightMRACard({
     </div>
   );
 }
-
 // ─────────────────────────────────────────────────────────────
 // STANDARD PRODUCT CARD
 // ─────────────────────────────────────────────────────────────

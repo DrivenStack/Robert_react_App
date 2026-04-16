@@ -1928,3 +1928,14 @@ details[open] .override-summary::before { content:"▼"; }
   color: #9ca3af;
   border-bottom: 1px solid #f3f4f6;
 }
+
+.mps-input-invalid {
+  border-color: #dc3545 !important;
+  background-color: #fff8f8 !important;
+}
+
+.mps-field-error {
+  color: #dc3545;
+  font-size: 0.75rem;
+  margin-top: 4px;
+}
