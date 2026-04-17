@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import './ProductSummary.css';
+import './productsummary.css';
 
 // ─────────────────────────────────────────────────────────────
 // CONSTANTS
