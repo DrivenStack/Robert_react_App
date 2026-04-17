@@ -49,8 +49,9 @@ function getLChannelRate(size) {
   return found?.rate ?? 25;
 }
 
+
 // ─────────────────────────────────────────────────────────────
-// MRA PRICING MATRICES
+// MRA PRICING MATRIC
 // ─────────────────────────────────────────────────────────────
 const SKYLIGHT_MRA_PRICE_DATA = {
   "4'11\"": {
