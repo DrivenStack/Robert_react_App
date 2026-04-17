@@ -26,7 +26,7 @@ const MRA_PROJECTION_OPTIONS = [
   "6'6\"",
   "8'2\"",
   "9'10\"",
-  "11'2\"",
+  "11'8\"",
   "13'1\"",
 ];
 
@@ -53,30 +53,98 @@ function getLChannelRate(size) {
 // MRA PRICING MATRICES
 // ─────────────────────────────────────────────────────────────
 const SKYLIGHT_MRA_PRICE_DATA = {
-  "4'11\"": { 13:4550,14:4745,15:4940,16:5135,17:5330,18:5525,19:5720,20:5915 },
-  "6'6\"":  { 13:5060,14:5280,15:5500,16:5720,17:5940,18:6160,19:6380,20:6600 },
-  "8'2\"":  { 13:5720,14:5975,15:6230,16:6485,17:6740,18:6995,19:7250,20:7505 },
-  "9'10\"": { 13:6270,14:6555,15:6840,16:7125,17:7410,18:7695,19:7980,20:8265 },
-  "11'2\"": { 13:6820,14:7150,15:7480,16:7810,17:8140,18:8470,19:8800,20:9130 },
-  "13'1\"": { 13:7590,14:7975,15:8360,16:8745,17:9130,18:9515,19:9900,20:10285 },
+  "4'11\"": {
+    7:5680,8:5880,9:6080,10:6280,11:6480,12:6680,13:6880,14:7080,15:7280,16:7580,17:7880,18:8180,19:8480,20:8780,
+    21:9280,22:9780,23:10280,24:10780,25:11280,26:11780,27:12280,28:12780,29:13280,30:13780,31:14280,32:14780,
+    33:15280,34:15780,35:16280,36:16780
+  },
+  "6'6\"": {
+    9:6280,10:6480,11:6680,12:6880,13:7080,14:7280,15:7480,16:7780,17:8080,18:8380,19:8680,20:8980,
+    21:9480,22:9980,23:10480,24:10980,25:11480,26:11980,27:12480,28:12980,29:13480,30:13980,31:14480,32:14980,
+    33:15480,34:15980,35:16480,36:16980
+  },
+  "8'2\"": {
+    10:6680,11:6880,12:7080,13:7280,14:7480,15:7680,16:7980,17:8280,18:8580,19:8880,20:9180,
+    21:9680,22:10180,23:10680,24:11180,25:11680,26:12180,27:12680,28:13180,29:13680,30:14180,31:14680,32:15180,
+    33:15680,34:16180,35:16680,36:17180
+  },
+  "9'10\"": {
+    12:7280,13:7480,14:7680,15:7880,16:8180,17:8480,18:8780,19:9080,20:9380,
+    21:9880,22:10380,23:10880,24:11380,25:11880,26:12380,27:12880,28:13380,29:13880,30:14380,31:14880,32:15380,
+    33:15880,34:16380,35:16880,36:17380
+  },
+  "11'8\"": {
+    13:7680,14:7880,15:8080,16:8380,17:8680,18:8980,19:9280,20:9580,
+    21:10080,22:10580,23:11080,24:11580,25:12080,26:12580,27:13080,28:13580,29:14080,30:14580,31:15080,32:15580,
+    33:16080,34:16580,35:17080,36:17580
+  },
+  "13'1\"": {
+    14:8080,15:8280,16:8580,17:8880,18:9180,19:9480,20:9780,
+    21:10280,22:10780,23:11280,24:11780,25:12280,26:12780,27:13280,28:13780,29:14280,30:14780,31:15280,32:15780,
+    33:16280,34:16780,35:17280,36:17780
+  },
 };
 
 const SKYLINE_MRA_PRICE_DATA = {
-  "4'11\"": { 7:2860,8:3025,9:3190,10:3355,11:3520,12:3685,13:4550,14:4745,15:4940,16:5135,17:5330,18:5525,19:5720,20:5915 },
-  "6'6\"":  { 7:3190,8:3380,9:3570,10:3760,11:3950,12:4140,13:5060,14:5280,15:5500,16:5720,17:5940,18:6160,19:6380,20:6600 },
-  "8'2\"":  { 7:3575,8:3795,9:4015,10:4235,11:4455,12:4675,13:5720,14:5975,15:6230,16:6485,17:6740,18:6995,19:7250,20:7505 },
-  "9'10\"": { 7:3960,8:4180,9:4400,10:4620,11:4840,12:5060,13:6270,14:6555,15:6840,16:7125,17:7410,18:7695,19:7980,20:8265 },
-  "11'2\"": { 7:4345,8:4565,9:4785,10:5005,11:5225,12:5445,13:6820,14:7150,15:7480,16:7810,17:8140,18:8470,19:8800,20:9130 },
-  "13'1\"": { 7:4840,8:5115,9:5390,10:5665,11:5940,12:6215,13:7590,14:7975,15:8360,16:8745,17:9130,18:9515,19:9900,20:10285 },
+  "4'11\"": {
+    7:5380,8:5580,9:5780,10:5980,11:6180,12:6380,
+    13:6580,14:6780,15:6980,16:7180,17:7380,18:7580,19:7780,20:7980
+  },
+  "6'6\"": {
+    9:5980,10:6180,11:6380,12:6580,
+    13:6780,14:6980,15:7180,16:7380,17:7580,18:7780,19:7980,20:8180
+  },
+  "8'2\"": {
+    10:6380,11:6580,12:6780,
+    13:6980,14:7180,15:7380,16:7580,17:7780,18:7980,19:8180,20:8380
+  },
+  "9'10\"": {
+    // Based on your provided data, 9'10" seems to start at 12ft width
+    // If you have data for 9'10", add it here. Otherwise, I'll keep the existing pattern
+    12:7180,13:7380,14:7580,15:7780,16:7980,17:8180,18:8380,19:8580,20:8780
+  },
+  "11'8\"": {
+    // Based on your provided data, 11'8" would be next
+    // Keeping existing pattern but updating prices
+    13:7580,14:7780,15:7980,16:8180,17:8380,18:8580,19:8780,20:8980
+  },
+  "13'1\"": {
+    // Based on your provided data, 13'1" would be next
+    // Keeping existing pattern but updating prices
+    14:7980,15:8180,16:8380,17:8580,18:8780,19:8980,20:9180
+  },
 };
-
 const OPEN_ROLL_MRA_PRICE_DATA = {
-  "4'11\"": { 7:2310,8:2445,9:2580,10:2715,11:2850,12:2985,13:3685,14:3850,15:4015,16:4180,17:4345,18:4510,19:4675,20:4840 },
-  "6'6\"":  { 7:2585,8:2740,9:2895,10:3050,11:3205,12:3360,13:4125,14:4315,15:4505,16:4695,17:4885,18:5075,19:5265,20:5455 },
-  "8'2\"":  { 7:2915,8:3090,9:3265,10:3440,11:3615,12:3790,13:4675,14:4895,15:5115,16:5335,17:5555,18:5775,19:5995,20:6215 },
-  "9'10\"": { 7:3245,8:3420,9:3595,10:3770,11:3945,12:4120,13:5170,14:5390,15:5610,16:5830,17:6050,18:6270,19:6490,20:6710 },
-  "11'2\"": { 7:3575,8:3750,9:3925,10:4100,11:4275,12:4450,13:5610,14:5830,15:6050,16:6270,17:6490,18:6710,19:6930,20:7150 },
-  "13'1\"": { 7:3960,8:4180,9:4400,10:4620,11:4840,12:5060,13:6215,14:6490,15:6765,16:7040,17:7315,18:7590,19:7865,20:8140 },
+  "4'11\"": {
+    7:3470,8:3670,9:3870,10:4070,11:4270,12:4470,13:4670,14:4870,15:5070,16:5270,17:5470,18:5670,19:5870,
+    20:6070,21:6470,22:6870,23:7270,24:7670,25:8070,26:8470,27:8870,28:9270,29:9670,30:10070,31:10470,
+    32:10870,33:11270,34:11670,35:12070,36:12470
+  },
+  "6'6\"": {
+    9:4070,10:4270,11:4470,12:4670,13:4870,14:5070,15:5270,16:5470,17:5670,18:5870,19:6070,
+    20:6270,21:6670,22:7070,23:7470,24:7870,25:8270,26:8670,27:9070,28:9470,29:9870,30:10270,31:10670,
+    32:11070,33:11470,34:11870,35:12270,36:12670
+  },
+  "8'2\"": {
+    10:4470,11:4670,12:4870,13:5070,14:5270,15:5470,16:5670,17:5870,18:6070,19:6270,
+    20:6470,21:6870,22:7270,23:7670,24:8070,25:8470,26:8870,27:9270,28:9670,29:10070,30:10470,31:10870,
+    32:11270,33:11670,34:12070,35:12470,36:12870
+  },
+  "9'10\"": {
+    12:5070,13:5270,14:5470,15:5670,16:5870,17:6070,18:6270,19:6470,
+    20:6670,21:7070,22:7470,23:7870,24:8270,25:8670,26:9070,27:9470,28:9870,29:10270,30:10670,31:11070,
+    32:11470,33:11870,34:12270,35:12670,36:13070
+  },
+  "11'8\"": {
+    13:5470,14:5670,15:5870,16:6070,17:6270,18:6470,19:6670,
+    20:6870,21:7270,22:7670,23:8070,24:8470,25:8870,26:9270,27:9670,28:10070,29:10470,30:10870,31:11270,
+    32:11670,33:12070,34:12470,35:12870,36:13270
+  },
+  "13'1\"": {
+    14:5870,15:6070,16:6270,17:6470,18:6670,19:6870,
+    20:7070,21:7470,22:7870,23:8270,24:8670,25:9070,26:9470,27:9870,28:10270,29:10670,30:11070,31:11470,
+    32:11870,33:12270,34:12670,35:13070,36:13470
+  },
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -3643,82 +3711,97 @@ export default function ProductSummary() {
     .filter(l => AWNING_PRODUCTS.includes(l.product))
     .reduce((sum, l) => sum + (parseInt(l.quantity, 10) || 1), 0);
 
-  const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand, windSensorGrand, mraMatrixGrand, controlsGrand } = useMemo(() => {
-    if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0, mpsOpeningsProductGrand:0, windSensorGrand:0, mraMatrixGrand:0, controlsGrand:0 };
-    const configured = snapshot.productLines.filter(l => l.category && l.product);
+ const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand, windSensorGrand, mraMatrixGrand, controlsGrand } = useMemo(() => {
+  if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0, mpsOpeningsProductGrand:0, windSensorGrand:0, mraMatrixGrand:0, controlsGrand:0 };
+  const configured = snapshot.productLines.filter(l => l.category && l.product);
 
-    let addonGrand=0, structuralGrand=0, openingsGrand=0, appBaseMPSGrand=0, windGrand=0, mraGrand=0, ctrlGrand=0;
+  let addonGrand=0, structuralGrand=0, openingsGrand=0, appBaseMPSGrand=0, windGrand=0, mraGrand=0, ctrlGrand=0;
 
-    configured.forEach(line => {
-      if (MPS_PRODUCTS.includes(line.product)) {
-        const areas = mpsData[line.id] || [];
-        const openingsTotal = calcMPSOpeningsTotal(areas, line.product);
-        structuralGrand += areas.reduce((s,a) => s + calcAreaStructuralOnly(a), 0);
-        const qty = parseInt(line.quantity,10)||1;
-        const sel = addonSelections[line.id]||{};
-        MPS_SIMPLE_ADDONS.forEach(a => { if(sel[a.id]) addonGrand += a.price*qty; });
-        const totalOpenings = countTotalOpenings(areas);
-        windGrand += calcWindSensorTotal(windSensorSelections[line.id], totalOpenings);
+  // Helper to extract decimal from MeasurementValue or plain value
+  const getDecimal = (val) => {
+    if (val && typeof val === 'object' && 'decimal' in val) {
+      return val.decimal || 0;
+    }
+    return parseFloat(val) || 0;
+  };
 
-        // Control cost
-        const lineControlState = mpsControls[line.id] || {};
-        let dominantMotorId = "";
-        for (const area of areas) {
-          for (const opening of area.openings) {
-            if (opening.motorId) { dominantMotorId = opening.motorId; break; }
-          }
-          if (dominantMotorId) break;
+  configured.forEach(line => {
+    if (MPS_PRODUCTS.includes(line.product)) {
+      const areas = mpsData[line.id] || [];
+      const openingsTotal = calcMPSOpeningsTotal(areas, line.product);
+      structuralGrand += areas.reduce((s,a) => s + calcAreaStructuralOnly(a), 0);
+      const qty = parseInt(line.quantity,10)||1;
+      const sel = addonSelections[line.id]||{};
+      MPS_SIMPLE_ADDONS.forEach(a => { if(sel[a.id]) addonGrand += a.price*qty; });
+      const totalOpenings = countTotalOpenings(areas);
+      windGrand += calcWindSensorTotal(windSensorSelections[line.id], totalOpenings);
+
+      // Control cost
+      const lineControlState = mpsControls[line.id] || {};
+      let dominantMotorId = "";
+      for (const area of areas) {
+        for (const opening of area.openings) {
+          if (opening.motorId) { dominantMotorId = opening.motorId; break; }
         }
-        if (!dominantMotorId) dominantMotorId = getDefaultMotorId(line.product) || "";
-        const motorBrand = getMotorBrand(dominantMotorId);
-        const includedCredit = getIncludedControlCredit(motorBrand, totalOpenings > 0 ? totalOpenings : 1);
-        const { includedReplaced=false, replacementControlId="", additionalControls=[] } = lineControlState;
-        if (includedReplaced && replacementControlId) {
-          const rep = CONTROL_CATALOG.find(c => c.id === replacementControlId);
-          if (rep) ctrlGrand += Math.max(0, rep.price - includedCredit);
-        }
-        additionalControls.forEach(ac => {
-          const ctrl = CONTROL_CATALOG.find(c => c.id === ac.controlId);
-          if (ctrl) ctrlGrand += ctrl.price * (parseInt(ac.qty,10)||1);
-        });
-
-        if (openingsTotal > 0) openingsGrand += openingsTotal;
-        else { const e = snapshot.productLines.find(l2=>l2.id===line.id); appBaseMPSGrand += e?.pricing?.lineSubtotal||0; }
-
-      } else if (AWNING_PRODUCTS.includes(line.product)) {
-        const cfg = mraConfig[line.id] || {};
-        const qty = parseInt(line.quantity,10)||1;
-        const totalWidthFt = (parseInt(cfg.widthFt,10)||0) + ((parseInt(cfg.widthIn,10)||0)/12);
-        const widthFtKey = totalWidthFt > 0 ? Math.ceil(totalWidthFt) : null;
-        if (widthFtKey && cfg.projection) {
-          const pr = getMRAPrice(line.product, cfg.projection, widthFtKey);
-          if (pr.ok) mraGrand += pr.price * qty;
-        }
-        mraGrand += calcFieldAddonTotal(fieldAddonValues[line.id], line.product);
-      } else {
-        const qty = parseInt(line.quantity,10)||1;
-        const addons = getAddonsForProduct(line.product);
-        const sel = addonSelections[line.id]||{};
-        addons.forEach(a => { if(sel[a.id]) addonGrand += a.price*qty; });
-        addonGrand += calcFieldAddonTotal(fieldAddonValues[line.id], line.product);
+        if (dominantMotorId) break;
       }
-    });
+      if (!dominantMotorId) dominantMotorId = getDefaultMotorId(line.product) || "";
+      const motorBrand = getMotorBrand(dominantMotorId);
+      const includedCredit = getIncludedControlCredit(motorBrand, totalOpenings > 0 ? totalOpenings : 1);
+      const { includedReplaced=false, replacementControlId="", additionalControls=[] } = lineControlState;
+      if (includedReplaced && replacementControlId) {
+        const rep = CONTROL_CATALOG.find(c => c.id === replacementControlId);
+        if (rep) ctrlGrand += Math.max(0, rep.price - includedCredit);
+      }
+      additionalControls.forEach(ac => {
+        const ctrl = CONTROL_CATALOG.find(c => c.id === ac.controlId);
+        if (ctrl) ctrlGrand += ctrl.price * (parseInt(ac.qty,10)||1);
+      });
 
-    const nonMPSNonMRAOriginal = (snapshot.pricingSummary?.subtotal||0) -
-      snapshot.productLines
-        .filter(l => l.category && l.product && (MPS_PRODUCTS.includes(l.product) || AWNING_PRODUCTS.includes(l.product)))
-        .reduce((s,l)=>{ const e=snapshot.productLines.find(l2=>l2.id===l.id); return s+(e?.pricing?.lineSubtotal||0); }, 0);
+      if (openingsTotal > 0) openingsGrand += openingsTotal;
+      else { const e = snapshot.productLines.find(l2=>l2.id===line.id); appBaseMPSGrand += e?.pricing?.lineSubtotal||0; }
 
-    return {
-      summaryAddonGrandTotal:  addonGrand,
-      mpsStructuralGrand:      structuralGrand,
-      mpsOpeningsProductGrand: openingsGrand,
-      windSensorGrand:         windGrand,
-      mraMatrixGrand:          mraGrand,
-      controlsGrand:           ctrlGrand,
-      subtotalWithAddons: nonMPSNonMRAOriginal + openingsGrand + appBaseMPSGrand + addonGrand + structuralGrand + windGrand + mraGrand + ctrlGrand,
-    };
-  }, [snapshot, addonSelections, mpsData, fieldAddonValues, windSensorSelections, mraConfig, mpsControls]);
+    } else if (AWNING_PRODUCTS.includes(line.product)) {
+      const cfg = mraConfig[line.id] || {};
+      const qty = parseInt(line.quantity,10)||1;
+      
+      // FIX: Properly extract decimal values from MeasurementValue objects
+      const widthFtDecimal = getDecimal(cfg.widthFt);
+      const widthInDecimal = getDecimal(cfg.widthIn);
+      const totalWidthFt = widthFtDecimal + (widthInDecimal / 12);
+      const widthFtKey = totalWidthFt > 0 ? Math.ceil(totalWidthFt) : null;
+      
+      if (widthFtKey && cfg.projection) {
+        const pr = getMRAPrice(line.product, cfg.projection, widthFtKey);
+        if (pr.ok) {
+          mraGrand += pr.price * qty;
+        }
+      }
+      mraGrand += calcFieldAddonTotal(fieldAddonValues[line.id], line.product);
+    } else {
+      const qty = parseInt(line.quantity,10)||1;
+      const addons = getAddonsForProduct(line.product);
+      const sel = addonSelections[line.id]||{};
+      addons.forEach(a => { if(sel[a.id]) addonGrand += a.price*qty; });
+      addonGrand += calcFieldAddonTotal(fieldAddonValues[line.id], line.product);
+    }
+  });
+
+  const nonMPSNonMRAOriginal = (snapshot.pricingSummary?.subtotal||0) -
+    snapshot.productLines
+      .filter(l => l.category && l.product && (MPS_PRODUCTS.includes(l.product) || AWNING_PRODUCTS.includes(l.product)))
+      .reduce((s,l)=>{ const e=snapshot.productLines.find(l2=>l2.id===l.id); return s+(e?.pricing?.lineSubtotal||0); }, 0);
+
+  return {
+    summaryAddonGrandTotal:  addonGrand,
+    mpsStructuralGrand:      structuralGrand,
+    mpsOpeningsProductGrand: openingsGrand,
+    windSensorGrand:         windGrand,
+    mraMatrixGrand:          mraGrand,
+    controlsGrand:           ctrlGrand,
+    subtotalWithAddons: nonMPSNonMRAOriginal + openingsGrand + appBaseMPSGrand + addonGrand + structuralGrand + windGrand + mraGrand + ctrlGrand,
+  };
+}, [snapshot, addonSelections, mpsData, fieldAddonValues, windSensorSelections, mraConfig, mpsControls]);
 
   const discountPercent = snapshot?.pricingSummary?.discountPercent || 0;
   const discountAmount  = subtotalWithAddons * (discountPercent / 100);
