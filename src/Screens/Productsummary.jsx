@@ -259,6 +259,15 @@ class MeasurementValue {
   }
 }
 
+function safeParseFloat(val) {
+  if (val === null || val === undefined || val === "") return 0;
+  // MeasurementValue object
+  if (typeof val === "object" && "decimal" in val) {
+    return Number(val.decimal) || 0;
+  }
+  return parseFloat(val) || 0;
+}
+
 function getMRAPrice(productName, projection, widthFt) {
   let matrix;
   if (productName === "Skylight Plus MRA" || productName === "Motor B Retractable Awning") {
@@ -458,10 +467,15 @@ const PREMIUM_FABRIC_SURCHARGE_RATE = 35;
 function isPremiumFabricSurcharge(fabricSelection) {
   if (!fabricSelection?.brand || !fabricSelection?.style_number) return false;
   const brand    = fabricSelection.brand;
-  const series   = fabricSelection.series || "";
+  const series   = (fabricSelection.series || "").toLowerCase();
   const styleNum = fabricSelection.style_number;
-  if (brand === "Phifer" && (series === "SheerWeave Privacy" || styleNum.startsWith("SWP-"))) return true;
-  if (brand === "Twitchell" && (series === "Dimout" || styleNum.startsWith("Dimout-"))) return true;
+ 
+  // Phifer SheerWeave Privacy
+  if (brand === "Phifer" && (series.includes("sheerweave") || styleNum.startsWith("SWP-"))) return true;
+ 
+  // Twitchell Dimout — series is "Textilene Dimout"; also guard by style prefix "TD-"
+  if (brand === "Twitchell" && (series.includes("dimout") || styleNum.startsWith("TD-"))) return true;
+ 
   return false;
 }
 
@@ -1031,7 +1045,6 @@ let _uid = 1;
 const uid = () => `id_${_uid++}`;
 
 function createLChannel() {
-  // CHANGE 1: default size is now "1x1" (first in the updated list)
   return { id: uid(), loc: "Left", size: "1x1", customSize: "", lf: "", manualPrice: "", photo: null };
 }
 
@@ -1039,7 +1052,6 @@ function createBuildout() {
   return {
     id: uid(), type: "Wood", woodSize: "2x4", aluminubeSize: "1.5×1.5",
     isCustomAlumitubeSize: false, customAlumitubeSize: "", dims: "", lf: "", customRate: "",
-    // CHANGE 4: custom wood fields
     isCustomWoodSize: false, customWoodSizeLabel: "", customWoodRate: "",
     photo: null,
   };
@@ -1047,17 +1059,16 @@ function createBuildout() {
 
 function createOpening(productName = "", areaDefaults = {}) {
   return {
-    id: uid(), label: "", 
-    width: new MeasurementValue('', null), 
+    id: uid(), label: "",
+    width:  new MeasurementValue('', null),
     height: new MeasurementValue('', null),
     motorSide: areaDefaults.motorSide || "Left",
-    motorId: getDefaultMotorId(productName) || "",
+    // motorId intentionally omitted — inherited from area
     fabricSelection: { brand: "", style_number: "", color_name: "", series: "" },
     lChannels: [],
     buildouts: [],
     mountOverride: "", trackOverride: "",
     colorOverride: "", trackColorOverride: "",
-    motorOverride: "",
     weightBarOverride: "", remoteOverride: "",
     customTrackColorPrice: "",
     customCassetteColorPrice: "",
@@ -1068,10 +1079,11 @@ function createOpening(productName = "", areaDefaults = {}) {
 
 function createArea(productName = "") {
   return {
-    id: uid(), name: "", mountType: "", trackType: "",
+    id: uid(), name: "",
+    mountType: "", trackType: "",
     fabricSelection: { brand: "", style_number: "", color_name: "", series: "" },
     cassetteColor: "", trackColor: "",
-    motorType: "Somfy (default)",
+    motorId: getDefaultMotorId(productName) || "",   // ← replaces motorType string
     weightBar: "", remote: "",
     areaPhoto: null, openings: [createOpening(productName)],
   };
@@ -1098,24 +1110,23 @@ function calcStormRailCost(opening, effectiveTrackType) {
 
 function calcBuildoutCost(bo) {
   if (bo.type === "Wood") {
-    // CHANGE 4: support custom wood size with custom rate
     if (bo.woodSize === "Custom" || bo.isCustomWoodSize) {
-      const customRate = parseFloat(bo.customWoodRate) || 0;
-      return (parseFloat(bo.lf) || 0) * customRate;
+      const customRate = safeParseFloat(bo.customWoodRate);
+      return safeParseFloat(bo.lf) * customRate;
     }
     const rate = WOOD_BUILDOUT_RATES[bo.woodSize] || 0;
-    return (parseFloat(bo.lf) || 0) * rate;
+    return safeParseFloat(bo.lf) * rate;
   }
-  // CHANGE 5: Alumitube — custom size path unchanged
-  if (bo.isCustomAlumitubeSize) return parseFloat(bo.customRate) || 0;
-  return (parseFloat(bo.lf) || 0) * ALUMITUBE_DEFAULT_RATE;
+  // Alumitube
+  if (bo.isCustomAlumitubeSize) return safeParseFloat(bo.customRate);
+  return safeParseFloat(bo.lf) * ALUMITUBE_DEFAULT_RATE;
 }
 
 // CHANGE 1: calcLChannelCost now uses per-size rate from L_CHANNEL_SIZES
 function calcLChannelCost(lc) {
   if (lc.manualPrice !== "" && !isNaN(parseFloat(lc.manualPrice))) return parseFloat(lc.manualPrice);
   const rate = lc.size === "Custom" ? 0 : getLChannelRate(lc.size);
-  return (parseFloat(lc.lf) || 0) * rate;
+  return safeParseFloat(lc.lf) * rate;
 }
 
 function calcCustomColorCost(opening, effectiveTrackType, areaDefaults) {
@@ -1129,18 +1140,18 @@ function calcCustomColorCost(opening, effectiveTrackType, areaDefaults) {
   return total;
 }
 
-function calcMotorAdjustment(opening) {
-  return getMotorPriceAdjustment(opening.motorId);
+function calcMotorAdjustment(motorId) {
+  return getMotorPriceAdjustment(motorId);
 }
 
-function calcOpeningStructural(opening, areaDefaults) {
+function calcOpeningStructural(opening, areaDefaults, areaMotorId) {
   let total = 0;
   (opening.lChannels || []).forEach(lc => { total += calcLChannelCost(lc); });
   (opening.buildouts  || []).forEach(bo => { total += calcBuildoutCost(bo); });
   const effectiveTrackType = opening.trackOverride || areaDefaults?.trackType || "";
   total += calcStormRailCost(opening, effectiveTrackType);
   total += calcCustomColorCost(opening, effectiveTrackType, areaDefaults);
-  total += calcMotorAdjustment(opening);
+  total += calcMotorAdjustment(areaMotorId || areaDefaults?.motorId || "");
   const effectiveFabric = (opening.fabricSelection?.brand)
     ? opening.fabricSelection
     : (areaDefaults?.fabricSelection?.brand ? areaDefaults.fabricSelection : null);
@@ -1159,7 +1170,10 @@ function calcMPSOpeningsTotal(areas, productName) {
 }
 
 function calcAreaStructuralOnly(area) {
-  return area.openings.reduce((sum, o) => sum + calcOpeningStructural(o, area), 0);
+  return area.openings.reduce(
+    (sum, o) => sum + calcOpeningStructural(o, area, area.motorId),
+    0
+  );
 }
 
 function countTotalOpenings(areas) {
@@ -1755,15 +1769,15 @@ function LChannelItem({ lc, index, onChange, onRemove, showRemove }) {
   const cost = calcLChannelCost(lc);
   const isManualOverride = lc.manualPrice !== "" && !isNaN(parseFloat(lc.manualPrice));
   const currentRate = lc.size === "Custom" ? null : getLChannelRate(lc.size);
-
+  const lfDisplay = safeParseFloat(lc.lf); // safe for display
+ 
   return (
     <div className="structural-item-card">
       <div className="structural-item-header">
         <span className="structural-item-label">L-Channel #{index + 1}</span>
         {showRemove && <button type="button" className="structural-item-remove" onClick={onRemove}>✕ Remove</button>}
       </div>
-
-      {/* CHANGE 6: Clean row layout — no long pricing text in labels */}
+ 
       <div className="structural-fields-grid">
         {/* Location */}
         <div className="mps-field">
@@ -1772,8 +1786,8 @@ function LChannelItem({ lc, index, onChange, onRemove, showRemove }) {
             {MPS_DEFAULTS.lChannelLocs.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
         </div>
-
-        {/* CHANGE 1: Updated size dropdown with rate shown in option label */}
+ 
+        {/* Size */}
         <div className="mps-field">
           <label className="mps-label">
             Size
@@ -1787,13 +1801,19 @@ function LChannelItem({ lc, index, onChange, onRemove, showRemove }) {
             ))}
           </select>
         </div>
-
-        {/* Custom size input — only shown when Custom is selected */}
+ 
+        {/* Custom size label */}
         {lc.size === "Custom" && (
-          <Field label="Custom Size" value={lc.customSize} onChange={v => set("customSize", v)} placeholder='e.g. 2"×3"' />
+          <Field
+            label="Custom Size"
+            value={lc.customSize}
+            onChange={v => set("customSize", v)}
+            placeholder='e.g. 2"×3"'
+            allowFractions={false}
+          />
         )}
-
-        {/* CHANGE 6: Simple "Linear Feet" label */}
+ 
+        {/* Linear Feet — plain number, NOT fraction input */}
         <Field
           label="Linear Feet"
           type="number"
@@ -1802,8 +1822,9 @@ function LChannelItem({ lc, index, onChange, onRemove, showRemove }) {
           placeholder="e.g. 8"
           min="0"
           step="0.5"
+          allowFractions={false}
         />
-
+ 
         <Field
           label="Manual Price Override ($)"
           type="number"
@@ -1811,9 +1832,10 @@ function LChannelItem({ lc, index, onChange, onRemove, showRemove }) {
           onChange={v => set("manualPrice", v)}
           placeholder="Leave blank to use rate"
           min="0"
+          allowFractions={false}
         />
       </div>
-
+ 
       {/* Cost display */}
       {(lc.lf || isManualOverride) && (
         <div className="structural-calc">
@@ -1821,10 +1843,12 @@ function LChannelItem({ lc, index, onChange, onRemove, showRemove }) {
             ? <>L-Channel (manual override): <strong>{fmt(cost)}</strong></>
             : lc.size === "Custom"
               ? <>L-Channel (Custom — enter manual price above): <strong>{fmt(cost)}</strong></>
-              : <>{lc.size}: {lc.lf} LF × ${currentRate}/LF = <strong>{fmt(cost)}</strong></>
+              : <>{lc.size}: {lfDisplay} LF × ${currentRate}/LF = <strong>{fmt(cost)}</strong></>
           }
         </div>
       )}
+ 
+      {/* FIX 6: Photo NOT copied — only rendered here, not spread into copy */}
       <PhotoUpload label="L-Channel Photo (optional)" value={lc.photo} onChange={v => set("photo", v)} />
     </div>
   );
@@ -1840,60 +1864,51 @@ function BuildoutItem({ bo, index, onChange, onRemove }) {
   const set = (field, val) => onChange({ ...bo, [field]: val });
   const cost = calcBuildoutCost(bo);
   const isWood = bo.type === "Wood";
-
-  // CHANGE 4: detect custom wood
   const isCustomWood = isWood && (bo.woodSize === "Custom" || bo.isCustomWoodSize);
-
-  // Rate label for standard wood
   const woodRate = (!isCustomWood && isWood) ? (WOOD_BUILDOUT_RATES[bo.woodSize] || 0) : null;
-
+  const lfDisplay = safeParseFloat(bo.lf);
+ 
   return (
     <div className="structural-item-card">
       <div className="structural-item-header">
         <span>Buildout #{index + 1}</span>
         <button type="button" className="structural-item-remove" onClick={onRemove}>✕</button>
       </div>
-
+ 
       <div className="structural-fields-grid">
-
-        {/* Type dropdown */}
         <Sel label="Type" value={bo.type} options={["Wood", "Alumitube"]} onChange={v => set("type", v)} />
-
-        {/* ── WOOD path ── */}
+ 
+        {/* ── WOOD ── */}
         {isWood && (
           <div className="mps-field">
             <label className="mps-label">
               Wood Size
               {woodRate != null && <span className="lchannel-rate-badge">${woodRate}/LF</span>}
             </label>
-            {/* CHANGE 4: added "Custom" option to wood size dropdown */}
             <select
               className="mps-select"
               value={bo.woodSize}
               onChange={e => {
                 const val = e.target.value;
-                set("woodSize", val);
-                // toggle isCustomWoodSize flag
                 onChange({ ...bo, woodSize: val, isCustomWoodSize: val === "Custom" });
               }}
             >
               {Object.keys(WOOD_BUILDOUT_RATES).map(s => (
                 <option key={s} value={s}>{s} — ${WOOD_BUILDOUT_RATES[s]}/LF</option>
               ))}
-              {/* CHANGE 4: Custom option */}
               <option value="Custom">Custom</option>
             </select>
           </div>
         )}
-
-        {/* CHANGE 4: Custom wood size inputs */}
+ 
         {isWood && isCustomWood && (
           <>
             <Field
               label="Custom Wood Size"
               value={bo.customWoodSizeLabel || ""}
               onChange={v => set("customWoodSizeLabel", v)}
-              placeholder='e.g. 3×8, 6×6'
+              placeholder="e.g. 3×8, 6×6"
+              allowFractions={false}
             />
             <Field
               label="Custom Rate ($/LF)"
@@ -1902,12 +1917,12 @@ function BuildoutItem({ bo, index, onChange, onRemove }) {
               onChange={v => set("customWoodRate", v)}
               placeholder="e.g. 15"
               min="0"
+              allowFractions={false}
             />
           </>
         )}
-
-        {/* ── ALUMITUBE path ── */}
-        {/* CHANGE 5: replaced radio buttons with a standard dropdown */}
+ 
+        {/* ── ALUMITUBE ── */}
         {!isWood && (
           <div className="mps-field">
             <label className="mps-label">
@@ -1924,19 +1939,17 @@ function BuildoutItem({ bo, index, onChange, onRemove }) {
             </select>
           </div>
         )}
-
-        {/* Custom alumitube inputs */}
+ 
         {!isWood && bo.isCustomAlumitubeSize && (
           <Field
             label="Custom Alumitube Size"
             value={bo.customAlumitubeSize || ""}
             onChange={v => set("customAlumitubeSize", v)}
             placeholder='e.g. 4"×10"'
+            allowFractions={false}
           />
         )}
-
-        {/* CHANGE 6: Clean "Linear Feet" label for both types */}
-        {/* For custom alumitube, show manual price instead of LF */}
+ 
         {(!isWood && bo.isCustomAlumitubeSize) ? (
           <Field
             label="Manual Price ($)"
@@ -1945,6 +1958,7 @@ function BuildoutItem({ bo, index, onChange, onRemove }) {
             onChange={v => set("customRate", v)}
             placeholder="Enter total price"
             min="0"
+            allowFractions={false}
           />
         ) : (
           <Field
@@ -1955,23 +1969,25 @@ function BuildoutItem({ bo, index, onChange, onRemove }) {
             placeholder="e.g. 12"
             min="0"
             step="0.5"
+            allowFractions={false}
           />
         )}
       </div>
-
-      {/* Cost display */}
+ 
       {cost > 0 && (
         <div className="structural-calc">
           {isWood && isCustomWood
-            ? <>Custom Wood ({bo.customWoodSizeLabel || "—"}) @ ${bo.customWoodRate || 0}/LF × {bo.lf || 0} LF = <strong>{fmt(cost)}</strong></>
+            ? <>Custom Wood ({bo.customWoodSizeLabel || "—"}) @ ${bo.customWoodRate || 0}/LF × {lfDisplay} LF = <strong>{fmt(cost)}</strong></>
             : isWood
-              ? <>{bo.woodSize} @ ${woodRate}/LF × {bo.lf || 0} LF = <strong>{fmt(cost)}</strong></>
+              ? <>{bo.woodSize} @ ${woodRate}/LF × {lfDisplay} LF = <strong>{fmt(cost)}</strong></>
               : bo.isCustomAlumitubeSize
                 ? <>Alumitube Custom (manual price): <strong>{fmt(cost)}</strong></>
-                : <>Alumitube 3″×8″ @ ${ALUMITUBE_DEFAULT_RATE}/LF × {bo.lf || 0} LF = <strong>{fmt(cost)}</strong></>
+                : <>Alumitube 3″×8″ @ ${ALUMITUBE_DEFAULT_RATE}/LF × {lfDisplay} LF = <strong>{fmt(cost)}</strong></>
           }
         </div>
       )}
+ 
+      {/* Photo NOT copied when duplicating */}
       <PhotoUpload label="Photo (optional)" value={bo.photo} onChange={v => set("photo", v)} />
     </div>
   );
@@ -1982,99 +1998,83 @@ function BuildoutItem({ bo, index, onChange, onRemove }) {
 // CHANGE 2 + 3: "Copy from Previous Opening" buttons for both
 //               L-Channels and Buildouts
 // ─────────────────────────────────────────────────────────────
-function OpeningEditor({ 
-  opening, 
-  index, 
-  areaDefaults, 
-  productName, 
-  onChange, 
-  onRemove, 
-  showRemove, 
-  allOpenings,
-  motorBrandCache // Pass the consistent motor brand for this product group
+function OpeningEditor({
+  opening, index, areaDefaults, productName, areaMotorId,
+  onChange, onRemove, showRemove, allOpenings,
 }) {
-
-  const structural = calcOpeningStructural(opening, areaDefaults);
+  const structural   = calcOpeningStructural(opening, areaDefaults, areaMotorId);
   const openingPrice = calcOpeningBasePrice(opening, productName);
   const openingTotal = openingPrice + structural;
-
+ 
   const effectiveFabric = (opening.fabricSelection?.brand)
     ? opening.fabricSelection
     : (areaDefaults?.fabricSelection?.brand ? areaDefaults.fabricSelection : null);
-  const hasSurcharge = isPremiumFabricSurcharge(effectiveFabric);
+  const hasSurcharge    = isPremiumFabricSurcharge(effectiveFabric);
   const surchargeAmount = calcPremiumFabricSurcharge(effectiveFabric, opening.width);
-
+ 
   const prevOpening = allOpenings && index > 0 ? allOpenings[index - 1] : null;
-
+ 
+  // FIX 8 applied here — photos stripped on copy
   const copyLChannels = () => {
     if (!prevOpening?.lChannels?.length) {
       alert("No L-Channels to copy from the previous opening.");
       return;
     }
-    onChange({ ...opening, lChannels: prevOpening.lChannels.map(item => ({ ...item, id: uid() })) });
+    onChange({
+      ...opening,
+      lChannels: prevOpening.lChannels.map(({ photo: _p, ...item }) => ({ ...item, id: uid(), photo: null })),
+    });
   };
-
+ 
   const copyBuildouts = () => {
     if (!prevOpening?.buildouts?.length) {
       alert("No Buildouts to copy from the previous opening.");
       return;
     }
-    onChange({ ...opening, buildouts: prevOpening.buildouts.map(item => ({ ...item, id: uid() })) });
+    onChange({
+      ...opening,
+      buildouts: prevOpening.buildouts.map(({ photo: _p, ...item }) => ({ ...item, id: uid(), photo: null })),
+    });
   };
-
+ 
   const set = (field, val) => {
-  if ((field === "width" || field === "height") && val && typeof val === 'object' && 'decimal' in val) {
-    // Store both display and decimal
-    onChange({ ...opening, [field]: val });
-  } else if ((field === "width" || field === "height") && (!val || val === '')) {
-    onChange({ ...opening, [field]: new MeasurementValue('', null) });
-  } else {
-    onChange({ ...opening, [field]: val });
-  }
-};
-
-// Helper to get decimal value for calculations
-const getDecimalValue = (measurement) => {
-  if (measurement && typeof measurement === 'object' && 'decimal' in measurement) {
-    return measurement.decimal;
-  }
-  return measurement || null;
-};
-
-// When using width/height for calculations, get decimal:
-const widthDecimal = getDecimalValue(opening.width);
-const heightDecimal = getDecimalValue(opening.height);
-
-  const effectiveMount = opening.mountOverride || areaDefaults.mountType || "—";
-  const effectiveTrack = opening.trackOverride || areaDefaults.trackType || "—";
-  const effectiveMotor = opening.motorOverride || areaDefaults.motorType || "—";
-  const effectiveWeightBar = opening.weightBarOverride || areaDefaults.weightBar || "—";
-  const effectiveCassette = opening.colorOverride || areaDefaults.cassetteColor || "";
-  const effectiveTrackColor = opening.trackColorOverride || areaDefaults.trackColor || "";
-
+    if ((field === "width" || field === "height") && val && typeof val === "object" && "decimal" in val) {
+      onChange({ ...opening, [field]: val });
+    } else if ((field === "width" || field === "height") && (!val || val === "")) {
+      onChange({ ...opening, [field]: new MeasurementValue("", null) });
+    } else {
+      onChange({ ...opening, [field]: val });
+    }
+  };
+ 
+  const effectiveMount       = opening.mountOverride || areaDefaults.mountType || "—";
+  const effectiveTrack       = opening.trackOverride || areaDefaults.trackType || "—";
+  const effectiveWeightBar   = opening.weightBarOverride || areaDefaults.weightBar || "—";
+  const effectiveCassette    = opening.colorOverride || areaDefaults.cassetteColor || "";
+  const effectiveTrackColor  = opening.trackColorOverride || areaDefaults.trackColor || "";
   const effectiveFabricLabel = effectiveFabric ? buildFabricLabel(effectiveFabric) : "—";
-
+ 
   const stormRailCost = calcStormRailCost(opening, effectiveTrack);
-  const cassIsCustom = effectiveCassette.toLowerCase().includes("custom");
+  const cassIsCustom  = effectiveCassette.toLowerCase().includes("custom");
   const trackIsCustom = effectiveTrackColor.toLowerCase().includes("custom");
-  const effectiveMotorId = opening.motorId || getDefaultMotorId(productName) || "";
-  const motorObj = MOTOR_CATALOG.find(m => m.id === effectiveMotorId);
-  const motorAdj = motorObj?.priceAdjustment || 0;
-
   const showTrackColor = effectiveTrack !== "Wire Guide";
-
-  const addLChannel = () => set("lChannels", [...(opening.lChannels || []), createLChannel()]);
-  const updateLChannel = (id, updated) => set("lChannels", (opening.lChannels || []).map(lc => lc.id === id ? updated : lc));
+ 
+  // Motor display (read-only — comes from area)
+  const motorObj = MOTOR_CATALOG.find(m => m.id === areaMotorId);
+  const motorAdj = motorObj?.priceAdjustment || 0;
+ 
+  const addLChannel    = () => set("lChannels", [...(opening.lChannels || []), createLChannel()]);
+  const updateLChannel = (id, u) => set("lChannels", (opening.lChannels || []).map(lc => lc.id === id ? u : lc));
   const removeLChannel = (id) => set("lChannels", (opening.lChannels || []).filter(lc => lc.id !== id));
-  const addBuildout = () => set("buildouts", [...(opening.buildouts || []), createBuildout()]);
-  const updateBuildout = (id, updated) => set("buildouts", (opening.buildouts || []).map(bo => bo.id === id ? updated : bo));
-  const removeBuildout = (id) => set("buildouts", (opening.buildouts || []).filter(bo => bo.id !== id));
-
-  const lChannels = opening.lChannels || [];
-  const buildouts = opening.buildouts || [];
-  const lChannelTotal = lChannels.reduce((s, lc) => s + calcLChannelCost(lc), 0);
-  const buildoutTotal = buildouts.reduce((s, bo) => s + calcBuildoutCost(bo), 0);
-
+  const addBuildout    = () => set("buildouts",  [...(opening.buildouts  || []), createBuildout()]);
+  const updateBuildout = (id, u) => set("buildouts",  (opening.buildouts  || []).map(bo => bo.id === id ? u : bo));
+  const removeBuildout = (id) => set("buildouts",  (opening.buildouts  || []).filter(bo => bo.id !== id));
+ 
+  const lChannels      = opening.lChannels || [];
+  const buildouts      = opening.buildouts  || [];
+  const lChannelTotal  = lChannels.reduce((s, lc) => s + calcLChannelCost(lc), 0);
+  const buildoutTotal  = buildouts.reduce((s, bo)  => s + calcBuildoutCost(bo),  0);
+ 
   return (
     <div className="opening-card">
       <div className="opening-header">
@@ -2090,31 +2090,47 @@ const heightDecimal = getDecimalValue(opening.height);
           </button>
         )}
       </div>
-
+ 
       <div className="opening-grid-3">
-      <Field 
-  label="Width (ft or inches)" 
-  type="text" 
-  value={opening.width} 
-  onChange={v => set("width", v)} 
-  placeholder='e.g. 10, 120, 16 1/4' 
-  required 
-  allowFractions={true} 
-/>
-       <Field 
-  label="Height (ft or inches)" 
-  type="text" 
-  value={opening.height} 
-  onChange={v => set("height", v)} 
-  placeholder='e.g. 8, 96, 10 1/2' 
-  required 
-  allowFractions={true} 
-/>
-        <Sel label="Motor Side" value={opening.motorSide} options={MPS_DEFAULTS.motorSides} onChange={v => set("motorSide", v)} required />
+        <Field label="Width (ft or inches)"  type="text" value={opening.width}  onChange={v => set("width",  v)} placeholder="e.g. 10, 120, 16 1/4" required allowFractions={true} />
+        <Field label="Height (ft or inches)" type="text" value={opening.height} onChange={v => set("height", v)} placeholder="e.g. 8, 96, 10 1/2"   required allowFractions={true} />
+        <Sel   label="Motor Side" value={opening.motorSide} options={MPS_DEFAULTS.motorSides} onChange={v => set("motorSide", v)} required />
       </div>
-
+ 
       <OpeningPriceBadge opening={opening} productName={productName} />
-
+ 
+      {/* ── MOTOR READ-ONLY DISPLAY ── */}
+      <div className="motor-locked-display" style={{
+        background: "var(--ps-bg-subtle, #f8f9fa)",
+        border: "1px solid var(--ps-border, #e0e0e0)",
+        borderRadius: 8,
+        padding: "10px 14px",
+        marginBottom: 12,
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+      }}>
+        <span style={{ fontSize: "1.1em" }}>⚡</span>
+        <div>
+          <span style={{ fontWeight: 600 }}>Motor: </span>
+          <span>{motorObj?.displayName || getDefaultMotorDisplayName(productName) || "Somfy (default)"}</span>
+          <span style={{ marginLeft: 10, fontSize: "0.8em", opacity: 0.65, fontStyle: "italic" }}>
+            (set globally at area level)
+          </span>
+          {motorAdj < 0 && (
+            <span className="motor-badge motor-badge--credit" style={{ marginLeft: 8 }}>
+              Credit: {fmt(motorAdj)}
+            </span>
+          )}
+          {motorAdj > 0 && (
+            <span className="motor-badge motor-badge--extra" style={{ marginLeft: 8 }}>
+              +{fmt(motorAdj)}
+            </span>
+          )}
+        </div>
+      </div>
+      {/* ── END MOTOR READ-ONLY ── */}
+ 
       {hasSurcharge && opening.width && surchargeAmount > 0 && (
         <div className="premium-fabric-surcharge-badge">
           <span className="premium-fabric-surcharge-icon">⚡</span>
@@ -2131,35 +2147,14 @@ const heightDecimal = getDecimalValue(opening.height);
           <span>Premium fabric surcharge (+${PREMIUM_FABRIC_SURCHARGE_RATE}/LF) — enter width to calculate</span>
         </div>
       )}
-
-      <div className="motor-selector-row">
-        <MotorSelector 
-          motorId={effectiveMotorId} 
-          productName={productName} 
-          onChange={v => set("motorId", v)}
-          currentOpeningId={opening.id}
-          allOpenings={allOpenings}
-          currentMotorBrand={motorBrandCache}
-        />
-        {motorAdj < 0 && (
-          <div className="motor-adjustment-badge motor-adjustment-badge--credit">
-            Motor credit applied: <strong>{fmt(motorAdj)}</strong> (deducted from total)
-          </div>
-        )}
-        {motorAdj > 0 && (
-          <div className="motor-adjustment-badge motor-adjustment-badge--extra">
-            Motor upcharge: <strong>+{fmt(motorAdj)}</strong>
-          </div>
-        )}
-      </div>
-
+ 
       {effectiveTrack === "Storm Rail" && (
         <div className="storm-rail-badge">
-          ⚡ Storm Rail: {toFeetKey(opening.height) || "—"}ft height × ${STORM_RAIL_RATE}/LF = <strong>{fmt(stormRailCost)}</strong>
+          ⚡ Storm Rail: {toFeetKey(opening.height) || "—"}ft × ${STORM_RAIL_RATE}/LF = <strong>{fmt(stormRailCost)}</strong>
           {!opening.height && <span className="storm-rail-hint"> (enter height to calculate)</span>}
         </div>
       )}
-
+ 
       <details className="override-details">
         <summary className="override-summary">
           🧵 Fabric Selection
@@ -2173,19 +2168,20 @@ const heightDecimal = getDecimalValue(opening.height);
           fabricContext="screen"
         />
       </details>
-
+ 
       <details className="override-details">
         <summary className="override-summary">
           ⚙ Opening Settings
-          <span className="override-hint">(Mount: <strong>{effectiveMount}</strong> · Track: <strong>{effectiveTrack}</strong> · Motor: <strong>{effectiveMotor}</strong>)</span>
+          <span className="override-hint">(Mount: <strong>{effectiveMount}</strong> · Track: <strong>{effectiveTrack}</strong>)</span>
         </summary>
-        <div className="override-resolved-info">These settings default to the Area values above. Change any field here to override for this opening only.</div>
+        <div className="override-resolved-info">These settings default to the Area values. Change any field here to override for this opening only.</div>
         <div className="override-resolved-grid">
-
+ 
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Mount Type
-              {opening.mountOverride ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
+              {opening.mountOverride
+                ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
                 : <span className="override-resolved-source">area default</span>}
             </label>
             <select className={`override-resolved-select ${opening.mountOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
@@ -2194,11 +2190,12 @@ const heightDecimal = getDecimalValue(opening.height);
               {MPS_DEFAULTS.mountTypes.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
           </div>
-
+ 
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Track Type
-              {opening.trackOverride ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
+              {opening.trackOverride
+                ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
                 : <span className="override-resolved-source">area default</span>}
             </label>
             <select className={`override-resolved-select ${opening.trackOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
@@ -2207,39 +2204,22 @@ const heightDecimal = getDecimalValue(opening.height);
               {MPS_DEFAULTS.trackTypes.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
           </div>
-
-          <div className="override-resolved-item">
-            <label className="override-resolved-label">
-              Motor Type (legacy)
-              {opening.motorOverride ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
-                : <span className="override-resolved-source">area default</span>}
-            </label>
-            <select className={`override-resolved-select ${opening.motorOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
-              value={opening.motorOverride || ""} onChange={e => set("motorOverride", e.target.value)}>
-              <option value="">
-                — area default ({getDefaultMotorDisplayName(productName) || areaDefaults.motorType || "not set"}) —
-              </option>
-              {MPS_DEFAULTS.motorTypes.map(o => <option key={o} value={o}>{o}</option>)}
-            </select>
-          </div>
-
+ 
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Cassette Color
-              {opening.colorOverride ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
+              {opening.colorOverride
+                ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
                 : <span className="override-resolved-source">area default</span>}
             </label>
-            <select
-              className={`override-resolved-select ${opening.colorOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
-              value={opening.colorOverride || ""}
-              onChange={e => set("colorOverride", e.target.value)}
-            >
+            <select className={`override-resolved-select ${opening.colorOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
+              value={opening.colorOverride || ""} onChange={e => set("colorOverride", e.target.value)}>
               <option value="">— area default ({areaDefaults.cassetteColor || "not set"}) —</option>
               {MPS_DEFAULTS.cassetteColors.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
             {cassIsCustom && (
               <div className="custom-color-price-row">
-                <span className="custom-color-price-label">Custom Cassette Color Price (based on width):</span>
+                <span className="custom-color-price-label">Custom Cassette Color Price:</span>
                 <input className="custom-color-price-input" type="number" min="0"
                   value={opening.customCassetteColorPrice || ""} placeholder="Enter $"
                   onChange={e => set("customCassetteColorPrice", e.target.value)} />
@@ -2247,25 +2227,23 @@ const heightDecimal = getDecimalValue(opening.height);
               </div>
             )}
           </div>
-
+ 
           {showTrackColor && (
             <div className="override-resolved-item">
               <label className="override-resolved-label">
                 Track Color
-                {opening.trackColorOverride ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
+                {opening.trackColorOverride
+                  ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
                   : <span className="override-resolved-source">area default</span>}
               </label>
-              <select
-                className={`override-resolved-select ${opening.trackColorOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
-                value={opening.trackColorOverride || ""}
-                onChange={e => set("trackColorOverride", e.target.value)}
-              >
+              <select className={`override-resolved-select ${opening.trackColorOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
+                value={opening.trackColorOverride || ""} onChange={e => set("trackColorOverride", e.target.value)}>
                 <option value="">— area default ({areaDefaults.trackColor || "not set"}) —</option>
                 {MPS_DEFAULTS.trackColors.map(o => <option key={o} value={o}>{o}</option>)}
               </select>
               {trackIsCustom && (
                 <div className="custom-color-price-row">
-                  <span className="custom-color-price-label">Custom Track Color Price (based on width):</span>
+                  <span className="custom-color-price-label">Custom Track Color Price:</span>
                   <input className="custom-color-price-input" type="number" min="0"
                     value={opening.customTrackColorPrice || ""} placeholder="Enter $"
                     onChange={e => set("customTrackColorPrice", e.target.value)} />
@@ -2274,7 +2252,7 @@ const heightDecimal = getDecimalValue(opening.height);
               )}
             </div>
           )}
-
+ 
           {!showTrackColor && (
             <div className="override-resolved-item">
               <div className="wire-guide-notice">
@@ -2283,11 +2261,12 @@ const heightDecimal = getDecimalValue(opening.height);
               </div>
             </div>
           )}
-
+ 
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Weight Bar Color
-              {opening.weightBarOverride ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
+              {opening.weightBarOverride
+                ? <span className="override-resolved-source override-resolved-source--custom">opening override</span>
                 : <span className="override-resolved-source">area default</span>}
             </label>
             <select className={`override-resolved-select ${opening.weightBarOverride ? "override-resolved-select--set" : "override-resolved-select--default"}`}
@@ -2297,7 +2276,7 @@ const heightDecimal = getDecimalValue(opening.height);
             </select>
             {(opening.weightBarOverride || areaDefaults.weightBar || "").toLowerCase() === "custom" && (
               <div className="custom-color-price-row">
-                <span className="custom-color-price-label">Custom Weight Bar Price (based on width):</span>
+                <span className="custom-color-price-label">Custom Weight Bar Price:</span>
                 <input className="custom-color-price-input" type="number" min="0"
                   value={opening.customWeightBarColorPrice || ""} placeholder="Enter $"
                   onChange={e => set("customWeightBarColorPrice", e.target.value)} />
@@ -2305,27 +2284,21 @@ const heightDecimal = getDecimalValue(opening.height);
               </div>
             )}
           </div>
-
+ 
         </div>
       </details>
-
+ 
       {/* ── L-CHANNELS ── */}
       <div className="structural-section">
         <div className="structural-section-header">
           <span className="mps-label">L-Channels</span>
           {lChannelTotal > 0 && <span className="structural-section-total">{fmt(lChannelTotal)} total</span>}
           <div className="structural-section-actions">
-            <button type="button" className="structural-add-btn" onClick={addLChannel}>
-              + Add L-Channel
-            </button>
+            <button type="button" className="structural-add-btn" onClick={addLChannel}>+ Add L-Channel</button>
             {prevOpening && (
-              <button
-                type="button"
-                className="structural-copy-btn"
-                onClick={copyLChannels}
+              <button type="button" className="structural-copy-btn" onClick={copyLChannels}
                 title={`Copy ${prevOpening.lChannels?.length || 0} L-Channel(s) from Opening ${index}`}
-                disabled={!prevOpening.lChannels?.length}
-              >
+                disabled={!prevOpening.lChannels?.length}>
                 ⧉ Copy from Prev Opening
               </button>
             )}
@@ -2340,24 +2313,18 @@ const heightDecimal = getDecimalValue(opening.height);
             onRemove={() => removeLChannel(lc.id)} showRemove={true} />
         ))}
       </div>
-
+ 
       {/* ── BUILDOUTS ── */}
       <div className="structural-section">
         <div className="structural-section-header">
           <span className="mps-label">Buildouts</span>
           {buildoutTotal > 0 && <span className="structural-section-total">{fmt(buildoutTotal)} total</span>}
           <div className="structural-section-actions">
-            <button type="button" className="structural-add-btn" onClick={addBuildout}>
-              + Add Buildout
-            </button>
+            <button type="button" className="structural-add-btn" onClick={addBuildout}>+ Add Buildout</button>
             {prevOpening && (
-              <button
-                type="button"
-                className="structural-copy-btn"
-                onClick={copyBuildouts}
+              <button type="button" className="structural-copy-btn" onClick={copyBuildouts}
                 title={`Copy ${prevOpening.buildouts?.length || 0} Buildout(s) from Opening ${index}`}
-                disabled={!prevOpening.buildouts?.length}
-              >
+                disabled={!prevOpening.buildouts?.length}>
                 ⧉ Copy from Prev Opening
               </button>
             )}
@@ -2372,11 +2339,11 @@ const heightDecimal = getDecimalValue(opening.height);
             onRemove={() => removeBuildout(bo.id)} showRemove={true} />
         ))}
       </div>
-
+ 
       <div className="opening-photo-row">
         <PhotoUpload label="Opening Photo" value={opening.openingPhoto} onChange={v => set("openingPhoto", v)} />
       </div>
-
+ 
       {openingTotal > 0 && (
         <div className="opening-total">
           {openingPrice > 0 && structural > 0
@@ -2394,34 +2361,28 @@ const heightDecimal = getDecimalValue(opening.height);
 // AREA EDITOR
 // ─────────────────────────────────────────────────────────────
 function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemove, allAreaOpenings }) {
-  const areaBaseTotal = area.openings.reduce((s, o) => s + calcOpeningBasePrice(o, productName), 0);
+  const areaBaseTotal       = area.openings.reduce((s, o) => s + calcOpeningBasePrice(o, productName), 0);
   const areaStructuralTotal = calcAreaStructuralOnly(area);
-  const areaGrandTotal = areaBaseTotal + areaStructuralTotal;
+  const areaGrandTotal      = areaBaseTotal + areaStructuralTotal;
   const setArea = (field, val) => onChange({ ...area, [field]: val });
-
-  // Get consistent motor brand across all openings in this area
-  const getConsistentMotorBrand = () => {
-    for (const opening of area.openings) {
-      if (opening.motorId) {
-        return getMotorBrand(opening.motorId);
-      }
-    }
-    return null;
-  };
-  
-  const motorBrandCache = getConsistentMotorBrand();
-
+ 
   const setOpening = useCallback((openingId, updated) => {
     onChange({ ...area, openings: area.openings.map(o => o.id === openingId ? updated : o) });
   }, [area, onChange]);
-
-  const addOpening = () => onChange({ ...area, openings: [...area.openings, createOpening(productName, { motorSide: "Left" })] });
-  const removeOpening = (id) => onChange({ ...area, openings: area.openings.filter(o => o.id !== id) });
-
+ 
+  const addOpening = () =>
+    onChange({ ...area, openings: [...area.openings, createOpening(productName, { motorSide: "Left" })] });
+  const removeOpening = (id) =>
+    onChange({ ...area, openings: area.openings.filter(o => o.id !== id) });
+ 
+  const compatibleMotors   = getCompatibleMotors(productName);
+  const selectedMotorObj   = MOTOR_CATALOG.find(m => m.id === area.motorId);
+  const motorAdj           = selectedMotorObj?.priceAdjustment || 0;
+  const isDefaultMotor     = area.motorId === getDefaultMotorId(productName) || !area.motorId;
   const areaEffectiveTrack = area.trackType || "";
   const showAreaTrackColor = areaEffectiveTrack !== "Wire Guide";
   const defaultMotorDisplayName = getDefaultMotorDisplayName(productName);
-
+ 
   return (
     <div className="area-card">
       <div className="area-header">
@@ -2447,23 +2408,76 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
           )}
         </div>
       </div>
-
+ 
       <details className="override-details">
         <summary className="override-summary">
           ⚙ Area Defaults
-          <span className="override-hint">(Mount: <strong>{area.mountType || "not set"}</strong> · Track: <strong>{area.trackType || "not set"}</strong> · Cassette: <strong>{area.cassetteColor || "not set"}</strong>)</span>
+          <span className="override-hint">
+            (Mount: <strong>{area.mountType || "not set"}</strong> ·
+            Track: <strong>{area.trackType || "not set"}</strong> ·
+            Motor: <strong>{selectedMotorObj?.displayName || defaultMotorDisplayName || "Somfy (default)"}</strong>)
+          </span>
         </summary>
-
+ 
         <div className="area-defaults">
-          <div className="area-defaults-label">Area Defaults (auto-populated per opening — override per opening below)</div>
+          <div className="area-defaults-label">
+            Area Defaults — applied to ALL openings in this area automatically.
+          </div>
           <div className="area-defaults-grid">
             <div className="mps-field">
               <label className="mps-label">Product</label>
               <div className="mps-input mps-input--readonly">{productName}</div>
             </div>
-            <Sel label="Mount Type" value={area.mountType} options={MPS_DEFAULTS.mountTypes} onChange={v => setArea("mountType", v)} />
-            <Sel label="Track Type" value={area.trackType} options={MPS_DEFAULTS.trackTypes} onChange={v => setArea("trackType", v)} />
-
+            <Sel label="Mount Type"  value={area.mountType}  options={MPS_DEFAULTS.mountTypes}  onChange={v => setArea("mountType", v)} />
+            <Sel label="Track Type"  value={area.trackType}  options={MPS_DEFAULTS.trackTypes}  onChange={v => setArea("trackType", v)} />
+ 
+            {/* ── GLOBAL MOTOR SELECTOR ── */}
+            <div className="mps-field">
+              <label className="mps-label">
+                Motor
+                {isDefaultMotor && (
+                  <span className="motor-badge motor-badge--included" style={{ marginLeft: 8 }}>
+                    ✓ Included in base price
+                  </span>
+                )}
+                {!isDefaultMotor && motorAdj < 0 && (
+                  <span className="motor-badge motor-badge--credit" style={{ marginLeft: 8 }}>
+                    Credit: {fmt(motorAdj)}
+                  </span>
+                )}
+                {!isDefaultMotor && motorAdj > 0 && (
+                  <span className="motor-badge motor-badge--extra" style={{ marginLeft: 8 }}>
+                    +{fmt(motorAdj)}
+                  </span>
+                )}
+              </label>
+              <select
+                className="mps-select motor-select"
+                value={area.motorId || getDefaultMotorId(productName) || ""}
+                onChange={e => setArea("motorId", e.target.value)}
+              >
+                {compatibleMotors.map(motor => (
+                  <option key={motor.id} value={motor.id}>
+                    {motor.displayName}
+                    {motor.includedInBase ? " (included)" : ""}
+                    {motor.priceAdjustment < 0 ? ` (credit ${fmt(motor.priceAdjustment)})` : ""}
+                    {motor.priceAdjustment > 0 ? ` (+${fmt(motor.priceAdjustment)})` : ""}
+                  </option>
+                ))}
+              </select>
+              {selectedMotorObj?.notes && (
+                <div className="motor-notes">{selectedMotorObj.notes}</div>
+              )}
+              <div className="motor-global-notice" style={{
+                marginTop: 6, fontSize: "0.8em",
+                color: "var(--ps-text-muted, #888)",
+                fontStyle: "italic"
+              }}>
+                ⚠ Motor applies to all openings in this area. To use a different motor, create a new product group.
+              </div>
+            </div>
+            {/* ── END MOTOR SELECTOR ── */}
+ 
             <div className="mps-field">
               <label className="mps-label">Cassette Color</label>
               <select className="mps-select" value={area.cassetteColor || ""} onChange={e => setArea("cassetteColor", e.target.value)}>
@@ -2471,7 +2485,7 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
                 {MPS_DEFAULTS.cassetteColors.map(o => <option key={o} value={o}>{o}</option>)}
               </select>
             </div>
-
+ 
             {showAreaTrackColor ? (
               <div className="mps-field">
                 <label className="mps-label">Track Color</label>
@@ -2486,20 +2500,15 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
                 <div className="wire-guide-notice-inline">N/A — Wire Guide selected</div>
               </div>
             )}
-
-            <div className="mps-field">
-              <label className="mps-label">Motor Type (Default)</label>
-              <div className="mps-input mps-input--readonly">
-                {defaultMotorDisplayName || area.motorType || "Somfy (default)"}
-                {defaultMotorDisplayName && <span className="motor-badge motor-badge--included" style={{ marginLeft: "8px", fontSize: "0.7em" }}>✓ Included</span>}
-              </div>
-            </div>
-
-            <Sel label="Weight Bar Color" value={area.weightBar || ""} options={MPS_DEFAULTS.weightBarTypes} onChange={v => setArea("weightBar", v)} placeholder="Select Weight Bar Color" />
+ 
+            <Sel label="Weight Bar Color" value={area.weightBar || ""} options={MPS_DEFAULTS.weightBarTypes}
+              onChange={v => setArea("weightBar", v)} placeholder="Select Weight Bar Color" />
           </div>
-
+ 
           <div className="area-fabric-section">
-            <div className="area-defaults-label" style={{ marginTop: "12px" }}>Area Default Fabric (openings inherit this unless overridden)</div>
+            <div className="area-defaults-label" style={{ marginTop: "12px" }}>
+              Area Default Fabric (openings inherit this unless overridden)
+            </div>
             <FabricSelector
               fabricSelection={area.fabricSelection || { brand: "", style_number: "", color_name: "", series: "" }}
               onChange={v => setArea("fabricSelection", v)}
@@ -2507,12 +2516,11 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
               fabricContext="screen"
             />
           </div>
-
+ 
           <PhotoUpload label="Area Photo (wide shot)" value={area.areaPhoto} onChange={v => setArea("areaPhoto", v)} />
         </div>
-
       </details>
-
+ 
       <div className="openings-container">
         <div className="openings-heading">
           <span>Openings</span>
@@ -2520,17 +2528,17 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
           {areaBaseTotal > 0 && <span className="openings-price-total">= {fmt(areaBaseTotal)} product price</span>}
         </div>
         {area.openings.map((opening, idx) => (
-          <OpeningEditor 
-            key={opening.id} 
-            opening={opening} 
-            index={idx} 
+          <OpeningEditor
+            key={opening.id}
+            opening={opening}
+            index={idx}
             areaDefaults={area}
             productName={productName}
+            areaMotorId={area.motorId || getDefaultMotorId(productName) || ""}
             onChange={updated => setOpening(opening.id, updated)}
             onRemove={() => removeOpening(opening.id)}
             showRemove={area.openings.length > 1}
             allOpenings={area.openings}
-            motorBrandCache={motorBrandCache}
           />
         ))}
         <button type="button" className="add-opening-btn" onClick={addOpening}>+ Add Opening</button>
@@ -2744,50 +2752,29 @@ function MPSProductCard({
   productNotes, onProductNoteChange,
   controlState, onControlChange,
 }) {
-  const qty = parseInt(line.quantity, 10) || 1;
-  const areas = mpsData[line.id] || [];
-  const setAreas = (a) => onMPSChange(line.id, a);
-  const addArea = () => setAreas([...areas, createArea(line.product)]);
-  const updateArea = (id, u) => setAreas(areas.map(a => a.id === id ? u : a));
-  const removeArea = (id) => setAreas(areas.filter(a => a.id !== id));
-
+  const qty    = parseInt(line.quantity, 10) || 1;
+  const areas  = mpsData[line.id] || [];
+  const setAreas    = (a) => onMPSChange(line.id, a);
+  const addArea     = () => setAreas([...areas, createArea(line.product)]);
+  const updateArea  = (id, u) => setAreas(areas.map(a => a.id === id ? u : a));
+  const removeArea  = (id) => setAreas(areas.filter(a => a.id !== id));
+ 
   const totalOpenings = countTotalOpenings(areas);
-
-  // Get consistent motor brand across ALL openings in this product group
-  const getConsistentMotorBrand = () => {
-    let foundBrand = null;
-    for (const area of areas) {
-      for (const opening of area.openings) {
-        if (opening.motorId) {
-          const brand = getMotorBrand(opening.motorId);
-          if (!foundBrand) {
-            foundBrand = brand;
-          } else if (foundBrand !== brand) {
-            // Mixed motors detected - this shouldn't happen due to validation
-            console.warn("Mixed motor types detected in product group");
-            return null;
-          }
-        }
-      }
-    }
-    return foundBrand;
-  };
-
-  const dominantMotorBrand = getConsistentMotorBrand();
+ 
+  // Motor brand now comes from area.motorId (global per area)
   const dominantMotorId = useMemo(() => {
     for (const area of areas) {
-      for (const opening of area.openings) {
-        if (opening.motorId) return opening.motorId;
-      }
+      if (area.motorId) return area.motorId;
     }
     return getDefaultMotorId(line.product) || "";
   }, [areas, line.product]);
-
+ 
+  const dominantMotorBrand = getMotorBrand(dominantMotorId);
+ 
   const controlCost = useMemo(() => {
-    const motorBrand = getMotorBrand(dominantMotorId);
+    const motorBrand     = getMotorBrand(dominantMotorId);
     const includedCredit = getIncludedControlCredit(motorBrand, totalOpenings > 0 ? totalOpenings : 1);
     const { includedReplaced = false, replacementControlId = "", additionalControls = [] } = controlState || {};
-
     let cost = 0;
     if (includedReplaced && replacementControlId) {
       const replacement = CONTROL_CATALOG.find(c => c.id === replacementControlId);
@@ -2799,23 +2786,22 @@ function MPSProductCard({
     });
     return cost;
   }, [dominantMotorId, totalOpenings, controlState]);
-
-  const selected = addonSelections[line.id] || {};
+ 
+  const selected             = addonSelections[line.id] || {};
   const openingsProductTotal = calcMPSOpeningsTotal(areas, line.product);
-  const structuralTotal = areas.reduce((s, a) => s + calcAreaStructuralOnly(a), 0);
-  const autoRemoteName = getAutoRemote(totalOpenings > 0 ? totalOpenings : 1);
-  const simpleAddonTotal = MPS_SIMPLE_ADDONS.reduce((s, a) => selected[a.id] ? s + a.price * qty : s, 0);
-  const windTotal = calcWindSensorTotal(windSensorSelections[line.id], totalOpenings);
-
-  const enriched = snapshot.productLines.find(l => l.id === line.id);
-  const appBaseTotal = enriched?.pricing?.lineSubtotal || 0;
+  const structuralTotal      = areas.reduce((s, a) => s + calcAreaStructuralOnly(a), 0);
+  const autoRemoteName       = getAutoRemote(totalOpenings > 0 ? totalOpenings : 1);
+  const simpleAddonTotal     = MPS_SIMPLE_ADDONS.reduce((s, a) => selected[a.id] ? s + a.price * qty : s, 0);
+  const windTotal            = calcWindSensorTotal(windSensorSelections[line.id], totalOpenings);
+  const enriched             = snapshot.productLines.find(l => l.id === line.id);
+  const appBaseTotal         = enriched?.pricing?.lineSubtotal || 0;
   const effectiveProductTotal = openingsProductTotal > 0 ? openingsProductTotal : appBaseTotal;
-  const grandLineTotal = effectiveProductTotal + structuralTotal + simpleAddonTotal + windTotal + controlCost;
-
+  const grandLineTotal       = effectiveProductTotal + structuralTotal + simpleAddonTotal + windTotal + controlCost;
+ 
   const hasUnpriced = areas.some(a =>
     a.openings.some(o => (o.width || o.height) && !getMPSOpeningPrice(line.product, o.width, o.height).ok)
   );
-
+ 
   const handleReset = () => {
     if (window.confirm("Reset all areas, openings, and add-ons for this product? This cannot be undone.")) {
       onMPSChange(line.id, []);
@@ -2824,13 +2810,10 @@ function MPSProductCard({
       onControlChange({ includedReplaced: false, replacementControlId: "", additionalControls: [] });
     }
   };
-
-  const defaultMotorId = getDefaultMotorId(line.product);
-  const defaultMotor = MOTOR_CATALOG.find(m => m.id === defaultMotorId);
-
-  // Show warning if mixed motors detected
-  const hasMixedMotors = dominantMotorBrand === null && areas.length > 0;
-
+ 
+  const defaultMotorId  = getDefaultMotorId(line.product);
+  const defaultMotor    = MOTOR_CATALOG.find(m => m.id === defaultMotorId);
+ 
   return (
     <div className="ps-product-card mps-product-card">
       <div className="ps-product-header">
@@ -2838,44 +2821,31 @@ function MPSProductCard({
         <div className="ps-product-name">{line.product}</div>
         <div className="ps-product-price">{fmt(grandLineTotal)}</div>
       </div>
-
-      {hasMixedMotors && (
-        <div className="motor-mix-warning" style={{
-          backgroundColor: "#fff3cd",
-          border: "1px solid #ffc107",
-          borderRadius: "8px",
-          padding: "12px",
-          marginBottom: "16px",
-          color: "#856404"
-        }}>
-          <span style={{ fontSize: "20px", marginRight: "8px" }}>⚠️</span>
-          <strong>Mixed motor types detected!</strong> All openings in a product group must use the same motor type.
-          Please update motors to be consistent or create separate product groups.
-        </div>
-      )}
-
+ 
       <div className="quote-tool-controls">
         <span className="quote-tool-controls-label">🛠 Quote Tool Controls</span>
         <button type="button" className="ctrl-btn ctrl-btn-reset" onClick={handleReset}>↺ Reset Quote Tool</button>
       </div>
-
+ 
       {defaultMotor && (
         <div className="motor-info-banner">
           <span className="motor-info-icon">⚡</span>
           <div className="motor-info-content">
             <span className="motor-info-title">Default Motor: <strong>{defaultMotor.displayName}</strong></span>
-            <span className="motor-info-sub">{defaultMotor.notes} — Override per opening below if needed</span>
+            <span className="motor-info-sub">
+              {defaultMotor.notes} — Change motor in Area Defaults if needed (applies to all openings in that area)
+            </span>
           </div>
         </div>
       )}
-
+ 
       <div className="ps-detail-grid">
         {[
           { label: "Product Name", value: line.product },
-          { label: "Category", value: line.category },
-          { label: "Base Size", value: `${line.width || "—"} × ${line.height || "—"}` },
-          { label: "Quantity", value: line.quantity },
-          { label: "Operation", value: line.operation, capitalize: true }
+          { label: "Category",     value: line.category },
+          { label: "Base Size",    value: `${line.width || "—"} × ${line.height || "—"}` },
+          { label: "Quantity",     value: line.quantity },
+          { label: "Operation",    value: line.operation, capitalize: true },
         ].map(({ label, value, capitalize }) => (
           <div className="ps-detail-item" key={label}>
             <span className="ps-detail-label">{label}</span>
@@ -2883,22 +2853,22 @@ function MPSProductCard({
           </div>
         ))}
       </div>
-
+ 
       <div className="product-note-section">
         <label className="mps-label">📝 Product Notes</label>
         <textarea className="product-note-textarea"
           placeholder="Add any important notes about this product…"
           value={productNotes || ""} onChange={e => onProductNoteChange(line.id, e.target.value)} rows={3} />
       </div>
-
+ 
       {enriched?.pricing?.priceNote && (
         <div className="ps-price-note">💡 Reference (from intake form): {enriched.pricing.priceNote}</div>
       )}
       {hasUnpriced && (
         <div className="ps-price-note ps-price-note--warn">⚠ Some openings have dimensions that don't match the price matrix.</div>
       )}
-
-      {totalOpenings > 0 && dominantMotorBrand && (
+ 
+      {totalOpenings > 0 && (
         <div className="auto-remote-badge">
           <span className="auto-remote-icon">🎛</span>
           <span className="auto-remote-text">
@@ -2909,7 +2879,7 @@ function MPSProductCard({
           </span>
         </div>
       )}
-
+ 
       <div className="mps-builder">
         <div className="mps-builder-header">
           <div className="mps-builder-title">
@@ -2930,7 +2900,11 @@ function MPSProductCard({
         {areas.length === 0
           ? <div className="mps-empty-state"><p>No areas configured yet. Add an area to specify openings.</p></div>
           : areas.map((area, idx) => (
-            <AreaEditor key={area.id} area={area} areaIndex={idx} productName={line.product}
+            <AreaEditor
+              key={area.id}
+              area={area}
+              areaIndex={idx}
+              productName={line.product}
               onChange={u => updateArea(area.id, u)}
               onRemove={() => removeArea(area.id)}
               showRemove={areas.length > 1}
@@ -2940,25 +2914,22 @@ function MPSProductCard({
         }
         <button type="button" className="add-area-btn" onClick={addArea}>+ Add Area</button>
       </div>
-
+ 
       <WindSensorSection
         productName={line.product}
         windSensorSelections={windSensorSelections[line.id] || {}}
         onWindSensorChange={(updated) => onWindSensorChange(line.id, updated)}
         totalOpenings={totalOpenings}
       />
-
-      {/* Controls Section - only show if we have a consistent motor brand */}
-      {dominantMotorBrand && (
-        <MPSControlSection
-          productName={line.product}
-          motorId={dominantMotorId}
-          totalOpenings={totalOpenings > 0 ? totalOpenings : 1}
-          controlState={controlState || { includedReplaced: false, replacementControlId: "", additionalControls: [] }}
-          onControlChange={onControlChange}
-        />
-      )}
-
+ 
+      <MPSControlSection
+        productName={line.product}
+        motorId={dominantMotorId}
+        totalOpenings={totalOpenings > 0 ? totalOpenings : 1}
+        controlState={controlState || { includedReplaced: false, replacementControlId: "", additionalControls: [] }}
+        onControlChange={onControlChange}
+      />
+ 
       <div className="mps-simple-addons">
         <div className="mps-simple-addons-title">
           <span className="ps-addons-icon">✦</span> Accessories &amp; Add-ons
@@ -2984,19 +2955,17 @@ function MPSProductCard({
           })}
         </div>
       </div>
-
+ 
       <div className="mps-line-total">
         {openingsProductTotal > 0
           ? <span>Openings Price: {fmt(openingsProductTotal)}</span>
           : <span>Base Price (from form): {fmt(appBaseTotal)}</span>
         }
         {simpleAddonTotal > 0 && <span>+ Add-ons: {fmt(simpleAddonTotal)}</span>}
-        {windTotal > 0 && <span>+ Wind Sensor(s): {fmt(windTotal)}</span>}
-        {controlCost > 0 && <span>+ Controls: {fmt(controlCost)}</span>}
-        {structuralTotal > 0 && <span>+ Structural: {fmt(structuralTotal)}</span>}
-        {totalOpenings > 0 && (
-          <span className="mps-remote-info-line">Remote included: {autoRemoteName}</span>
-        )}
+        {windTotal > 0        && <span>+ Wind Sensor(s): {fmt(windTotal)}</span>}
+        {controlCost > 0      && <span>+ Controls: {fmt(controlCost)}</span>}
+        {structuralTotal > 0  && <span>+ Structural: {fmt(structuralTotal)}</span>}
+        {totalOpenings > 0    && <span className="mps-remote-info-line">Remote included: {autoRemoteName}</span>}
         <span className="mps-line-grand">Line Total: {fmt(grandLineTotal)}</span>
       </div>
     </div>
@@ -3713,96 +3682,91 @@ export default function ProductSummary() {
     .reduce((sum, l) => sum + (parseInt(l.quantity, 10) || 1), 0);
 
  const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand, windSensorGrand, mraMatrixGrand, controlsGrand } = useMemo(() => {
-  if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0, mpsOpeningsProductGrand:0, windSensorGrand:0, mraMatrixGrand:0, controlsGrand:0 };
-  const configured = snapshot.productLines.filter(l => l.category && l.product);
-
-  let addonGrand=0, structuralGrand=0, openingsGrand=0, appBaseMPSGrand=0, windGrand=0, mraGrand=0, ctrlGrand=0;
-
-  // Helper to extract decimal from MeasurementValue or plain value
-  const getDecimal = (val) => {
-    if (val && typeof val === 'object' && 'decimal' in val) {
-      return val.decimal || 0;
-    }
-    return parseFloat(val) || 0;
-  };
-
-  configured.forEach(line => {
-    if (MPS_PRODUCTS.includes(line.product)) {
-      const areas = mpsData[line.id] || [];
-      const openingsTotal = calcMPSOpeningsTotal(areas, line.product);
-      structuralGrand += areas.reduce((s,a) => s + calcAreaStructuralOnly(a), 0);
-      const qty = parseInt(line.quantity,10)||1;
-      const sel = addonSelections[line.id]||{};
-      MPS_SIMPLE_ADDONS.forEach(a => { if(sel[a.id]) addonGrand += a.price*qty; });
-      const totalOpenings = countTotalOpenings(areas);
-      windGrand += calcWindSensorTotal(windSensorSelections[line.id], totalOpenings);
-
-      // Control cost
-      const lineControlState = mpsControls[line.id] || {};
-      let dominantMotorId = "";
-      for (const area of areas) {
-        for (const opening of area.openings) {
-          if (opening.motorId) { dominantMotorId = opening.motorId; break; }
+    if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0, mpsOpeningsProductGrand:0, windSensorGrand:0, mraMatrixGrand:0, controlsGrand:0 };
+    const configured = snapshot.productLines.filter(l => l.category && l.product);
+ 
+    let addonGrand=0, structuralGrand=0, openingsGrand=0, appBaseMPSGrand=0, windGrand=0, mraGrand=0, ctrlGrand=0;
+ 
+    const getDecimal = (val) => {
+      if (val && typeof val === "object" && "decimal" in val) return val.decimal || 0;
+      return parseFloat(val) || 0;
+    };
+ 
+    configured.forEach(line => {
+      if (MPS_PRODUCTS.includes(line.product)) {
+        const areas         = mpsData[line.id] || [];
+        const openingsTotal = calcMPSOpeningsTotal(areas, line.product);
+ 
+        // FIX: structural uses area.motorId for each area
+        structuralGrand += areas.reduce((s, area) =>
+          s + area.openings.reduce((ss, o) => ss + calcOpeningStructural(o, area, area.motorId), 0),
+          0
+        );
+ 
+        const qty      = parseInt(line.quantity, 10) || 1;
+        const sel      = addonSelections[line.id] || {};
+        MPS_SIMPLE_ADDONS.forEach(a => { if (sel[a.id]) addonGrand += a.price * qty; });
+        const totalOpenings = countTotalOpenings(areas);
+        windGrand += calcWindSensorTotal(windSensorSelections[line.id], totalOpenings);
+ 
+        // Controls — read motor from area
+        const lineControlState = mpsControls[line.id] || {};
+        let dominantMotorId = "";
+        for (const area of areas) {
+          if (area.motorId) { dominantMotorId = area.motorId; break; }
         }
-        if (dominantMotorId) break;
-      }
-      if (!dominantMotorId) dominantMotorId = getDefaultMotorId(line.product) || "";
-      const motorBrand = getMotorBrand(dominantMotorId);
-      const includedCredit = getIncludedControlCredit(motorBrand, totalOpenings > 0 ? totalOpenings : 1);
-      const { includedReplaced=false, replacementControlId="", additionalControls=[] } = lineControlState;
-      if (includedReplaced && replacementControlId) {
-        const rep = CONTROL_CATALOG.find(c => c.id === replacementControlId);
-        if (rep) ctrlGrand += Math.max(0, rep.price - includedCredit);
-      }
-      additionalControls.forEach(ac => {
-        const ctrl = CONTROL_CATALOG.find(c => c.id === ac.controlId);
-        if (ctrl) ctrlGrand += ctrl.price * (parseInt(ac.qty,10)||1);
-      });
-
-      if (openingsTotal > 0) openingsGrand += openingsTotal;
-      else { const e = snapshot.productLines.find(l2=>l2.id===line.id); appBaseMPSGrand += e?.pricing?.lineSubtotal||0; }
-
-    } else if (AWNING_PRODUCTS.includes(line.product)) {
-      const cfg = mraConfig[line.id] || {};
-      const qty = parseInt(line.quantity,10)||1;
-      
-      // FIX: Properly extract decimal values from MeasurementValue objects
-      const widthFtDecimal = getDecimal(cfg.widthFt);
-      const widthInDecimal = getDecimal(cfg.widthIn);
-      const totalWidthFt = widthFtDecimal + (widthInDecimal / 12);
-      const widthFtKey = totalWidthFt > 0 ? Math.ceil(totalWidthFt) : null;
-      
-      if (widthFtKey && cfg.projection) {
-        const pr = getMRAPrice(line.product, cfg.projection, widthFtKey);
-        if (pr.ok) {
-          mraGrand += pr.price * qty;
+        if (!dominantMotorId) dominantMotorId = getDefaultMotorId(line.product) || "";
+        const motorBrand     = getMotorBrand(dominantMotorId);
+        const includedCredit = getIncludedControlCredit(motorBrand, totalOpenings > 0 ? totalOpenings : 1);
+        const { includedReplaced=false, replacementControlId="", additionalControls=[] } = lineControlState;
+        if (includedReplaced && replacementControlId) {
+          const rep = CONTROL_CATALOG.find(c => c.id === replacementControlId);
+          if (rep) ctrlGrand += Math.max(0, rep.price - includedCredit);
         }
+        additionalControls.forEach(ac => {
+          const ctrl = CONTROL_CATALOG.find(c => c.id === ac.controlId);
+          if (ctrl) ctrlGrand += ctrl.price * (parseInt(ac.qty, 10) || 1);
+        });
+ 
+        if (openingsTotal > 0) openingsGrand += openingsTotal;
+        else { const e = snapshot.productLines.find(l2 => l2.id === line.id); appBaseMPSGrand += e?.pricing?.lineSubtotal || 0; }
+ 
+      } else if (AWNING_PRODUCTS.includes(line.product)) {
+        const cfg = mraConfig[line.id] || {};
+        const qty = parseInt(line.quantity, 10) || 1;
+        const widthFtDecimal = getDecimal(cfg.widthFt);
+        const widthInDecimal = getDecimal(cfg.widthIn);
+        const totalWidthFt   = widthFtDecimal + (widthInDecimal / 12);
+        const widthFtKey     = totalWidthFt > 0 ? Math.ceil(totalWidthFt) : null;
+        if (widthFtKey && cfg.projection) {
+          const pr = getMRAPrice(line.product, cfg.projection, widthFtKey);
+          if (pr.ok) mraGrand += pr.price * qty;
+        }
+        mraGrand += calcFieldAddonTotal(fieldAddonValues[line.id], line.product);
+      } else {
+        const qty    = parseInt(line.quantity, 10) || 1;
+        const addons = getAddonsForProduct(line.product);
+        const sel    = addonSelections[line.id] || {};
+        addons.forEach(a => { if (sel[a.id]) addonGrand += a.price * qty; });
+        addonGrand += calcFieldAddonTotal(fieldAddonValues[line.id], line.product);
       }
-      mraGrand += calcFieldAddonTotal(fieldAddonValues[line.id], line.product);
-    } else {
-      const qty = parseInt(line.quantity,10)||1;
-      const addons = getAddonsForProduct(line.product);
-      const sel = addonSelections[line.id]||{};
-      addons.forEach(a => { if(sel[a.id]) addonGrand += a.price*qty; });
-      addonGrand += calcFieldAddonTotal(fieldAddonValues[line.id], line.product);
-    }
-  });
-
-  const nonMPSNonMRAOriginal = (snapshot.pricingSummary?.subtotal||0) -
-    snapshot.productLines
-      .filter(l => l.category && l.product && (MPS_PRODUCTS.includes(l.product) || AWNING_PRODUCTS.includes(l.product)))
-      .reduce((s,l)=>{ const e=snapshot.productLines.find(l2=>l2.id===l.id); return s+(e?.pricing?.lineSubtotal||0); }, 0);
-
-  return {
-    summaryAddonGrandTotal:  addonGrand,
-    mpsStructuralGrand:      structuralGrand,
-    mpsOpeningsProductGrand: openingsGrand,
-    windSensorGrand:         windGrand,
-    mraMatrixGrand:          mraGrand,
-    controlsGrand:           ctrlGrand,
-    subtotalWithAddons: nonMPSNonMRAOriginal + openingsGrand + appBaseMPSGrand + addonGrand + structuralGrand + windGrand + mraGrand + ctrlGrand,
-  };
-}, [snapshot, addonSelections, mpsData, fieldAddonValues, windSensorSelections, mraConfig, mpsControls]);
+    });
+ 
+    const nonMPSNonMRAOriginal = (snapshot.pricingSummary?.subtotal || 0) -
+      snapshot.productLines
+        .filter(l => l.category && l.product && (MPS_PRODUCTS.includes(l.product) || AWNING_PRODUCTS.includes(l.product)))
+        .reduce((s, l) => { const e = snapshot.productLines.find(l2 => l2.id === l.id); return s + (e?.pricing?.lineSubtotal || 0); }, 0);
+ 
+    return {
+      summaryAddonGrandTotal:  addonGrand,
+      mpsStructuralGrand:      structuralGrand,
+      mpsOpeningsProductGrand: openingsGrand,
+      windSensorGrand:         windGrand,
+      mraMatrixGrand:          mraGrand,
+      controlsGrand:           ctrlGrand,
+      subtotalWithAddons: nonMPSNonMRAOriginal + openingsGrand + appBaseMPSGrand + addonGrand + structuralGrand + windGrand + mraGrand + ctrlGrand,
+    };
+  }, [snapshot, addonSelections, mpsData, fieldAddonValues, windSensorSelections, mraConfig, mpsControls]);
 
   const discountPercent = snapshot?.pricingSummary?.discountPercent || 0;
   const discountAmount  = subtotalWithAddons * (discountPercent / 100);
