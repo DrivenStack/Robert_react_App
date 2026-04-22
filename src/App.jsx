@@ -183,7 +183,7 @@ const products = [
   },
   // Keep Skylight Plus MRA (Motor B Retractable Awning) as before
   {
-    name: "Skylight Plus MRA",
+    name: "Skyline Plus MRA",
     pricingModel: "mra_configured",
   },
 ];
@@ -200,7 +200,7 @@ const productCatalog = {
   ],
   "Retractable Awnings": [
     // CHANGE 1 & 2: Replaced separate Motor A/B products with unified products
-    "Skylight Plus MRA",
+    "Skyline Plus MRA",
     "Skyline Motorized Retractable Awning",
     "Open Roll Motorized Retractable Awning",
   ]
@@ -216,7 +216,7 @@ const MPS_PRODUCTS = [
 // ── Awning products that are fully configured in ProductSummary (like MPS — no width/height on intake) ──
 // CHANGE 3: Skyline MRA and Open Roll MRA skip width/projection on intake form
 const MRA_CONFIGURED_PRODUCTS = [
-  "Skylight Plus MRA",
+  "Skyline Plus MRA",
   "Skyline Motorized Retractable Awning",
   "Open Roll Motorized Retractable Awning",
 ];

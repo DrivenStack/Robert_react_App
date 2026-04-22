@@ -12,7 +12,7 @@ const MPS_PRODUCTS = [
 ];
 
 const AWNING_PRODUCTS = [
-  "Skylight Plus MRA",
+  "Skyline Plus MRA",
   "Skyline Motorized Retractable Awning",
   "Open Roll Motorized Retractable Awning",
   "Motor A QIP-Square box Retractable Awning",
@@ -270,7 +270,7 @@ function safeParseFloat(val) {
 
 function getMRAPrice(productName, projection, widthFt) {
   let matrix;
-  if (productName === "Skylight Plus MRA" || productName === "Motor B Retractable Awning") {
+  if (productName === "Skyline Plus MRA" || productName === "Motor B Retractable Awning") {
     matrix = SKYLIGHT_MRA_PRICE_DATA;
   } else if (productName === "Skyline Motorized Retractable Awning") {
     matrix = SKYLINE_MRA_PRICE_DATA;
@@ -984,7 +984,7 @@ const PRODUCT_FIELD_ADDONS = {
     { id:"part_gold_deco_s",     name:"Gold Extra Parts Deco / Sq Sill etc (single)",pricingType:"per_unit",rate:70,   unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
     { id:"part_gold_deco_d",     name:"Gold Extra Parts Deco / Sq Sill etc (double)",pricingType:"per_unit",rate:140,  unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
   ],
-  "Skylight Plus MRA": [
+  "Skyline Plus MRA": [
     { id:"somfy_wind_sensor", name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"somfy_sun_wind",    name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
     { id:"power_cord_24ft",   name:"24\u2019 Motor Power Cord (upgrade)", pricingType:"per_unit", rate:80,  unit:"units", unitShort:"ea", placeholder:"1", group:"Power Cable Options" },
@@ -3324,7 +3324,7 @@ function GenericMRACard({
 }
 
 // ─────────────────────────────────────────────────────────────
-// SKYLIGHT PLUS MRA CARD (UPDATED WITH FRACTION SUPPORT)
+// SKYLINE PLUS MRA CARD (UPDATED WITH FRACTION SUPPORT)
 // ─────────────────────────────────────────────────────────────
 function SkylightMRACard({
   line, index, snapshot,
@@ -3367,7 +3367,7 @@ function SkylightMRACard({
   const widthFtKey = totalWidthFt > 0 ? Math.ceil(totalWidthFt) : null;
   
   const priceResult = widthFtKey && cfg.projection
-    ? getMRAPrice("Skylight Plus MRA", cfg.projection, widthFtKey)
+    ? getMRAPrice("Skyline Plus MRA", cfg.projection, widthFtKey)
     : { ok: false, price: 0, message: "" };
   const unitPrice = priceResult.ok ? priceResult.price : 0;
   const matrixTotal = unitPrice * qty;
@@ -3375,7 +3375,7 @@ function SkylightMRACard({
   const sampleRow = cfg.projection ? SKYLIGHT_MRA_PRICE_DATA[cfg.projection] : null;
   const validWidths = sampleRow ? Object.keys(sampleRow).map(Number).sort((a,b)=>a-b) : [];
 
-  const fieldTotal = calcFieldAddonTotal(fieldAddonValues, "Skylight Plus MRA");
+  const fieldTotal = calcFieldAddonTotal(fieldAddonValues, "Skyline Plus MRA");
   const grandLineTotal = matrixTotal + fieldTotal;
 
   // Format display values for width
@@ -3390,7 +3390,7 @@ function SkylightMRACard({
       <div className="ps-product-header">
         <div className="ps-product-number">#{index + 1}</div>
         <div className="ps-product-name">
-          Skylight Plus MRA
+          Skyline Plus MRA
           <span className="skylight-mra-badge">Motorized Retractable Awning</span>
         </div>
         <div className="ps-product-price">{fmt(grandLineTotal)}</div>
@@ -3421,7 +3421,7 @@ function SkylightMRACard({
       </div>
 
       <div className="ps-detail-grid">
-        <div className="ps-detail-item"><span className="ps-detail-label">Product</span><span className="ps-detail-value">Skylight Plus MRA</span></div>
+        <div className="ps-detail-item"><span className="ps-detail-label">Product</span><span className="ps-detail-value">Skyline Plus MRA</span></div>
         <div className="ps-detail-item"><span className="ps-detail-label">Category</span><span className="ps-detail-value">{line.category}</span></div>
         <div className="ps-detail-item"><span className="ps-detail-label">Quantity</span><span className="ps-detail-value">{line.quantity}</span></div>
         <div className="ps-detail-item"><span className="ps-detail-label">Operation</span><span className="ps-detail-value" style={{textTransform:"capitalize"}}>{line.operation}</span></div>
@@ -3511,7 +3511,7 @@ function SkylightMRACard({
       </div>
 
       <FieldAddonSection
-        productName="Skylight Plus MRA"
+        productName="Skyline Plus MRA"
         fieldAddonValues={fieldAddonValues}
         onFieldAddonChange={onFieldAddonChange}
         lineId={line.id}
@@ -3811,7 +3811,7 @@ export default function ProductSummary() {
           {configuredLines.length === 0 ? <p className="ps-empty">No products configured yet.</p> : (
             <div className="ps-products-list">
               {configuredLines.map((line, idx) => {
-                const isSkylightMRA = line.product === "Skylight Plus MRA" || line.product === "Motor B Retractable Awning";
+                const isSkylightMRA = line.product === "Skyline Plus MRA" || line.product === "Motor B Retractable Awning";
                 const isGenericMRA  = line.product === "Skyline Motorized Retractable Awning" ||
                                       line.product === "Open Roll Motorized Retractable Awning";
 
@@ -3819,7 +3819,7 @@ export default function ProductSummary() {
                   return (
                     <SkylightMRACard
                       key={line.id}
-                      line={{ ...line, product: "Skylight Plus MRA" }}
+                      line={{ ...line, product: "Skyline Plus MRA" }}
                       index={idx}
                       snapshot={snapshot}
                       mraConfig={mraConfig}
