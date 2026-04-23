@@ -11,6 +11,12 @@ const MPS_PRODUCTS = [
   "Motorized Power Screen open roll",
 ];
 
+// TASK 7: Products that default to Zipper track
+const MPS_CASSETTE_PRODUCTS = [
+  "Motorized Power Screen 5in Cassette",
+  "Motorized Power Screen 6in Cassette",
+];
+
 const AWNING_PRODUCTS = [
   "Skyline Plus MRA",
   "Skyline Motorized Retractable Awning",
@@ -47,6 +53,17 @@ const L_CHANNEL_SIZES = [
 function getLChannelRate(size) {
   const found = L_CHANNEL_SIZES.find(s => s.label === size);
   return found?.rate ?? 25;
+}
+
+const TRACK_TYPE_DISCOUNTS = {
+  "Zipper":        0,
+  "Wire Guide":    -300,
+  "Free Floating": -300,
+  "Storm Rail":    0,
+};
+
+function calcTrackTypeDiscount(effectiveTrackType) {
+  return TRACK_TYPE_DISCOUNTS[effectiveTrackType] || 0;
 }
 
 
@@ -574,6 +591,8 @@ const CONTROL_CATALOG = [
   // ── Somfy Wall Switches ──
   { id: "somfy_wall_1ch",    brand: "Somfy", type: "wall_switch", name: "Somfy DecoFlex WireFree 1 Channel", channels: 1,  price: 175 },
   { id: "somfy_wall_5ch",    brand: "Somfy", type: "wall_switch", name: "Somfy DecoFlex WireFree 5 Channel", channels: 5,  price: 250 },
+  // ── Somfy TaHoma (TASK 3) ──
+  { id: "somfy_tahoma",      brand: "Somfy", type: "smart_hub",   name: "Somfy TaHoma",                      channels: null, price: 420 },
   // ── Dooya Remotes ──
   { id: "dooya_remote_1ch",  brand: "Dooya", type: "remote",      name: "1 Channel Dooya Remote",           channels: 1,  price: 100 },
   { id: "dooya_remote_5ch",  brand: "Dooya", type: "remote",      name: "5 Channel Dooya Remote",           channels: 5,  price: 125 },
@@ -646,9 +665,8 @@ function getDefaultMotorDisplayName(productName) {
 // ─────────────────────────────────────────────────────────────
 const MPS_DEFAULTS = {
   mountTypes:       ["Surface", "Inside", "Soffit Mount"],
-  trackTypes:       ["Zipper", "Wire Guide", "Storm Rail"],
+  trackTypes:       ["Zipper", "Wire Guide", "Storm Rail", "Free Floating"],
   motorTypes:       ["Somfy (default)", "Somfy RTS", "Somfy WireFree", "Custom"],
-  // CHANGE 1: Updated L-channel sizes — now derived from L_CHANNEL_SIZES constant
   lChannelSizes:    L_CHANNEL_SIZES.map(s => s.label),
   lChannelLocs:     ["Left", "Right", "Top", "Bottom"],
   buildoutTypes:    ["Wood", "Alumitube"],
@@ -659,6 +677,8 @@ const MPS_DEFAULTS = {
   trackColors:      ["Sand", "White", "Black", "Bronze", "Custom"],
   remoteTypes:      ["1 Channel Somfy Remote", "5 Channel Somfy Remote", "16 Channel Somfy Remote"],
 };
+
+
 
 const WOOD_BUILDOUT_RATES = {
   "2x4":  4,  "2x6":  6,  "2x8":  8,  "2x10": 10,
@@ -710,11 +730,12 @@ function getAvailableWindSensors(productName) {
   return [WIND_SENSOR_WIRED, WIND_SENSOR_WIRELESS];
 }
 
+// TASK 1: Wind sensors moved here from standalone section
+// TASK 2: Removed all remote add-ons (handled exclusively in Controls section)
 const MPS_SIMPLE_ADDONS = [
-  { id: "remote_1ch",  name: "1 Channel Somfy Remote",  price: 125 },
-  { id: "remote_5ch",  name: "5 Channel Somfy Remote",  price: 180 },
-  { id: "remote_16ch", name: "16 Channel Somfy Remote", price: 320 },
-  { id: "tahoma",      name: "Somfy Tahoma",             price: 420 },
+  { id: "tahoma",                name: "Somfy TaHoma",                                    price: 420 },
+  { id: "wind_sensor_wired",     name: "Somfy Eolis RTS 24V Wired Wind Sensor Kit",       price: 290, type: "global" },
+  { id: "wind_sensor_wireless",  name: "Somfy Eolis 3D Wirefree RTS Wind Sensor",         price: 290, type: "per_opening" },
 ];
 
 const fmt = (n) =>
@@ -1078,12 +1099,15 @@ function createOpening(productName = "", areaDefaults = {}) {
 }
 
 function createArea(productName = "") {
+  // TASK 7: Default track type to "Zipper" for cassette products
+  const defaultTrackType = MPS_CASSETTE_PRODUCTS.includes(productName) ? "Zipper" : "";
+
   return {
     id: uid(), name: "",
-    mountType: "", trackType: "",
+    mountType: "", trackType: defaultTrackType,
     fabricSelection: { brand: "", style_number: "", color_name: "", series: "" },
     cassetteColor: "", trackColor: "",
-    motorId: getDefaultMotorId(productName) || "",   // ← replaces motorType string
+    motorId: getDefaultMotorId(productName) || "",
     weightBar: "", remote: "",
     areaPhoto: null, openings: [createOpening(productName)],
   };
@@ -1144,6 +1168,14 @@ function calcMotorAdjustment(motorId) {
   return getMotorPriceAdjustment(motorId);
 }
 
+// TASK 1: Calculate wind sensor cost from accessory selections
+function calcAccessoryWindSensorCost(selected, totalOpenings) {
+  let total = 0;
+  if (selected?.["wind_sensor_wired"])    total += 290;
+  if (selected?.["wind_sensor_wireless"]) total += 290 * Math.max(1, totalOpenings);
+  return total;
+}
+
 function calcOpeningStructural(opening, areaDefaults, areaMotorId) {
   let total = 0;
   (opening.lChannels || []).forEach(lc => { total += calcLChannelCost(lc); });
@@ -1152,6 +1184,8 @@ function calcOpeningStructural(opening, areaDefaults, areaMotorId) {
   total += calcStormRailCost(opening, effectiveTrackType);
   total += calcCustomColorCost(opening, effectiveTrackType, areaDefaults);
   total += calcMotorAdjustment(areaMotorId || areaDefaults?.motorId || "");
+  // TASK 6: Apply track type discount (Wire Guide = -$300, Free Floating = -$300)
+  total += calcTrackTypeDiscount(effectiveTrackType);
   const effectiveFabric = (opening.fabricSelection?.brand)
     ? opening.fabricSelection
     : (areaDefaults?.fabricSelection?.brand ? areaDefaults.fabricSelection : null);
@@ -1191,6 +1225,8 @@ function getAutoTransmitter(totalAwningQty) {
   if (totalAwningQty <= 2) return "5-Channel Somfy Transmitter";
   return "16-Channel Somfy Transmitter";
 }
+
+
 
 // ─────────────────────────────────────────────────────────────
 // SESSION STORAGE PERSISTENCE
@@ -2005,16 +2041,15 @@ function OpeningEditor({
   const structural   = calcOpeningStructural(opening, areaDefaults, areaMotorId);
   const openingPrice = calcOpeningBasePrice(opening, productName);
   const openingTotal = openingPrice + structural;
- 
+
   const effectiveFabric = (opening.fabricSelection?.brand)
     ? opening.fabricSelection
     : (areaDefaults?.fabricSelection?.brand ? areaDefaults.fabricSelection : null);
   const hasSurcharge    = isPremiumFabricSurcharge(effectiveFabric);
   const surchargeAmount = calcPremiumFabricSurcharge(effectiveFabric, opening.width);
- 
+
   const prevOpening = allOpenings && index > 0 ? allOpenings[index - 1] : null;
- 
-  // FIX 8 applied here — photos stripped on copy
+
   const copyLChannels = () => {
     if (!prevOpening?.lChannels?.length) {
       alert("No L-Channels to copy from the previous opening.");
@@ -2025,7 +2060,7 @@ function OpeningEditor({
       lChannels: prevOpening.lChannels.map(({ photo: _p, ...item }) => ({ ...item, id: uid(), photo: null })),
     });
   };
- 
+
   const copyBuildouts = () => {
     if (!prevOpening?.buildouts?.length) {
       alert("No Buildouts to copy from the previous opening.");
@@ -2036,7 +2071,7 @@ function OpeningEditor({
       buildouts: prevOpening.buildouts.map(({ photo: _p, ...item }) => ({ ...item, id: uid(), photo: null })),
     });
   };
- 
+
   const set = (field, val) => {
     if ((field === "width" || field === "height") && val && typeof val === "object" && "decimal" in val) {
       onChange({ ...opening, [field]: val });
@@ -2046,35 +2081,35 @@ function OpeningEditor({
       onChange({ ...opening, [field]: val });
     }
   };
- 
+
   const effectiveMount       = opening.mountOverride || areaDefaults.mountType || "—";
   const effectiveTrack       = opening.trackOverride || areaDefaults.trackType || "—";
   const effectiveWeightBar   = opening.weightBarOverride || areaDefaults.weightBar || "—";
   const effectiveCassette    = opening.colorOverride || areaDefaults.cassetteColor || "";
   const effectiveTrackColor  = opening.trackColorOverride || areaDefaults.trackColor || "";
   const effectiveFabricLabel = effectiveFabric ? buildFabricLabel(effectiveFabric) : "—";
- 
+
   const stormRailCost = calcStormRailCost(opening, effectiveTrack);
   const cassIsCustom  = effectiveCassette.toLowerCase().includes("custom");
   const trackIsCustom = effectiveTrackColor.toLowerCase().includes("custom");
-  const showTrackColor = effectiveTrack !== "Wire Guide";
- 
-  // Motor display (read-only — comes from area)
-  const motorObj = MOTOR_CATALOG.find(m => m.id === areaMotorId);
-  const motorAdj = motorObj?.priceAdjustment || 0;
- 
+  // TASK 6: Hide track color for Wire Guide AND Free Floating
+  const showTrackColor = effectiveTrack !== "Wire Guide" && effectiveTrack !== "Free Floating";
+
+  // TASK 6: Track type discount
+  const trackDiscount = calcTrackTypeDiscount(effectiveTrack);
+
   const addLChannel    = () => set("lChannels", [...(opening.lChannels || []), createLChannel()]);
   const updateLChannel = (id, u) => set("lChannels", (opening.lChannels || []).map(lc => lc.id === id ? u : lc));
   const removeLChannel = (id) => set("lChannels", (opening.lChannels || []).filter(lc => lc.id !== id));
   const addBuildout    = () => set("buildouts",  [...(opening.buildouts  || []), createBuildout()]);
   const updateBuildout = (id, u) => set("buildouts",  (opening.buildouts  || []).map(bo => bo.id === id ? u : bo));
   const removeBuildout = (id) => set("buildouts",  (opening.buildouts  || []).filter(bo => bo.id !== id));
- 
+
   const lChannels      = opening.lChannels || [];
   const buildouts      = opening.buildouts  || [];
   const lChannelTotal  = lChannels.reduce((s, lc) => s + calcLChannelCost(lc), 0);
   const buildoutTotal  = buildouts.reduce((s, bo)  => s + calcBuildoutCost(bo),  0);
- 
+
   return (
     <div className="opening-card">
       <div className="opening-header">
@@ -2084,53 +2119,24 @@ function OpeningEditor({
             value={opening.label} onChange={e => set("label", e.target.value)} />
         </div>
         {structural > 0 && <div className="opening-structural-badge">{fmt(structural)} structural</div>}
+        {structural < 0 && <div className="opening-structural-badge" style={{background:"var(--ps-success,#27ae60)",color:"#fff"}}>{fmt(structural)} discount</div>}
         {showRemove && (
           <button type="button" className="opening-remove ctrl-btn-danger" onClick={onRemove} title="Delete this opening">
             🗑 Delete Opening
           </button>
         )}
       </div>
- 
+
       <div className="opening-grid-3">
         <Field label="Width (ft or inches)"  type="text" value={opening.width}  onChange={v => set("width",  v)} placeholder="e.g. 10, 120, 16 1/4" required allowFractions={true} />
         <Field label="Height (ft or inches)" type="text" value={opening.height} onChange={v => set("height", v)} placeholder="e.g. 8, 96, 10 1/2"   required allowFractions={true} />
         <Sel   label="Motor Side" value={opening.motorSide} options={MPS_DEFAULTS.motorSides} onChange={v => set("motorSide", v)} required />
       </div>
- 
+
       <OpeningPriceBadge opening={opening} productName={productName} />
- 
-      {/* ── MOTOR READ-ONLY DISPLAY ── */}
-      <div className="motor-locked-display" style={{
-        background: "var(--ps-bg-subtle, #f8f9fa)",
-        border: "1px solid var(--ps-border, #e0e0e0)",
-        borderRadius: 8,
-        padding: "10px 14px",
-        marginBottom: 12,
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-      }}>
-        <span style={{ fontSize: "1.1em" }}>⚡</span>
-        <div>
-          <span style={{ fontWeight: 600 }}>Motor: </span>
-          <span>{motorObj?.displayName || getDefaultMotorDisplayName(productName) || "Somfy (default)"}</span>
-          <span style={{ marginLeft: 10, fontSize: "0.8em", opacity: 0.65, fontStyle: "italic" }}>
-            (set globally at area level)
-          </span>
-          {motorAdj < 0 && (
-            <span className="motor-badge motor-badge--credit" style={{ marginLeft: 8 }}>
-              Credit: {fmt(motorAdj)}
-            </span>
-          )}
-          {motorAdj > 0 && (
-            <span className="motor-badge motor-badge--extra" style={{ marginLeft: 8 }}>
-              +{fmt(motorAdj)}
-            </span>
-          )}
-        </div>
-      </div>
-      {/* ── END MOTOR READ-ONLY ── */}
- 
+
+      {/* TASK 4: Motor read-only display REMOVED — motor is set at area level only */}
+
       {hasSurcharge && opening.width && surchargeAmount > 0 && (
         <div className="premium-fabric-surcharge-badge">
           <span className="premium-fabric-surcharge-icon">⚡</span>
@@ -2147,14 +2153,21 @@ function OpeningEditor({
           <span>Premium fabric surcharge (+${PREMIUM_FABRIC_SURCHARGE_RATE}/LF) — enter width to calculate</span>
         </div>
       )}
- 
+
       {effectiveTrack === "Storm Rail" && (
         <div className="storm-rail-badge">
           ⚡ Storm Rail: {toFeetKey(opening.height) || "—"}ft × ${STORM_RAIL_RATE}/LF = <strong>{fmt(stormRailCost)}</strong>
           {!opening.height && <span className="storm-rail-hint"> (enter height to calculate)</span>}
         </div>
       )}
- 
+
+      {/* TASK 6: Track type discount badge */}
+      {(effectiveTrack === "Wire Guide" || effectiveTrack === "Free Floating") && (
+        <div className="storm-rail-badge" style={{ borderLeftColor: "var(--ps-success, #27ae60)" }}>
+          💲 {effectiveTrack}: <strong>{fmt(trackDiscount)}</strong> per opening discount
+        </div>
+      )}
+
       <details className="override-details">
         <summary className="override-summary">
           🧵 Fabric Selection
@@ -2168,7 +2181,7 @@ function OpeningEditor({
           fabricContext="screen"
         />
       </details>
- 
+
       <details className="override-details">
         <summary className="override-summary">
           ⚙ Opening Settings
@@ -2176,7 +2189,7 @@ function OpeningEditor({
         </summary>
         <div className="override-resolved-info">These settings default to the Area values. Change any field here to override for this opening only.</div>
         <div className="override-resolved-grid">
- 
+
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Mount Type
@@ -2190,7 +2203,7 @@ function OpeningEditor({
               {MPS_DEFAULTS.mountTypes.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
           </div>
- 
+
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Track Type
@@ -2204,7 +2217,7 @@ function OpeningEditor({
               {MPS_DEFAULTS.trackTypes.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
           </div>
- 
+
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Cassette Color
@@ -2227,7 +2240,7 @@ function OpeningEditor({
               </div>
             )}
           </div>
- 
+
           {showTrackColor && (
             <div className="override-resolved-item">
               <label className="override-resolved-label">
@@ -2252,16 +2265,16 @@ function OpeningEditor({
               )}
             </div>
           )}
- 
+
           {!showTrackColor && (
             <div className="override-resolved-item">
               <div className="wire-guide-notice">
                 <span className="wire-guide-notice-icon">ℹ️</span>
-                Track Color is not applicable for <strong>Wire Guide</strong> track type.
+                Track Color is not applicable for <strong>{effectiveTrack}</strong> track type.
               </div>
             </div>
           )}
- 
+
           <div className="override-resolved-item">
             <label className="override-resolved-label">
               Weight Bar Color
@@ -2284,10 +2297,10 @@ function OpeningEditor({
               </div>
             )}
           </div>
- 
+
         </div>
       </details>
- 
+
       {/* ── L-CHANNELS ── */}
       <div className="structural-section">
         <div className="structural-section-header">
@@ -2313,7 +2326,7 @@ function OpeningEditor({
             onRemove={() => removeLChannel(lc.id)} showRemove={true} />
         ))}
       </div>
- 
+
       {/* ── BUILDOUTS ── */}
       <div className="structural-section">
         <div className="structural-section-header">
@@ -2339,17 +2352,18 @@ function OpeningEditor({
             onRemove={() => removeBuildout(bo.id)} showRemove={true} />
         ))}
       </div>
- 
+
       <div className="opening-photo-row">
         <PhotoUpload label="Opening Photo" value={opening.openingPhoto} onChange={v => set("openingPhoto", v)} />
       </div>
- 
-      {openingTotal > 0 && (
+
+      {(openingTotal > 0 || openingTotal < 0) && (
         <div className="opening-total">
-          {openingPrice > 0 && structural > 0
-            ? <>Opening Total: <strong>{fmt(openingTotal)}</strong> ({fmt(openingPrice)} product + {fmt(structural)} structural)</>
+          {openingPrice > 0 && structural !== 0
+            ? <>Opening Total: <strong>{fmt(openingTotal)}</strong> ({fmt(openingPrice)} product {structural >= 0 ? "+" : "−"} {fmt(Math.abs(structural))} {structural >= 0 ? "structural" : "discount"})</>
             : openingPrice > 0 ? <>Opening Total: <strong>{fmt(openingPrice)}</strong></>
-            : <>Structural Adjustments: <strong>{fmt(structural)}</strong></>
+            : structural > 0 ? <>Structural Adjustments: <strong>{fmt(structural)}</strong></>
+            : <>Track Discount: <strong>{fmt(structural)}</strong></>
           }
         </div>
       )}
@@ -2365,24 +2379,25 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
   const areaStructuralTotal = calcAreaStructuralOnly(area);
   const areaGrandTotal      = areaBaseTotal + areaStructuralTotal;
   const setArea = (field, val) => onChange({ ...area, [field]: val });
- 
+
   const setOpening = useCallback((openingId, updated) => {
     onChange({ ...area, openings: area.openings.map(o => o.id === openingId ? updated : o) });
   }, [area, onChange]);
- 
+
   const addOpening = () =>
     onChange({ ...area, openings: [...area.openings, createOpening(productName, { motorSide: "Left" })] });
   const removeOpening = (id) =>
     onChange({ ...area, openings: area.openings.filter(o => o.id !== id) });
- 
+
   const compatibleMotors   = getCompatibleMotors(productName);
   const selectedMotorObj   = MOTOR_CATALOG.find(m => m.id === area.motorId);
   const motorAdj           = selectedMotorObj?.priceAdjustment || 0;
   const isDefaultMotor     = area.motorId === getDefaultMotorId(productName) || !area.motorId;
   const areaEffectiveTrack = area.trackType || "";
-  const showAreaTrackColor = areaEffectiveTrack !== "Wire Guide";
+  // TASK 6: Hide track color for Wire Guide AND Free Floating
+  const showAreaTrackColor = areaEffectiveTrack !== "Wire Guide" && areaEffectiveTrack !== "Free Floating";
   const defaultMotorDisplayName = getDefaultMotorDisplayName(productName);
- 
+
   return (
     <div className="area-card">
       <div className="area-header">
@@ -2396,9 +2411,16 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
             <div className="area-structural-total">
               {areaBaseTotal > 0 && areaStructuralTotal > 0
                 ? `${fmt(areaGrandTotal)} total (${fmt(areaBaseTotal)} product + ${fmt(areaStructuralTotal)} structural)`
+                : areaBaseTotal > 0 && areaStructuralTotal < 0
+                ? `${fmt(areaGrandTotal)} total (${fmt(areaBaseTotal)} product ${fmt(areaStructuralTotal)} discount)`
                 : areaBaseTotal > 0 ? `${fmt(areaBaseTotal)} product`
                 : `+${fmt(areaStructuralTotal)} structural`
               }
+            </div>
+          )}
+          {areaGrandTotal <= 0 && areaStructuralTotal < 0 && (
+            <div className="area-structural-total" style={{color:"var(--ps-success,#27ae60)"}}>
+              {fmt(areaStructuralTotal)} discount
             </div>
           )}
           {showRemove && (
@@ -2408,7 +2430,7 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
           )}
         </div>
       </div>
- 
+
       <details className="override-details">
         <summary className="override-summary">
           ⚙ Area Defaults
@@ -2418,7 +2440,7 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
             Motor: <strong>{selectedMotorObj?.displayName || defaultMotorDisplayName || "Somfy (default)"}</strong>)
           </span>
         </summary>
- 
+
         <div className="area-defaults">
           <div className="area-defaults-label">
             Area Defaults — applied to ALL openings in this area automatically.
@@ -2430,8 +2452,8 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
             </div>
             <Sel label="Mount Type"  value={area.mountType}  options={MPS_DEFAULTS.mountTypes}  onChange={v => setArea("mountType", v)} />
             <Sel label="Track Type"  value={area.trackType}  options={MPS_DEFAULTS.trackTypes}  onChange={v => setArea("trackType", v)} />
- 
-            {/* ── GLOBAL MOTOR SELECTOR ── */}
+
+            {/* ── MOTOR SELECTOR ── */}
             <div className="mps-field">
               <label className="mps-label">
                 Motor
@@ -2465,19 +2487,9 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
                   </option>
                 ))}
               </select>
-              {selectedMotorObj?.notes && (
-                <div className="motor-notes">{selectedMotorObj.notes}</div>
-              )}
-              <div className="motor-global-notice" style={{
-                marginTop: 6, fontSize: "0.8em",
-                color: "var(--ps-text-muted, #888)",
-                fontStyle: "italic"
-              }}>
-                ⚠ Motor applies to all openings in this area. To use a different motor, create a new product group.
-              </div>
+              {/* TASK 4: Motor notice text REMOVED */}
             </div>
-            {/* ── END MOTOR SELECTOR ── */}
- 
+
             <div className="mps-field">
               <label className="mps-label">Cassette Color</label>
               <select className="mps-select" value={area.cassetteColor || ""} onChange={e => setArea("cassetteColor", e.target.value)}>
@@ -2485,7 +2497,7 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
                 {MPS_DEFAULTS.cassetteColors.map(o => <option key={o} value={o}>{o}</option>)}
               </select>
             </div>
- 
+
             {showAreaTrackColor ? (
               <div className="mps-field">
                 <label className="mps-label">Track Color</label>
@@ -2497,14 +2509,14 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
             ) : (
               <div className="mps-field">
                 <label className="mps-label">Track Color</label>
-                <div className="wire-guide-notice-inline">N/A — Wire Guide selected</div>
+                <div className="wire-guide-notice-inline">N/A — {areaEffectiveTrack} selected</div>
               </div>
             )}
- 
+
             <Sel label="Weight Bar Color" value={area.weightBar || ""} options={MPS_DEFAULTS.weightBarTypes}
               onChange={v => setArea("weightBar", v)} placeholder="Select Weight Bar Color" />
           </div>
- 
+
           <div className="area-fabric-section">
             <div className="area-defaults-label" style={{ marginTop: "12px" }}>
               Area Default Fabric (openings inherit this unless overridden)
@@ -2516,11 +2528,11 @@ function AreaEditor({ area, areaIndex, productName, onChange, onRemove, showRemo
               fabricContext="screen"
             />
           </div>
- 
+
           <PhotoUpload label="Area Photo (wide shot)" value={area.areaPhoto} onChange={v => setArea("areaPhoto", v)} />
         </div>
       </details>
- 
+
       <div className="openings-container">
         <div className="openings-heading">
           <span>Openings</span>
@@ -2758,19 +2770,21 @@ function MPSProductCard({
   const addArea     = () => setAreas([...areas, createArea(line.product)]);
   const updateArea  = (id, u) => setAreas(areas.map(a => a.id === id ? u : a));
   const removeArea  = (id) => setAreas(areas.filter(a => a.id !== id));
- 
+
   const totalOpenings = countTotalOpenings(areas);
- 
-  // Motor brand now comes from area.motorId (global per area)
+
   const dominantMotorId = useMemo(() => {
     for (const area of areas) {
       if (area.motorId) return area.motorId;
     }
     return getDefaultMotorId(line.product) || "";
   }, [areas, line.product]);
- 
+
   const dominantMotorBrand = getMotorBrand(dominantMotorId);
- 
+
+  // TASK 3: Check if TaHoma is selected as replacement control
+  const tahomaIsReplacement = controlState?.includedReplaced && controlState?.replacementControlId === "somfy_tahoma";
+
   const controlCost = useMemo(() => {
     const motorBrand     = getMotorBrand(dominantMotorId);
     const includedCredit = getIncludedControlCredit(motorBrand, totalOpenings > 0 ? totalOpenings : 1);
@@ -2786,22 +2800,30 @@ function MPSProductCard({
     });
     return cost;
   }, [dominantMotorId, totalOpenings, controlState]);
- 
+
   const selected             = addonSelections[line.id] || {};
   const openingsProductTotal = calcMPSOpeningsTotal(areas, line.product);
   const structuralTotal      = areas.reduce((s, a) => s + calcAreaStructuralOnly(a), 0);
   const autoRemoteName       = getAutoRemote(totalOpenings > 0 ? totalOpenings : 1);
-  const simpleAddonTotal     = MPS_SIMPLE_ADDONS.reduce((s, a) => selected[a.id] ? s + a.price * qty : s, 0);
-  const windTotal            = calcWindSensorTotal(windSensorSelections[line.id], totalOpenings);
+
+  // TASK 1+2+3: Compute accessories total with correct wind sensor pricing and tahoma dedup
+  const simpleAddonTotal = MPS_SIMPLE_ADDONS.reduce((s, a) => {
+    if (!selected[a.id]) return s;
+    if (a.id === "tahoma" && tahomaIsReplacement) return s;
+    if (a.id === "wind_sensor_wireless") return s + a.price * Math.max(1, totalOpenings);
+    if (a.id === "wind_sensor_wired") return s + a.price;
+    return s + a.price * qty;
+  }, 0);
+
   const enriched             = snapshot.productLines.find(l => l.id === line.id);
   const appBaseTotal         = enriched?.pricing?.lineSubtotal || 0;
   const effectiveProductTotal = openingsProductTotal > 0 ? openingsProductTotal : appBaseTotal;
-  const grandLineTotal       = effectiveProductTotal + structuralTotal + simpleAddonTotal + windTotal + controlCost;
- 
+  const grandLineTotal       = effectiveProductTotal + structuralTotal + simpleAddonTotal + controlCost;
+
   const hasUnpriced = areas.some(a =>
     a.openings.some(o => (o.width || o.height) && !getMPSOpeningPrice(line.product, o.width, o.height).ok)
   );
- 
+
   const handleReset = () => {
     if (window.confirm("Reset all areas, openings, and add-ons for this product? This cannot be undone.")) {
       onMPSChange(line.id, []);
@@ -2810,10 +2832,21 @@ function MPSProductCard({
       onControlChange({ includedReplaced: false, replacementControlId: "", additionalControls: [] });
     }
   };
- 
+
   const defaultMotorId  = getDefaultMotorId(line.product);
   const defaultMotor    = MOTOR_CATALOG.find(m => m.id === defaultMotorId);
- 
+
+  // TASK 1: Determine which wind sensors are compatible
+  const isCassette = line.product === "Motorized Power Screen 5in Cassette" ||
+                     line.product === "Motorized Power Screen 6in Cassette";
+
+  // TASK 1+3: Build visible accessories list
+  const visibleAccessories = MPS_SIMPLE_ADDONS.filter(a => {
+    if (a.id === "tahoma" && tahomaIsReplacement) return false;
+    if (a.id === "wind_sensor_wireless" && isCassette) return false;
+    return true;
+  });
+
   return (
     <div className="ps-product-card mps-product-card">
       <div className="ps-product-header">
@@ -2821,24 +2854,22 @@ function MPSProductCard({
         <div className="ps-product-name">{line.product}</div>
         <div className="ps-product-price">{fmt(grandLineTotal)}</div>
       </div>
- 
+
       <div className="quote-tool-controls">
         <span className="quote-tool-controls-label">🛠 Quote Tool Controls</span>
         <button type="button" className="ctrl-btn ctrl-btn-reset" onClick={handleReset}>↺ Reset Quote Tool</button>
       </div>
- 
+
+      {/* TASK 4: Simplified motor banner */}
       {defaultMotor && (
         <div className="motor-info-banner">
           <span className="motor-info-icon">⚡</span>
           <div className="motor-info-content">
             <span className="motor-info-title">Default Motor: <strong>{defaultMotor.displayName}</strong></span>
-            <span className="motor-info-sub">
-              {defaultMotor.notes} — Change motor in Area Defaults if needed (applies to all openings in that area)
-            </span>
           </div>
         </div>
       )}
- 
+
       <div className="ps-detail-grid">
         {[
           { label: "Product Name", value: line.product },
@@ -2853,21 +2884,21 @@ function MPSProductCard({
           </div>
         ))}
       </div>
- 
+
       <div className="product-note-section">
         <label className="mps-label">📝 Product Notes</label>
         <textarea className="product-note-textarea"
           placeholder="Add any important notes about this product…"
           value={productNotes || ""} onChange={e => onProductNoteChange(line.id, e.target.value)} rows={3} />
       </div>
- 
+
       {enriched?.pricing?.priceNote && (
         <div className="ps-price-note">💡 Reference (from intake form): {enriched.pricing.priceNote}</div>
       )}
       {hasUnpriced && (
         <div className="ps-price-note ps-price-note--warn">⚠ Some openings have dimensions that don't match the price matrix.</div>
       )}
- 
+
       {totalOpenings > 0 && (
         <div className="auto-remote-badge">
           <span className="auto-remote-icon">🎛</span>
@@ -2879,7 +2910,7 @@ function MPSProductCard({
           </span>
         </div>
       )}
- 
+
       <div className="mps-builder">
         <div className="mps-builder-header">
           <div className="mps-builder-title">
@@ -2892,8 +2923,10 @@ function MPSProductCard({
                 Openings product total: <strong>{fmt(openingsProductTotal)}</strong>
               </div>
             )}
-            {structuralTotal > 0 && (
-              <div className="mps-structural-total">Structural: <strong>{fmt(structuralTotal)}</strong></div>
+            {structuralTotal !== 0 && (
+              <div className="mps-structural-total">
+                {structuralTotal > 0 ? "Structural" : "Discounts"}: <strong>{fmt(structuralTotal)}</strong>
+              </div>
             )}
           </div>
         </div>
@@ -2914,14 +2947,9 @@ function MPSProductCard({
         }
         <button type="button" className="add-area-btn" onClick={addArea}>+ Add Area</button>
       </div>
- 
-      <WindSensorSection
-        productName={line.product}
-        windSensorSelections={windSensorSelections[line.id] || {}}
-        onWindSensorChange={(updated) => onWindSensorChange(line.id, updated)}
-        totalOpenings={totalOpenings}
-      />
- 
+
+      {/* TASK 1: WindSensorSection REMOVED — sensors now in Accessories below */}
+
       <MPSControlSection
         productName={line.product}
         motorId={dominantMotorId}
@@ -2929,24 +2957,44 @@ function MPSProductCard({
         controlState={controlState || { includedReplaced: false, replacementControlId: "", additionalControls: [] }}
         onControlChange={onControlChange}
       />
- 
+
+      {/* TASK 1+2+3: Unified Accessories */}
       <div className="mps-simple-addons">
         <div className="mps-simple-addons-title">
           <span className="ps-addons-icon">✦</span> Accessories &amp; Add-ons
           {simpleAddonTotal > 0 && <span className="ps-addons-running-total">+{fmt(simpleAddonTotal)} selected</span>}
         </div>
+        {isCassette && (
+          <div className="wind-sensor-cassette-note" style={{ marginBottom: 8 }}>
+            <span className="wind-sensor-cassette-note-icon">ℹ️</span>
+            Only the <strong>Wired Wind Sensor</strong> is compatible with cassette products.
+          </div>
+        )}
         <div className="ps-addons-grid">
-          {MPS_SIMPLE_ADDONS.map(addon => {
+          {visibleAccessories.map(addon => {
             const isChecked = !!selected[addon.id];
+            const isWindPerOpening = addon.id === "wind_sensor_wireless";
+            const displayPrice = isWindPerOpening
+              ? addon.price * Math.max(1, totalOpenings)
+              : addon.price;
             return (
               <label key={addon.id} className={`ps-addon-item ${isChecked ? "ps-addon-checked" : ""}`}>
                 <input type="checkbox" className="ps-addon-checkbox" checked={isChecked}
                   onChange={() => onAddonToggle(line.id, addon.id)} />
                 <div className="ps-addon-content">
-                  <span className="ps-addon-name">{addon.name}</span>
+                  <span className="ps-addon-name">
+                    {addon.name}
+                    {addon.type === "global" && <span style={{ fontSize: "0.8em", opacity: 0.65, marginLeft: 6 }}>🔌 Wired — Global</span>}
+                    {addon.type === "per_opening" && <span style={{ fontSize: "0.8em", opacity: 0.65, marginLeft: 6 }}>📡 Wireless — Per Opening</span>}
+                  </span>
                   <span className="ps-addon-price">
                     +{fmt(addon.price)}
-                    {qty > 1 && <span className="ps-addon-per-unit"> × {qty} = {fmt(addon.price * qty)}</span>}
+                    {isWindPerOpening && totalOpenings > 1 && isChecked && (
+                      <span className="ps-addon-per-unit"> × {totalOpenings} openings = {fmt(displayPrice)}</span>
+                    )}
+                    {!isWindPerOpening && !addon.type && qty > 1 && (
+                      <span className="ps-addon-per-unit"> × {qty} = {fmt(addon.price * qty)}</span>
+                    )}
                   </span>
                 </div>
                 {isChecked && <span className="ps-addon-check-mark">✓</span>}
@@ -2955,16 +3003,15 @@ function MPSProductCard({
           })}
         </div>
       </div>
- 
+
       <div className="mps-line-total">
         {openingsProductTotal > 0
           ? <span>Openings Price: {fmt(openingsProductTotal)}</span>
           : <span>Base Price (from form): {fmt(appBaseTotal)}</span>
         }
-        {simpleAddonTotal > 0 && <span>+ Add-ons: {fmt(simpleAddonTotal)}</span>}
-        {windTotal > 0        && <span>+ Wind Sensor(s): {fmt(windTotal)}</span>}
+        {simpleAddonTotal > 0 && <span>+ Accessories: {fmt(simpleAddonTotal)}</span>}
         {controlCost > 0      && <span>+ Controls: {fmt(controlCost)}</span>}
-        {structuralTotal > 0  && <span>+ Structural: {fmt(structuralTotal)}</span>}
+        {structuralTotal !== 0 && <span>{structuralTotal > 0 ? "+" : ""} Structural/Discounts: {fmt(structuralTotal)}</span>}
         {totalOpenings > 0    && <span className="mps-remote-info-line">Remote included: {autoRemoteName}</span>}
         <span className="mps-line-grand">Line Total: {fmt(grandLineTotal)}</span>
       </div>
@@ -3681,35 +3728,45 @@ export default function ProductSummary() {
     .filter(l => AWNING_PRODUCTS.includes(l.product))
     .reduce((sum, l) => sum + (parseInt(l.quantity, 10) || 1), 0);
 
- const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand, windSensorGrand, mraMatrixGrand, controlsGrand } = useMemo(() => {
+const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand, windSensorGrand, mraMatrixGrand, controlsGrand } = useMemo(() => {
     if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0, mpsOpeningsProductGrand:0, windSensorGrand:0, mraMatrixGrand:0, controlsGrand:0 };
     const configured = snapshot.productLines.filter(l => l.category && l.product);
- 
+
     let addonGrand=0, structuralGrand=0, openingsGrand=0, appBaseMPSGrand=0, windGrand=0, mraGrand=0, ctrlGrand=0;
- 
+
     const getDecimal = (val) => {
       if (val && typeof val === "object" && "decimal" in val) return val.decimal || 0;
       return parseFloat(val) || 0;
     };
- 
+
     configured.forEach(line => {
       if (MPS_PRODUCTS.includes(line.product)) {
         const areas         = mpsData[line.id] || [];
         const openingsTotal = calcMPSOpeningsTotal(areas, line.product);
- 
-        // FIX: structural uses area.motorId for each area
+
         structuralGrand += areas.reduce((s, area) =>
           s + area.openings.reduce((ss, o) => ss + calcOpeningStructural(o, area, area.motorId), 0),
           0
         );
- 
+
         const qty      = parseInt(line.quantity, 10) || 1;
         const sel      = addonSelections[line.id] || {};
-        MPS_SIMPLE_ADDONS.forEach(a => { if (sel[a.id]) addonGrand += a.price * qty; });
         const totalOpenings = countTotalOpenings(areas);
-        windGrand += calcWindSensorTotal(windSensorSelections[line.id], totalOpenings);
- 
-        // Controls — read motor from area
+
+        // TASK 1: Wind sensors now in accessories
+        windGrand += calcAccessoryWindSensorCost(sel, totalOpenings);
+
+        // TASK 1+2+3: Compute accessory total (skip wind sensors already counted, skip tahoma if replacement)
+        const lineControlState2 = mpsControls[line.id] || {};
+        const tahomaIsRepl = lineControlState2.includedReplaced && lineControlState2.replacementControlId === "somfy_tahoma";
+        MPS_SIMPLE_ADDONS.forEach(a => {
+          if (!sel[a.id]) return;
+          if (a.id === "tahoma" && tahomaIsRepl) return;
+          if (a.id === "wind_sensor_wired" || a.id === "wind_sensor_wireless") return;
+          addonGrand += a.price * qty;
+        });
+
+        // Controls
         const lineControlState = mpsControls[line.id] || {};
         let dominantMotorId = "";
         for (const area of areas) {
@@ -3727,10 +3784,10 @@ export default function ProductSummary() {
           const ctrl = CONTROL_CATALOG.find(c => c.id === ac.controlId);
           if (ctrl) ctrlGrand += ctrl.price * (parseInt(ac.qty, 10) || 1);
         });
- 
+
         if (openingsTotal > 0) openingsGrand += openingsTotal;
         else { const e = snapshot.productLines.find(l2 => l2.id === line.id); appBaseMPSGrand += e?.pricing?.lineSubtotal || 0; }
- 
+
       } else if (AWNING_PRODUCTS.includes(line.product)) {
         const cfg = mraConfig[line.id] || {};
         const qty = parseInt(line.quantity, 10) || 1;
@@ -3751,12 +3808,12 @@ export default function ProductSummary() {
         addonGrand += calcFieldAddonTotal(fieldAddonValues[line.id], line.product);
       }
     });
- 
+
     const nonMPSNonMRAOriginal = (snapshot.pricingSummary?.subtotal || 0) -
       snapshot.productLines
         .filter(l => l.category && l.product && (MPS_PRODUCTS.includes(l.product) || AWNING_PRODUCTS.includes(l.product)))
         .reduce((s, l) => { const e = snapshot.productLines.find(l2 => l2.id === l.id); return s + (e?.pricing?.lineSubtotal || 0); }, 0);
- 
+
     return {
       summaryAddonGrandTotal:  addonGrand,
       mpsStructuralGrand:      structuralGrand,
