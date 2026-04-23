@@ -1083,8 +1083,9 @@ function createOpening(productName = "", areaDefaults = {}) {
     id: uid(), label: "",
     width:  new MeasurementValue('', null),
     height: new MeasurementValue('', null),
+    widthFt: '', widthIn: '',       // TASK 5: split fields
+    heightFt: '', heightIn: '',     // TASK 5: split fields
     motorSide: areaDefaults.motorSide || "Left",
-    // motorId intentionally omitted — inherited from area
     fabricSelection: { brand: "", style_number: "", color_name: "", series: "" },
     lChannels: [],
     buildouts: [],
@@ -2127,13 +2128,98 @@ function OpeningEditor({
         )}
       </div>
 
-      <div className="opening-grid-3">
-        <Field label="Width (ft or inches)"  type="text" value={opening.width}  onChange={v => set("width",  v)} placeholder="e.g. 10, 120, 16 1/4" required allowFractions={true} />
-        <Field label="Height (ft or inches)" type="text" value={opening.height} onChange={v => set("height", v)} placeholder="e.g. 8, 96, 10 1/2"   required allowFractions={true} />
-        <Sel   label="Motor Side" value={opening.motorSide} options={MPS_DEFAULTS.motorSides} onChange={v => set("motorSide", v)} required />
+     {/* Replace the opening-grid-3 div in OpeningEditor with this: */}
+<div className="opening-grid-3">
+  {/* ── WIDTH: ft + in ── */}
+  <div className="mps-field">
+    <label className="mps-label">Width <span className="mps-req">*</span></label>
+    <div className="skylight-width-inputs">
+      <div className="skylight-width-input-wrap">
+        <Field label="" type="text" value={opening.widthFt || ""}
+          onChange={v => {
+            const ft = v && typeof v === 'object' && 'decimal' in v ? v : MeasurementValue.fromInput(String(v));
+            const inVal = opening.widthIn && typeof opening.widthIn === 'object' ? opening.widthIn.decimal || 0 : parseFloat(opening.widthIn) || 0;
+            const ftVal = ft.decimal || 0;
+            const totalFt = ftVal + (inVal / 12);
+            onChange({
+              ...opening,
+              widthFt: ft,
+              width: new MeasurementValue(String(totalFt || ''), totalFt || null),
+            });
+          }}
+          placeholder="Feet" allowFractions={true} />
+        <span className="skylight-dim-unit">ft</span>
       </div>
+      <div className="skylight-width-input-wrap">
+        <Field label="" type="text" value={opening.widthIn || ""}
+          onChange={v => {
+            const inV = v && typeof v === 'object' && 'decimal' in v ? v : MeasurementValue.fromInput(String(v));
+            const ftVal = opening.widthFt && typeof opening.widthFt === 'object' ? opening.widthFt.decimal || 0 : parseFloat(opening.widthFt) || 0;
+            const inVal = inV.decimal || 0;
+            const totalFt = ftVal + (inVal / 12);
+            onChange({
+              ...opening,
+              widthIn: inV,
+              width: new MeasurementValue(String(totalFt || ''), totalFt || null),
+            });
+          }}
+          placeholder="Inches" allowFractions={true} />
+        <span className="skylight-dim-unit">in</span>
+      </div>
+    </div>
+    {opening.width?.decimal > 0 && (
+      <div className="skylight-width-display">
+        → <strong>{toFeetKey(opening.width)}ft</strong> bracket
+      </div>
+    )}
+  </div>
 
-      <OpeningPriceBadge opening={opening} productName={productName} />
+  {/* ── HEIGHT: ft + in ── */}
+  <div className="mps-field">
+    <label className="mps-label">Height <span className="mps-req">*</span></label>
+    <div className="skylight-width-inputs">
+      <div className="skylight-width-input-wrap">
+        <Field label="" type="text" value={opening.heightFt || ""}
+          onChange={v => {
+            const ft = v && typeof v === 'object' && 'decimal' in v ? v : MeasurementValue.fromInput(String(v));
+            const inVal = opening.heightIn && typeof opening.heightIn === 'object' ? opening.heightIn.decimal || 0 : parseFloat(opening.heightIn) || 0;
+            const ftVal = ft.decimal || 0;
+            const totalFt = ftVal + (inVal / 12);
+            onChange({
+              ...opening,
+              heightFt: ft,
+              height: new MeasurementValue(String(totalFt || ''), totalFt || null),
+            });
+          }}
+          placeholder="Feet" allowFractions={true} />
+        <span className="skylight-dim-unit">ft</span>
+      </div>
+      <div className="skylight-width-input-wrap">
+        <Field label="" type="text" value={opening.heightIn || ""}
+          onChange={v => {
+            const inV = v && typeof v === 'object' && 'decimal' in v ? v : MeasurementValue.fromInput(String(v));
+            const ftVal = opening.heightFt && typeof opening.heightFt === 'object' ? opening.heightFt.decimal || 0 : parseFloat(opening.heightFt) || 0;
+            const inVal = inV.decimal || 0;
+            const totalFt = ftVal + (inVal / 12);
+            onChange({
+              ...opening,
+              heightIn: inV,
+              height: new MeasurementValue(String(totalFt || ''), totalFt || null),
+            });
+          }}
+          placeholder="Inches" allowFractions={true} />
+        <span className="skylight-dim-unit">in</span>
+      </div>
+    </div>
+    {opening.height?.decimal > 0 && (
+      <div className="skylight-width-display">
+        → <strong>{toFeetKey(opening.height)}ft</strong> bracket
+      </div>
+    )}
+  </div>
+
+  <Sel label="Motor Side" value={opening.motorSide} options={MPS_DEFAULTS.motorSides} onChange={v => set("motorSide", v)} required />
+</div>
 
       {/* TASK 4: Motor read-only display REMOVED — motor is set at area level only */}
 
