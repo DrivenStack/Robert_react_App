@@ -202,6 +202,206 @@ function getPowerCordPrice(cordValue) {
   return opt?.price || 0;
 }
 
+// ─────────────────────────────────────────────────────────────
+// AWNING CONTROL CATALOG (Somfy RTS options for all awnings)
+// ─────────────────────────────────────────────────────────────
+const AWNING_CONTROL_CATALOG = [
+  { id: "somfy_awning_1ch_tx",     name: "1 Channel Transmitter",                  price: 125 },
+  { id: "somfy_awning_5ch_tx",     name: "5 Channel Transmitter",                  price: 250 },
+  { id: "somfy_awning_1ch_patio",  name: "1 Channel Patio Transmitter",            price: 200 },
+  { id: "somfy_awning_5ch_patio",  name: "5 Channel Patio Transmitter",            price: 300 },
+  { id: "somfy_awning_1ch_wall",   name: "1 Ch. Transmitter - Wireless Wall Mount", price: 300 },
+  { id: "somfy_awning_5ch_wall",   name: "5 Ch. Transmitter - Wireless Wall Mount", price: 400 },
+  { id: "somfy_awning_16ch_telis", name: "16 Channel Telis RTS",                   price: 500 },
+];
+
+// Included control for awnings: 1 Channel Transmitter ($125)
+const AWNING_INCLUDED_CONTROL = AWNING_CONTROL_CATALOG[0]; // 1 Channel Transmitter
+const AWNING_INCLUDED_CONTROL_CREDIT = 125;
+
+function getAwningIncludedControlId(totalAwningQty) {
+  if (totalAwningQty <= 1) return "somfy_awning_1ch_tx";
+  if (totalAwningQty <= 5) return "somfy_awning_5ch_tx";
+  return "somfy_awning_16ch_telis";
+}
+
+function getAwningIncludedControlCredit(totalAwningQty) {
+  if (totalAwningQty <= 1) return 125;
+  if (totalAwningQty <= 5) return 250;
+  return 500;
+}
+
+// ─────────────────────────────────────────────────────────────
+// AWNING CONTROL SECTION (mirrors MPSControlSection UX)
+// ─────────────────────────────────────────────────────────────
+function AwningControlSection({ totalAwningQty, controlState, onControlChange }) {
+  const includedControlId = getAwningIncludedControlId(totalAwningQty);
+  const includedControl = AWNING_CONTROL_CATALOG.find(c => c.id === includedControlId);
+  const includedCredit = getAwningIncludedControlCredit(totalAwningQty);
+
+  const { includedReplaced = false, replacementControlId = "", additionalControls = [] } = controlState || {};
+
+  const replacementControl = AWNING_CONTROL_CATALOG.find(c => c.id === replacementControlId);
+
+  const setField = (field, val) => onControlChange({ ...controlState, [field]: val });
+
+  const addAdditionalControl = () => {
+    onControlChange({
+      ...controlState,
+      additionalControls: [...additionalControls, { id: uid(), controlId: "", qty: 1 }],
+    });
+  };
+
+  const updateAdditionalControl = (itemId, updates) => {
+    onControlChange({
+      ...controlState,
+      additionalControls: additionalControls.map(ac =>
+        ac.id === itemId ? { ...ac, ...updates } : ac
+      ),
+    });
+  };
+
+  const removeAdditionalControl = (itemId) => {
+    onControlChange({
+      ...controlState,
+      additionalControls: additionalControls.filter(ac => ac.id !== itemId),
+    });
+  };
+
+  const replacementCost = includedReplaced && replacementControl
+    ? Math.max(0, replacementControl.price - includedCredit)
+    : 0;
+
+  const additionalCost = additionalControls.reduce((sum, ac) => {
+    const ctrl = AWNING_CONTROL_CATALOG.find(c => c.id === ac.controlId);
+    return sum + (ctrl ? ctrl.price * (parseInt(ac.qty, 10) || 1) : 0);
+  }, 0);
+
+  const totalControlCost = (includedReplaced ? replacementCost : 0) + additionalCost;
+
+  return (
+    <div className="mps-control-section">
+      <div className="mps-control-section-title">
+        <span className="ps-addons-icon">🎛</span> Controls (Somfy RTS)
+        {totalControlCost > 0 && (
+          <span className="ps-addons-running-total">+{fmt(totalControlCost)}</span>
+        )}
+      </div>
+
+      {/* Included Control Banner */}
+      <div className="mps-included-control-banner">
+        <span className="mps-included-icon">✅</span>
+        <div>
+          <strong>Included: </strong>{includedControl?.name || "—"} ({fmt(includedControl?.price || 0)})
+          <span className="mps-included-hint"> (auto-assigned for {totalAwningQty} awning unit{totalAwningQty !== 1 ? "s" : ""})</span>
+        </div>
+      </div>
+
+      {/* Replace Included Control Toggle */}
+      <Toggle
+        label="Replace included control?"
+        checked={includedReplaced}
+        onChange={(val) => setField("includedReplaced", val)}
+      />
+
+      {includedReplaced && (
+        <div className="mps-replacement-control">
+          <div className="mps-field">
+            <label className="mps-label">Replacement Control</label>
+            <select
+              className="mps-select"
+              value={replacementControlId}
+              onChange={e => setField("replacementControlId", e.target.value)}
+            >
+              <option value="">— Select replacement —</option>
+              {AWNING_CONTROL_CATALOG.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.name} — {fmt(c.price)}
+                </option>
+              ))}
+            </select>
+          </div>
+          {replacementControl && (
+            <div className="mps-control-credit-info">
+              <span>{replacementControl.name}: {fmt(replacementControl.price)}</span>
+              <span className="mps-credit-badge">− {fmt(includedCredit)} credit (included control value)</span>
+              <strong>Net cost: {fmt(replacementCost)}</strong>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Additional Controls */}
+      <div className="mps-additional-controls">
+        <div className="mps-additional-controls-header">
+          <span className="mps-label">Additional Controls</span>
+          <button type="button" className="structural-add-btn" onClick={addAdditionalControl}>
+            + Add Control
+          </button>
+        </div>
+        {additionalControls.length === 0 && (
+          <div className="structural-empty">No additional controls added.</div>
+        )}
+        {additionalControls.map((ac) => {
+          const ctrl = AWNING_CONTROL_CATALOG.find(c => c.id === ac.controlId);
+          const lineTotal = ctrl ? ctrl.price * (parseInt(ac.qty, 10) || 1) : 0;
+          return (
+            <div key={ac.id} className="structural-item-card">
+              <div className="structural-item-header">
+                <span>Additional Control</span>
+                <button type="button" className="structural-item-remove"
+                  onClick={() => removeAdditionalControl(ac.id)}>✕ Remove</button>
+              </div>
+              <div className="structural-fields-grid">
+                <div className="mps-field">
+                  <label className="mps-label">Control</label>
+                  <select className="mps-select" value={ac.controlId}
+                    onChange={e => updateAdditionalControl(ac.id, { controlId: e.target.value })}>
+                    <option value="">— Select control —</option>
+                    {AWNING_CONTROL_CATALOG.map(c => (
+                      <option key={c.id} value={c.id}>{c.name} — {fmt(c.price)}</option>
+                    ))}
+                  </select>
+                </div>
+                <Field
+                  label="Quantity"
+                  type="number"
+                  value={String(ac.qty)}
+                  onChange={v => updateAdditionalControl(ac.id, { qty: parseInt(v, 10) || 1 })}
+                  min="1"
+                  placeholder="1"
+                  allowFractions={false}
+                />
+              </div>
+              {lineTotal > 0 && (
+                <div className="structural-calc">
+                  {ctrl?.name} × {ac.qty} = <strong>{fmt(lineTotal)}</strong>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function calcAwningControlCost(controlState, totalAwningQty) {
+  if (!controlState) return 0;
+  const includedCredit = getAwningIncludedControlCredit(totalAwningQty);
+  const { includedReplaced = false, replacementControlId = "", additionalControls = [] } = controlState;
+  let cost = 0;
+  if (includedReplaced && replacementControlId) {
+    const rep = AWNING_CONTROL_CATALOG.find(c => c.id === replacementControlId);
+    if (rep) cost += Math.max(0, rep.price - includedCredit);
+  }
+  additionalControls.forEach(ac => {
+    const ctrl = AWNING_CONTROL_CATALOG.find(c => c.id === ac.controlId);
+    if (ctrl) cost += ctrl.price * (parseInt(ac.qty, 10) || 1);
+  });
+  return cost;
+}
+
 const SKYLINE_CASSETTE_SPECS = {
   "Skyline Motorized Retractable Awning": {
     height: '6.5"',
@@ -1170,43 +1370,29 @@ const PRODUCT_FIELD_ADDONS = {
     { id:"part_gold_deco_d",     name:"Gold Extra Parts Deco / Sq Sill etc (double)",pricingType:"per_unit",rate:140,  unit:"units", unitShort:"ea", placeholder:"1", group:"Parts" },
   ],
   "Skyline Plus MRA": [
-    { id:"somfy_wind_sensor", name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_sun_wind",    name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"power_cord_24ft",   name:"24\u2019 Motor Power Cord (upgrade)", pricingType:"per_unit", rate:80,  unit:"units", unitShort:"ea", placeholder:"1", group:"Power Cable Options" },
-    { id:"bracket_12in",      name:"Roof Mount Bracket 12\u2033 Tall",   pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-    { id:"bracket_16in",      name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-    { id:"bracket_24in",      name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-  ],
+  { id:"somfy_tahoma",       name:"Somfy TaHoma",                                    pricingType:"per_unit", rate:420, unit:"units", unitShort:"ea", placeholder:"1", group:"Smart Home" },
+  { id:"somfy_wind_sensor",  name:"RTS Wind Sensor",                                 pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Sensors" },
+  { id:"somfy_sun_wind",     name:"RTS Sun/Wind",                                    pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Sensors" },
+  { id:"bracket_12in",       name:"Roof Mount Bracket 12\u2033 Tall",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+  { id:"bracket_16in",       name:"Roof Mount Bracket 16\u2033 Tall",               pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+  { id:"bracket_24in",       name:"Roof Mount Bracket 24\u2033 Tall",               pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+],
   "Skyline Motorized Retractable Awning": [
-    { id:"somfy_1ch_tx",      name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_tx",      name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_1ch_patio",   name:"1 Channel Patio Transmitter",         pricingType:"per_unit", rate:200, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_patio",   name:"5 Channel Patio Transmitter",         pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_1ch_wall",    name:"1 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_wall",    name:"5 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:400, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_wind_sensor", name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_sun_wind",    name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_16ch_telis",  name:"16 Channel Telis RTS",                pricingType:"per_unit", rate:500, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"power_cord_24ft",   name:"24\u2019 Motor Power Cord (upgrade)", pricingType:"per_unit", rate:80,  unit:"units", unitShort:"ea", placeholder:"1", group:"Power Cable Options" },
-    { id:"bracket_12in",      name:"Roof Mount Bracket 12\u2033 Tall",   pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-    { id:"bracket_16in",      name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-    { id:"bracket_24in",      name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-  ],
+  { id:"somfy_tahoma",       name:"Somfy TaHoma",                                    pricingType:"per_unit", rate:420, unit:"units", unitShort:"ea", placeholder:"1", group:"Smart Home" },
+  { id:"somfy_wind_sensor",  name:"RTS Wind Sensor",                                 pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Sensors" },
+  { id:"somfy_sun_wind",     name:"RTS Sun/Wind",                                    pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Sensors" },
+  { id:"bracket_12in",       name:"Roof Mount Bracket 12\u2033 Tall",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+  { id:"bracket_16in",       name:"Roof Mount Bracket 16\u2033 Tall",               pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+  { id:"bracket_24in",       name:"Roof Mount Bracket 24\u2033 Tall",               pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+],
   "Open Roll Motorized Retractable Awning": [
-    { id:"somfy_1ch_tx",      name:"1 Channel Transmitter",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_tx",      name:"5 Channel Transmitter",               pricingType:"per_unit", rate:250, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_1ch_patio",   name:"1 Channel Patio Transmitter",         pricingType:"per_unit", rate:200, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_patio",   name:"5 Channel Patio Transmitter",         pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_1ch_wall",    name:"1 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:300, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_5ch_wall",    name:"5 Ch. Transmitter - Wireless Wall",   pricingType:"per_unit", rate:400, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_wind_sensor", name:"RTS Wind Sensor",                     pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_sun_wind",    name:"RTS Sun/Wind",                        pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"somfy_16ch_telis",  name:"16 Channel Telis RTS",                pricingType:"per_unit", rate:500, unit:"units", unitShort:"ea", placeholder:"1", group:"Somfy RTS" },
-    { id:"power_cord_24ft",   name:"24\u2019 Motor Power Cord (upgrade)", pricingType:"per_unit", rate:80,  unit:"units", unitShort:"ea", placeholder:"1", group:"Power Cable Options" },
-    { id:"bracket_12in",      name:"Roof Mount Bracket 12\u2033 Tall",   pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-    { id:"bracket_16in",      name:"Roof Mount Bracket 16\u2033 Tall",   pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-    { id:"bracket_24in",      name:"Roof Mount Bracket 24\u2033 Tall",   pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
-  ],
+  { id:"somfy_tahoma",       name:"Somfy TaHoma",                                    pricingType:"per_unit", rate:420, unit:"units", unitShort:"ea", placeholder:"1", group:"Smart Home" },
+  { id:"somfy_wind_sensor",  name:"RTS Wind Sensor",                                 pricingType:"per_unit", rate:350, unit:"units", unitShort:"ea", placeholder:"1", group:"Sensors" },
+  { id:"somfy_sun_wind",     name:"RTS Sun/Wind",                                    pricingType:"per_unit", rate:450, unit:"units", unitShort:"ea", placeholder:"1", group:"Sensors" },
+  { id:"bracket_12in",       name:"Roof Mount Bracket 12\u2033 Tall",               pricingType:"per_unit", rate:125, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+  { id:"bracket_16in",       name:"Roof Mount Bracket 16\u2033 Tall",               pricingType:"per_unit", rate:150, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+  { id:"bracket_24in",       name:"Roof Mount Bracket 24\u2033 Tall",               pricingType:"per_unit", rate:175, unit:"units", unitShort:"ea", placeholder:"1", group:"Roof Mount Brackets (Brown Only)" },
+],
 };
 
 function getFieldAddonsForProduct(productName) {
@@ -3613,7 +3799,8 @@ function GenericMRACard({
   fieldAddonValues, onFieldAddonChange,
   productNotes, onProductNoteChange,
   totalAwningQty,
-  manufacturerGroups, // TASK 1
+  manufacturerGroups,
+  awningControlState, onAwningControlChange, // NEW props
 }) {
   const cfg = mraConfig[line.id] || createMRAConfig();
 
@@ -3635,19 +3822,12 @@ function GenericMRACard({
   const totalWidthFt   = widthFtDecimal + (widthInDecimal / 12);
   const widthFtKey     = totalWidthFt > 0 ? Math.ceil(totalWidthFt) : null;
 
-  // TASK 4: Motor determination — width-based for these products
   const awningMotor = getAwningMotor(line.product, widthFtKey);
 
-  // TASK 1: LED logic (only relevant for Skyline Motorized, not Open Roll)
   const isSkylightType = line.product === "Skyline Motorized Retractable Awning";
   const includeLED     = isSkylightType ? (cfg.includeLED !== false) : true;
   const ledDeduct      = (isSkylightType && !includeLED) ? -LED_DEDUCT_AMOUNT : 0;
 
-  // TASK 1: Transmitter from manufacturer group
-  const somfyGroup  = manufacturerGroups?.["Somfy"];
-  const transmitter = getRecommendedTransmitter("Somfy", somfyGroup?.count || qty, includeLED);
-
-  // TASK 2: Power cord
   const powerCordCost = getAwningPowerCordPrice(cfg.powerCord || "10ft");
 
   const priceResult = widthFtKey && cfg.projection
@@ -3660,7 +3840,9 @@ function GenericMRACard({
   const cassetteIsCustom  = cfg.cassetteColor?.toLowerCase().includes("custom");
   const customCassetteCost = cassetteIsCustom ? (parseFloat(cfg.customCassetteColorPrice) || 0) : 0;
 
-  const grandLineTotal = matrixTotal + fieldTotal + customCassetteCost + ledDeduct + powerCordCost;
+  const controlCost = calcAwningControlCost(awningControlState, totalAwningQty);
+
+  const grandLineTotal = matrixTotal + fieldTotal + customCassetteCost + ledDeduct + powerCordCost + controlCost;
 
   const matrixRef   = line.product === "Skyline Motorized Retractable Awning"
     ? SKYLINE_MRA_PRICE_DATA
@@ -3689,7 +3871,7 @@ function GenericMRACard({
         <div className="ps-product-price">{fmt(grandLineTotal)}</div>
       </div>
 
-      {/* TASK 4: Motor Display Banner */}
+      {/* Motor Display Banner */}
       <div className="motor-info-banner">
         <span className="motor-info-icon">⚡</span>
         <div className="motor-info-content">
@@ -3706,24 +3888,6 @@ function GenericMRACard({
             </span>
           )}
         </div>
-      </div>
-
-      {/* TASK 1: Transmitter Banner */}
-      <div className="auto-remote-badge">
-        <span className="auto-remote-icon">🎛</span>
-        <span className="auto-remote-text">
-          Recommended Transmitter: <strong>{transmitter}</strong>
-          {somfyGroup && (
-            <span style={{ fontSize: "0.85em", opacity: 0.7, marginLeft: 8 }}>
-              ({somfyGroup.count} total Somfy-controlled unit{somfyGroup.count !== 1 ? "s" : ""} in order)
-            </span>
-          )}
-          {isSkylightType && !includeLED && (
-            <span style={{ fontSize: "0.85em", color: "var(--ps-warn,#e67e22)", marginLeft: 8 }}>
-              — downgraded to 1-ch (LED removed)
-            </span>
-          )}
-        </span>
       </div>
 
       <div className="ps-detail-grid">
@@ -3784,7 +3948,7 @@ function GenericMRACard({
           </div>
         )}
 
-        {/* TASK 1: LED Toggle — only for Skyline Motorized (has cassette/LED) */}
+        {/* LED Toggle — only for Skyline Motorized */}
         {isSkylightType && (
           <div className="mps-field" style={{ marginTop: "16px" }}>
             <Toggle
@@ -3795,15 +3959,12 @@ function GenericMRACard({
             {!includeLED && (
               <div className="storm-rail-badge" style={{ borderLeftColor: "var(--ps-warn,#e67e22)", marginTop: 8 }}>
                 💲 LED Removed: <strong>−{fmt(LED_DEDUCT_AMOUNT)}</strong> deduct applied
-                <span style={{ fontSize: "0.85em", opacity: 0.7, marginLeft: 8 }}>
-                  Transmitter downgraded to 1-channel
-                </span>
               </div>
             )}
           </div>
         )}
 
-        {/* TASK 2: Power Cord */}
+        {/* Power Cord */}
         <div className="mps-field" style={{ marginTop: "12px" }}>
           <label className="mps-label">
             Power Cord
@@ -3924,6 +4085,14 @@ function GenericMRACard({
         />
       </div>
 
+      {/* Controls Section — same UX as MPS */}
+      <AwningControlSection
+        totalAwningQty={totalAwningQty}
+        controlState={awningControlState || { includedReplaced: false, replacementControlId: "", additionalControls: [] }}
+        onControlChange={onAwningControlChange}
+      />
+
+      {/* Accessories (Roof Mount Brackets, TaHoma, Sensors only) */}
       <FieldAddonSection
         productName={line.product}
         fieldAddonValues={fieldAddonValues}
@@ -3938,6 +4107,7 @@ function GenericMRACard({
         }
         {ledDeduct < 0 && <span style={{ color: "var(--ps-success,#27ae60)" }}>− LED Deduct: {fmt(LED_DEDUCT_AMOUNT)}</span>}
         {powerCordCost > 0 && <span>+ 24ft Power Cord: {fmt(powerCordCost)}</span>}
+        {controlCost > 0 && <span>+ Controls: {fmt(controlCost)}</span>}
         {fieldTotal > 0 && <span>+ Accessories: {fmt(fieldTotal)}</span>}
         {customCassetteCost > 0 && <span>+ Custom Cassette Color: {fmt(customCassetteCost)}</span>}
         <span className="mps-line-grand">Line Total: {fmt(grandLineTotal)}</span>
@@ -4397,10 +4567,11 @@ export default function ProductSummary() {
   const [windSensorSelections, setWindSensorSelections] = useState(() => loadFromSession()?.windSensorSelections || {});
   const [mraConfig,            setMraConfig]            = useState(() => loadFromSession()?.mraConfig            || {});
   const [mpsControls, setMpsControls] = useState(() => loadFromSession()?.mpsControls || {});
+  const [awningControls, setAwningControls] = useState(() => loadFromSession()?.awningControls || {});
 
   useEffect(() => {
-    saveToSession({ addonSelections, mpsData, fieldAddonValues, productNotes, signature, windSensorSelections, mraConfig, mpsControls });
-  }, [addonSelections, mpsData, fieldAddonValues, productNotes, signature, windSensorSelections, mraConfig]);
+  saveToSession({ addonSelections, mpsData, fieldAddonValues, productNotes, signature, windSensorSelections, mraConfig, mpsControls, awningControls });
+}, [addonSelections, mpsData, fieldAddonValues, productNotes, signature, windSensorSelections, mraConfig, mpsControls, awningControls]);
 
   const handleProductNoteChange = (lineId, note) => setProductNotes(prev => ({ ...prev, [lineId]: note }));
 
@@ -4409,6 +4580,9 @@ export default function ProductSummary() {
 
   const handleMpsControlsChange = (lineId, updated) =>
   setMpsControls(prev => ({ ...prev, [lineId]: updated }));
+
+  const handleAwningControlsChange = (lineId, updated) =>
+  setAwningControls(prev => ({ ...prev, [lineId]: updated }));
 
   const handleAddonToggle = (lineId, addonId) => {
     if (addonId === "__RESET__") { setAddonSelections(prev => ({ ...prev, [lineId]: {} })); return; }
@@ -4538,14 +4712,17 @@ const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeni
   }
   mraGrand += calcFieldAddonTotal(fieldAddonValues[line.id], line.product);
 
-  // TASK 1: LED deduct
+  // LED deduct
   const isSkylightType = line.product === "Skyline Motorized Retractable Awning";
   const isSkylinePlus  = line.product === "Skyline Plus MRA" || line.product === "Motor B Retractable Awning";
   const hasLED         = isSkylinePlus || isSkylightType;
   if (hasLED && cfg.includeLED === false) mraGrand -= LED_DEDUCT_AMOUNT;
 
-  // TASK 2: Power cord
+  // Power cord
   mraGrand += getAwningPowerCordPrice(cfg.powerCord || "10ft") * qty;
+
+  // Awning controls
+  ctrlGrand += calcAwningControlCost(awningControls[line.id], totalAwningQty);
 } else {
         const qty    = parseInt(line.quantity, 10) || 1;
         const addons = getAddonsForProduct(line.product);
@@ -4569,7 +4746,7 @@ const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeni
       controlsGrand:           ctrlGrand,
       subtotalWithAddons: nonMPSNonMRAOriginal + openingsGrand + appBaseMPSGrand + addonGrand + structuralGrand + windGrand + mraGrand + ctrlGrand,
     };
-  }, [snapshot, addonSelections, mpsData, fieldAddonValues, windSensorSelections, mraConfig, mpsControls]);
+  }, [snapshot, addonSelections, mpsData, fieldAddonValues, windSensorSelections, mraConfig, mpsControls, awningControls]);
 
   const discountPercent = snapshot?.pricingSummary?.discountPercent || 0;
   const discountAmount  = subtotalWithAddons * (discountPercent / 100);
@@ -4619,43 +4796,46 @@ const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeni
                                       line.product === "Open Roll Motorized Retractable Awning";
 
                 if (isSkylightMRA) {
-                  return (
-                    <SkylightMRACard
-  key={line.id}
-  line={{ ...line, product: "Skyline Plus MRA" }}
-  index={idx}
-  snapshot={snapshot}
-  mraConfig={mraConfig}
-  onMRAConfigChange={handleMRAConfigChange}
-  fieldAddonValues={fieldAddonValues[line.id] || {}}
-  onFieldAddonChange={handleFieldAddonChange}
-  productNotes={productNotes[line.id]}
-  onProductNoteChange={handleProductNoteChange}
-  totalAwningQty={totalAwningQty}
-  manufacturerGroups={manufacturerGroups}   // ← ADD
-/>
-                  );
-                }
+  return (
+    <SkylightMRACard
+      key={line.id}
+      line={{ ...line, product: "Skyline Plus MRA" }}
+      index={idx}
+      snapshot={snapshot}
+      mraConfig={mraConfig}
+      onMRAConfigChange={handleMRAConfigChange}
+      fieldAddonValues={fieldAddonValues[line.id] || {}}
+      onFieldAddonChange={handleFieldAddonChange}
+      productNotes={productNotes[line.id]}
+      onProductNoteChange={handleProductNoteChange}
+      totalAwningQty={totalAwningQty}
+      manufacturerGroups={manufacturerGroups}
+      awningControlState={awningControls[line.id] || { includedReplaced: false, replacementControlId: "", additionalControls: [] }}
+      onAwningControlChange={(updated) => handleAwningControlsChange(line.id, updated)}
+    />
+  );
+}
 
                 if (isGenericMRA) {
-                  return (
-                    <GenericMRACard
-  key={line.id}
-  line={line}
-  index={idx}
-  snapshot={snapshot}
-  mraConfig={mraConfig}
-  onMRAConfigChange={handleMRAConfigChange}
-  fieldAddonValues={fieldAddonValues[line.id] || {}}
-  onFieldAddonChange={handleFieldAddonChange}
-  productNotes={productNotes[line.id]}
-  onProductNoteChange={handleProductNoteChange}
-  totalAwningQty={totalAwningQty}
-  manufacturerGroups={manufacturerGroups}   // ← ADD
-/>
-                  );
-                }
-
+  return (
+    <GenericMRACard
+      key={line.id}
+      line={line}
+      index={idx}
+      snapshot={snapshot}
+      mraConfig={mraConfig}
+      onMRAConfigChange={handleMRAConfigChange}
+      fieldAddonValues={fieldAddonValues[line.id] || {}}
+      onFieldAddonChange={handleFieldAddonChange}
+      productNotes={productNotes[line.id]}
+      onProductNoteChange={handleProductNoteChange}
+      totalAwningQty={totalAwningQty}
+      manufacturerGroups={manufacturerGroups}
+      awningControlState={awningControls[line.id] || { includedReplaced: false, replacementControlId: "", additionalControls: [] }}
+      onAwningControlChange={(updated) => handleAwningControlsChange(line.id, updated)}
+    />
+  );
+}
                 if (MPS_PRODUCTS.includes(line.product)) {
   return (
     <MPSProductCard
