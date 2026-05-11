@@ -203,16 +203,18 @@ function getPowerCordPrice(cordValue) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// AWNING CONTROL CATALOG (Somfy RTS options for all awnings)
+// AWNING CONTROL CATALOG (Somfy RTS — used across all 3 MRAs)
 // ─────────────────────────────────────────────────────────────
 const AWNING_CONTROL_CATALOG = [
-  { id: "somfy_awning_1ch_tx",     name: "1 Channel Transmitter",                  price: 125 },
-  { id: "somfy_awning_5ch_tx",     name: "5 Channel Transmitter",                  price: 250 },
-  { id: "somfy_awning_1ch_patio",  name: "1 Channel Patio Transmitter",            price: 200 },
-  { id: "somfy_awning_5ch_patio",  name: "5 Channel Patio Transmitter",            price: 300 },
-  { id: "somfy_awning_1ch_wall",   name: "1 Ch. Transmitter - Wireless Wall Mount", price: 300 },
-  { id: "somfy_awning_5ch_wall",   name: "5 Ch. Transmitter - Wireless Wall Mount", price: 400 },
-  { id: "somfy_awning_16ch_telis", name: "16 Channel Telis RTS",                   price: 500 },
+  { id: "somfy_awning_1ch_tx",     name: "1 Channel Transmitter",                    price: 125 },
+  { id: "somfy_awning_5ch_tx",     name: "5 Channel Transmitter",                    price: 250 },
+  { id: "somfy_awning_1ch_patio",  name: "1 Channel Patio Transmitter",              price: 200 },
+  { id: "somfy_awning_5ch_patio",  name: "5 Channel Patio Transmitter",              price: 300 },
+  { id: "somfy_awning_1ch_wall",   name: "1 Ch. Transmitter - Wireless Wall Mount",  price: 300 },
+  { id: "somfy_awning_5ch_wall",   name: "5 Ch. Transmitter - Wireless Wall Mount",  price: 400 },
+  { id: "somfy_awning_wind",       name: "RTS Wind Sensor",                          price: 350 },
+  { id: "somfy_awning_sun_wind",   name: "RTS Sun/Wind",                             price: 450 },
+  { id: "somfy_awning_16ch_telis", name: "16 Channel Telis RTS",                     price: 500 },
 ];
 
 // Included control for awnings: 1 Channel Transmitter ($125)
@@ -4124,7 +4126,8 @@ function SkylightMRACard({
   fieldAddonValues, onFieldAddonChange,
   productNotes, onProductNoteChange,
   totalAwningQty,
-  manufacturerGroups, // TASK 1
+  manufacturerGroups,
+  awningControlState, onAwningControlChange,  // ← NEW
 }) {
   const cfg = mraConfig[line.id] || createMRAConfig();
 
@@ -4146,32 +4149,36 @@ function SkylightMRACard({
   const totalWidthFt   = widthFtDecimal + (widthInDecimal / 12);
   const widthFtKey     = totalWidthFt > 0 ? Math.ceil(totalWidthFt) : null;
 
-  // TASK 4: Motor determination
+  // Motor (Skyline Plus always 550)
   const awningMotor = getAwningMotor("Skyline Plus MRA", widthFtKey);
 
-  // TASK 1: LED logic
-  const includeLED   = cfg.includeLED !== false;
-  const ledDeduct    = includeLED ? 0 : -LED_DEDUCT_AMOUNT;
+  // LED logic
+  const includeLED = cfg.includeLED !== false;
+  const ledDeduct  = includeLED ? 0 : -LED_DEDUCT_AMOUNT;
 
-  // TASK 1: Transmitter from manufacturer group
-  const somfyGroup    = manufacturerGroups?.["Somfy"];
-  const transmitter   = getRecommendedTransmitter("Somfy", somfyGroup?.count || qty, includeLED);
-
-  // TASK 2: Power cord
+  // Power cord (lives only in config — never in accessories)
   const powerCordCost = getAwningPowerCordPrice(cfg.powerCord || "10ft");
 
+  // Matrix price
   const priceResult = widthFtKey && cfg.projection
     ? getMRAPriceWithNewProjections("Skyline Plus MRA", cfg.projection, widthFtKey)
     : { ok: false, price: 0, message: "" };
   const unitPrice   = priceResult.ok ? priceResult.price : 0;
   const matrixTotal = unitPrice * qty;
 
-  const fieldTotal = calcFieldAddonTotal(fieldAddonValues, "Skyline Plus MRA");
-
-  const cassetteIsCustom  = cfg.cassetteColor?.toLowerCase().includes("custom");
+  // Accessory + cassette + control costs
+  const fieldTotal         = calcFieldAddonTotal(fieldAddonValues, "Skyline Plus MRA");
+  const cassetteIsCustom   = cfg.cassetteColor?.toLowerCase().includes("custom");
   const customCassetteCost = cassetteIsCustom ? (parseFloat(cfg.customCassetteColorPrice) || 0) : 0;
+  const controlCost        = calcAwningControlCost(awningControlState, totalAwningQty);
 
-  const grandLineTotal = matrixTotal + fieldTotal + customCassetteCost + ledDeduct + powerCordCost;
+  const grandLineTotal =
+    matrixTotal +
+    fieldTotal +
+    customCassetteCost +
+    ledDeduct +
+    powerCordCost +
+    controlCost;
 
   const sampleRow   = cfg.projection ? SKYLIGHT_MRA_PRICE_DATA[PROJECTION_PRICE_KEY_MAP[cfg.projection] || cfg.projection] : null;
   const validWidths = sampleRow ? Object.keys(sampleRow).map(Number).sort((a, b) => a - b) : [];
@@ -4195,7 +4202,7 @@ function SkylightMRACard({
         <div className="ps-product-price">{fmt(grandLineTotal)}</div>
       </div>
 
-      {/* TASK 4: Motor Display Banner */}
+      {/* Motor banner */}
       <div className="motor-info-banner">
         <span className="motor-info-icon">⚡</span>
         <div className="motor-info-content">
@@ -4208,49 +4215,6 @@ function SkylightMRACard({
         </div>
       </div>
 
-      {/* TASK 1: Transmitter Banner */}
-      <div className="auto-remote-badge">
-        <span className="auto-remote-icon">🎛</span>
-        <span className="auto-remote-text">
-          Recommended Transmitter: <strong>{transmitter}</strong>
-          {somfyGroup && (
-            <span style={{ fontSize: "0.85em", opacity: 0.7, marginLeft: 8 }}>
-              ({somfyGroup.count} total Somfy-controlled unit{somfyGroup.count !== 1 ? "s" : ""} in order)
-            </span>
-          )}
-          {!includeLED && (
-            <span style={{ fontSize: "0.85em", color: "var(--ps-warn,#e67e22)", marginLeft: 8 }}>
-              — downgraded to 1-ch (LED removed)
-            </span>
-          )}
-        </span>
-      </div>
-
-      <div className="skylight-included-banner">
-        <div className="skylight-included-title">✅ Standard Included Items (Auto-Assigned)</div>
-        <div className="skylight-included-grid">
-          <div className="skylight-included-item">
-            <span className="skylight-included-icon">🎛</span>
-            <div className="skylight-included-content">
-              <span className="skylight-included-name">Transmitter</span>
-              <span className="skylight-included-value">{transmitter}</span>
-              <span className="skylight-included-hint">
-                Auto-assigned based on {somfyGroup?.count || qty} total Somfy unit{(somfyGroup?.count || qty) !== 1 ? "s" : ""}
-              </span>
-            </div>
-          </div>
-          <div className="skylight-included-item">
-            <span className="skylight-included-icon">💡</span>
-            <div className="skylight-included-content">
-              <span className="skylight-included-name">LED Lighting</span>
-              <span className="skylight-included-value">
-                {includeLED ? "Built-in LED — Included" : "LED Removed — −$750 deduct"}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="ps-detail-grid">
         <div className="ps-detail-item"><span className="ps-detail-label">Product</span><span className="ps-detail-value">Skyline Plus MRA</span></div>
         <div className="ps-detail-item"><span className="ps-detail-label">Category</span><span className="ps-detail-value">{line.category}</span></div>
@@ -4258,6 +4222,7 @@ function SkylightMRACard({
         <div className="ps-detail-item"><span className="ps-detail-label">Operation</span><span className="ps-detail-value" style={{ textTransform: "capitalize" }}>{line.operation}</span></div>
       </div>
 
+      {/* ── CONFIGURATION ────────────────────────────── */}
       <div className="skylight-config-section">
         <div className="skylight-config-title">📐 Awning Configuration</div>
         <div className="skylight-config-grid">
@@ -4309,7 +4274,7 @@ function SkylightMRACard({
           </div>
         )}
 
-        {/* TASK 1: LED Toggle */}
+        {/* LED Toggle */}
         <div className="mps-field" style={{ marginTop: "16px" }}>
           <Toggle
             label="Include LED Lights (built-in)"
@@ -4319,14 +4284,11 @@ function SkylightMRACard({
           {!includeLED && (
             <div className="storm-rail-badge" style={{ borderLeftColor: "var(--ps-warn,#e67e22)", marginTop: 8 }}>
               💲 LED Removed: <strong>−{fmt(LED_DEDUCT_AMOUNT)}</strong> deduct applied
-              <span style={{ fontSize: "0.85em", opacity: 0.7, marginLeft: 8 }}>
-                Transmitter downgraded to 1-channel
-              </span>
             </div>
           )}
         </div>
 
-        {/* TASK 2: Power Cord */}
+        {/* Power Cord — lives ONLY here, never in accessories */}
         <div className="mps-field" style={{ marginTop: "12px" }}>
           <label className="mps-label">
             Power Cord
@@ -4433,6 +4395,7 @@ function SkylightMRACard({
         </div>
       </div>
 
+      {/* Product notes */}
       <div className="product-note-section">
         <label className="mps-label">📝 Product Notes</label>
         <textarea
@@ -4444,6 +4407,14 @@ function SkylightMRACard({
         />
       </div>
 
+      {/* ── CONTROLS (same UX as MPS / GenericMRACard) ── */}
+      <AwningControlSection
+        totalAwningQty={totalAwningQty}
+        controlState={awningControlState || { includedReplaced: false, replacementControlId: "", additionalControls: [] }}
+        onControlChange={onAwningControlChange}
+      />
+
+      {/* ── ACCESSORIES (Roof Mount Brackets, TaHoma, Wind Sensor, Sun/Wind) ── */}
       <FieldAddonSection
         productName="Skyline Plus MRA"
         fieldAddonValues={fieldAddonValues}
@@ -4451,14 +4422,16 @@ function SkylightMRACard({
         lineId={line.id}
       />
 
+      {/* Line total */}
       <div className="mps-line-total">
         {priceResult.ok
           ? <span>Matrix Price: {fmt(unitPrice)}{qty > 1 ? ` × ${qty} = ${fmt(matrixTotal)}` : ""}</span>
           : <span style={{ color: "var(--ps-warn,#e67e22)" }}>⚠ Enter projection &amp; width to calculate price</span>
         }
-        {!includeLED && <span style={{ color: "var(--ps-success,#27ae60)" }}>− LED Deduct: {fmt(LED_DEDUCT_AMOUNT)}</span>}
-        {powerCordCost > 0 && <span>+ 24ft Power Cord: {fmt(powerCordCost)}</span>}
-        {fieldTotal > 0 && <span>+ Accessories: {fmt(fieldTotal)}</span>}
+        {!includeLED          && <span style={{ color: "var(--ps-success,#27ae60)" }}>− LED Deduct: {fmt(LED_DEDUCT_AMOUNT)}</span>}
+        {powerCordCost > 0    && <span>+ 24ft Power Cord: {fmt(powerCordCost)}</span>}
+        {controlCost > 0      && <span>+ Controls: {fmt(controlCost)}</span>}
+        {fieldTotal > 0       && <span>+ Accessories: {fmt(fieldTotal)}</span>}
         {customCassetteCost > 0 && <span>+ Custom Cassette Color: {fmt(customCassetteCost)}</span>}
         <span className="mps-line-grand">Line Total: {fmt(grandLineTotal)}</span>
       </div>
