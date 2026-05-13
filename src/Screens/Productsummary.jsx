@@ -69,6 +69,127 @@ const AWNING_MOTOR_550 = {
   brand: "Somfy",
 };
 
+// ─────────────────────────────────────────────────────────────
+// CLEARVIEW RETRACTABLE SCREEN DOORS
+// ─────────────────────────────────────────────────────────────
+const CLEARVIEW_PRODUCTS = ["Clearview Retractable Screen Doors"];
+
+const CV_INSTALL_TYPES   = ["Door", "Window/Dutch"];
+const CV_SLIDE_DIRS      = ["Horizontal", "Vertical"];
+const CV_DOOR_CONFIGS    = ["Single Door", "Single Over Double", "Double Door"];
+const CV_MOUNT_TYPES     = ["Surface Mount", "Inside Mount", "Into Reveal"];
+const CV_HOUSING_SEALS   = ["Thin Pile", "Thick Pile", "Bug Flap"];
+const CV_HANDLES         = ["Standard", "Die Cast", "Recessed"];
+const CV_HOUSING_COLORS  = ["White","Off White","Almond","Bronze","Champagne Brown","Dark Brown","Black","Green","Silver"];
+const CV_BOTTOM_COLORS   = CV_HOUSING_COLORS.filter(c => c !== "Green"); // Green excluded for bottom
+const CV_MESH_TYPES_ALL  = ["Standard", "Pet", "Solar"];
+const CV_MESH_COLORS     = ["Black", "Gray"];
+const CV_TOP_RAILS       = ["Deco", "Square Sill", "Out Sill", "Break Sill"];
+const CV_BOTTOM_RAILS    = ["Out Sill", '2" Sill', '5" Sill', "Break Sill", "Top Sill", "Round Sill", "Square Sill", "Deco"];
+const CV_LATCH_SIZES     = ["Small", "Medium", "Large"];
+
+// Max constraints
+const CV_MAX_HEIGHT      = 120;
+const CV_MAX_W_SINGLE    = 55;
+const CV_MAX_W_SOD       = 68;
+const CV_MAX_W_DOUBLE    = 144;
+const CV_MAX_W_WINDOW    = 60;
+const CV_PET_MESH_MAX_SINGLE = 42;
+const CV_PET_MESH_MAX_DOUBLE = 84;
+
+function isDoubleConfig(cfg) { return cfg === "Double Door"; }
+
+function getAvailableDoorConfigs(widthIn, heightIn) {
+  const w = parseFloat(widthIn) || 0;
+  const h = parseFloat(heightIn) || 0;
+  if (!w || !h || h > CV_MAX_HEIGHT) return [];
+  const out = [];
+  if (w <= CV_MAX_W_SINGLE) out.push("Single Door");
+  if (w <= CV_MAX_W_SOD)    out.push("Single Over Double");
+  if (w <= CV_MAX_W_DOUBLE) out.push("Double Door");
+  return out;
+}
+
+function getAvailableMeshTypes(widthIn, doorConfig) {
+  const w = parseFloat(widthIn) || 0;
+  const max = doorConfig === "Double Door" ? CV_PET_MESH_MAX_DOUBLE : CV_PET_MESH_MAX_SINGLE;
+  return w > 0 && w <= max ? CV_MESH_TYPES_ALL : ["Standard"];
+}
+
+function calcClearviewOpeningBasePrice(opening) {
+  const w = parseFloat(opening.widthIn)  || 0;
+  const h = parseFloat(opening.heightIn) || 0;
+  if (!w || !h) return { ok: false, price: 0, label: "", message: "Enter valid width and height (inches)." };
+  if (h > CV_MAX_HEIGHT) return { ok: false, price: 0, label: "", message: `Height ${h}" exceeds ${CV_MAX_HEIGHT}" — Custom Quote Required.` };
+
+  // ── WINDOW / DUTCH DOOR FLOW ──
+  if (opening.installType === "Window/Dutch") {
+    const dir  = opening.slideDirection || "Horizontal";
+    const effW = dir === "Vertical" ? h : w;
+    if (effW > CV_MAX_W_WINDOW) {
+      return { ok: false, price: 0, label: "", message: `Effective width ${effW}" exceeds ${CV_MAX_W_WINDOW}" max for Window — Custom Quote Required.` };
+    }
+    return { ok: true, price: 545, label: `ClearView – Window (${dir})`, message: `Window/Dutch (${dir}): $545 flat` };
+  }
+
+  // ── DOOR FLOW ──
+  const cfg = opening.doorConfig;
+  if (!cfg) return { ok: false, price: 0, label: "", message: "Select a door configuration." };
+
+  if (cfg === "Single Door") {
+    if (w > CV_MAX_W_SINGLE) return { ok: false, price: 0, label: "", message: `Width ${w}" exceeds ${CV_MAX_W_SINGLE}" max for Single Door — Custom Quote Required.` };
+    if (h <= 98) return { ok: true, price: 695, label: "ClearView – Single Door",                    message: "Standard (h ≤ 98\")" };
+    return       { ok: true, price: 895, label: "ClearView – Single Door (Height Oversized)",        message: "Height Oversized (98\" < h ≤ 120\")" };
+  }
+
+  if (cfg === "Single Over Double") {
+    if (w > CV_MAX_W_SOD) return { ok: false, price: 0, label: "", message: `Width ${w}" exceeds ${CV_MAX_W_SOD}" max for Single Over Double — Custom Quote Required.` };
+    if (h <= 98) return { ok: true, price: 895,  label: "ClearView – Single Over Double",            message: "Standard (h ≤ 98\")" };
+    return       { ok: true, price: 1295, label: "ClearView – Single Over Double (Height Oversized)", message: "Height Oversized" };
+  }
+
+  if (cfg === "Double Door") {
+    if (w > CV_MAX_W_DOUBLE) return { ok: false, price: 0, label: "", message: `Width ${w}" exceeds ${CV_MAX_W_DOUBLE}" max for Double Door — Custom Quote Required.` };
+    if (w <= 96  && h <= 98)              return { ok: true, price: 1390, label: "ClearView – Double Door",                          message: "Standard" };
+    if (w <= 96  && h > 98 && h <= 120)   return { ok: true, price: 1795, label: "ClearView – Double Door (Height Oversized)",       message: "Height Oversized" };
+    if (w > 96   && w <= 136 && h <= 98)  return { ok: true, price: 1695, label: "ClearView – Double Door (Width Oversized)",        message: "Width Oversized" };
+    if (w > 96   && w <= 144 && h > 98 && h <= 120)
+      return { ok: true, price: 2095, label: "ClearView – Double Door (Width + Height Oversized)", message: "Width + Height Oversized" };
+    return { ok: false, price: 0, label: "", message: "Combination not supported — Custom Quote Required." };
+  }
+
+  return { ok: false, price: 0, label: "", message: "Unsupported configuration." };
+}
+
+function calcClearviewOpeningAddons(opening) {
+  let total = 0;
+  const isDouble = isDoubleConfig(opening.doorConfig);
+
+  // Required: Handle upgrade
+  if (opening.installType === "Door" && (opening.handle === "Die Cast" || opening.handle === "Recessed")) {
+    total += isDouble ? 120 : 60;
+  }
+  // Optional: Arched Fixed Frame
+  if (opening.archedAddon) total += isDouble ? 800 : 450;
+  // Optional: Internal Magnet
+  if (opening.internalMagnet) total += isDouble ? 160 : 80;
+  // Optional: Chrome Latch
+  if (opening.chromeLatch) total += 25;
+  // Pet Guard: TBD (not added until price provided)
+
+  return total;
+}
+
+function calcClearviewOpeningTotal(opening) {
+  const base = calcClearviewOpeningBasePrice(opening);
+  if (!base.ok) return 0;
+  return base.price + calcClearviewOpeningAddons(opening);
+}
+
+function calcClearviewLineTotal(openings) {
+  return (openings || []).reduce((s, o) => s + calcClearviewOpeningTotal(o), 0);
+}
+
 function getAwningMotor(productName, widthFtKey) {
   if (
     productName === "Skyline Plus MRA" ||
@@ -1430,6 +1551,39 @@ function createBuildout() {
   };
 }
 
+function createClearviewOpening() {
+  return {
+    id: uid(),
+    label: "",
+    // measurement (decimal inches — supports ft+in input UI)
+    widthFt: "", widthIn: "",   // input fields
+    heightFt: "", heightIn: "", // input fields (these store the final inch total too)
+    // Step 3 flow
+    installType: "Door",
+    slideDirection: "Horizontal",
+    doorConfig: "",
+    // Required dependencies
+    mountType: "Surface Mount",
+    housingSeal: "Thin Pile",
+    handle: "Standard",
+    housingColor: "White",
+    meshType: "Standard",
+    meshColor: "Black",
+    topRail: "Deco",
+    bottomRail: "Out Sill",
+    bottomRailColor: "White",
+    // Optional add-ons
+    archedAddon: false,
+    archWidth: "", archHeight: "",
+    internalMagnet: false,
+    chromeLatch: false,
+    chromeLatchSize: "Small",
+    petGuard: false,
+    notes: "",
+    openingPhoto: null,
+  };
+}
+
 function createOpening(productName = "", areaDefaults = {}) {
   return {
     id: uid(), label: "",
@@ -1487,6 +1641,374 @@ function createMRAConfig() {
     powerCord: "10ft",   // TASK 2
     includeLED: true,    // TASK 1
   };
+}
+
+function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove }) {
+  const set = (field, val) => onChange({ ...opening, [field]: val });
+
+  // Width / Height inches — derived from ft+in fields (use Field allowFractions style)
+  // Keep raw inches input simple: total = (ft * 12) + in
+  const widthFtDec  = safeParseFloat(opening.widthFt);
+  const widthInDec  = safeParseFloat(opening.widthIn);
+  const heightFtDec = safeParseFloat(opening.heightFt);
+  const heightInDec = safeParseFloat(opening.heightIn);
+  const totalW = widthFtDec * 12 + widthInDec;
+  const totalH = heightFtDec * 12 + heightInDec;
+
+  // Sync inches into the field used by pricing functions
+  useEffect(() => {
+    const newW = totalW || "";
+    const newH = totalH || "";
+    if (String(opening._wIn ?? "") !== String(newW) || String(opening._hIn ?? "") !== String(newH)) {
+      onChange({ ...opening, _wIn: newW, _hIn: newH });
+    }
+    // eslint-disable-next-line
+  }, [totalW, totalH]);
+
+  // Pricing helpers want widthIn/heightIn — alias so calc functions read decimals directly
+  const pricingOpening = { ...opening, widthIn: totalW, heightIn: totalH };
+  const baseResult     = calcClearviewOpeningBasePrice(pricingOpening);
+  const addonsTotal    = calcClearviewOpeningAddons(pricingOpening);
+  const openingTotal   = baseResult.ok ? baseResult.price + addonsTotal : 0;
+
+  const availableConfigs = getAvailableDoorConfigs(totalW, totalH);
+  const availableMeshes  = getAvailableMeshTypes(totalW, opening.doorConfig);
+  const isDouble         = isDoubleConfig(opening.doorConfig);
+  const isWindow         = opening.installType === "Window/Dutch";
+  const isDoor           = opening.installType === "Door";
+
+  // Hide pet/solar mesh if width-restricted — also reset selection if invalid
+  useEffect(() => {
+    if (!availableMeshes.includes(opening.meshType)) set("meshType", "Standard");
+    // eslint-disable-next-line
+  }, [availableMeshes.join(",")]);
+
+  // Top rail color locks to housingColor (display only)
+  // Bottom rail color: defaults to housing unless housing is Green
+  useEffect(() => {
+    if (opening.housingColor === "Green") {
+      if (opening.bottomRailColor === "Green") set("bottomRailColor", "White");
+    } else {
+      if (opening.bottomRailColor !== opening.housingColor) set("bottomRailColor", opening.housingColor);
+    }
+    // eslint-disable-next-line
+  }, [opening.housingColor]);
+
+  return (
+    <div className="opening-card">
+      <div className="opening-header">
+        <div className="opening-num">Opening {index + 1}</div>
+        <div className="opening-label-wrap">
+          <input className="opening-label-input" placeholder="Opening label (e.g. Front Entry)"
+            value={opening.label} onChange={e => set("label", e.target.value)} />
+        </div>
+        {openingTotal > 0 && <div className="opening-structural-badge">{fmt(openingTotal)}</div>}
+        {showRemove && (
+          <button type="button" className="opening-remove ctrl-btn-danger" onClick={onRemove}>
+            🗑 Delete Opening
+          </button>
+        )}
+      </div>
+
+      {/* ── MEASUREMENTS ── */}
+      <div className="opening-grid-3">
+        <div className="mps-field">
+          <label className="mps-label">Width <span className="mps-req">*</span></label>
+          <div className="skylight-width-inputs">
+            <div className="skylight-width-input-wrap">
+              <Field label="" type="text" value={opening.widthFt}
+                onChange={v => set("widthFt", typeof v === "object" ? v.display : v)}
+                placeholder="Feet" allowFractions={true} />
+              <span className="skylight-dim-unit">ft</span>
+            </div>
+            <div className="skylight-width-input-wrap">
+              <Field label="" type="text" value={opening.widthIn}
+                onChange={v => set("widthIn", typeof v === "object" ? v.display : v)}
+                placeholder="Inches" allowFractions={true} />
+              <span className="skylight-dim-unit">in</span>
+            </div>
+          </div>
+          {totalW > 0 && <div className="skylight-width-display">→ <strong>{totalW}"</strong> total</div>}
+        </div>
+
+        <div className="mps-field">
+          <label className="mps-label">Height <span className="mps-req">*</span></label>
+          <div className="skylight-width-inputs">
+            <div className="skylight-width-input-wrap">
+              <Field label="" type="text" value={opening.heightFt}
+                onChange={v => set("heightFt", typeof v === "object" ? v.display : v)}
+                placeholder="Feet" allowFractions={true} />
+              <span className="skylight-dim-unit">ft</span>
+            </div>
+            <div className="skylight-width-input-wrap">
+              <Field label="" type="text" value={opening.heightIn}
+                onChange={v => set("heightIn", typeof v === "object" ? v.display : v)}
+                placeholder="Inches" allowFractions={true} />
+              <span className="skylight-dim-unit">in</span>
+            </div>
+          </div>
+          {totalH > 0 && <div className="skylight-width-display">→ <strong>{totalH}"</strong> total</div>}
+        </div>
+
+        <Sel label="Install Type" value={opening.installType} options={CV_INSTALL_TYPES}
+          onChange={v => onChange({ ...opening, installType: v, doorConfig: "" })} required />
+      </div>
+
+      {/* ── WINDOW FLOW ── */}
+      {isWindow && (
+        <div className="skylight-config-section">
+          <div className="skylight-config-title">🪟 Window / Dutch Door Configuration</div>
+          <div className="opening-grid-3">
+            <Sel label="Slide Direction" value={opening.slideDirection} options={CV_SLIDE_DIRS}
+              onChange={v => set("slideDirection", v)} required />
+          </div>
+          <div className="storm-rail-badge" style={{ borderLeftColor: "var(--ps-info,#3498db)" }}>
+            💲 Window flat pricing: <strong>$545</strong> per opening
+          </div>
+        </div>
+      )}
+
+      {/* ── DOOR FLOW ── */}
+      {isDoor && (
+        <div className="skylight-config-section">
+          <div className="skylight-config-title">🚪 Door Configuration</div>
+          <div className="opening-grid-3">
+            <div className="mps-field">
+              <label className="mps-label">Door Configuration <span className="mps-req">*</span></label>
+              <select className="mps-select" value={opening.doorConfig}
+                onChange={e => set("doorConfig", e.target.value)}
+                disabled={availableConfigs.length === 0}>
+                <option value="">{availableConfigs.length === 0 ? "— enter valid dimensions first —" : "— Select —"}</option>
+                {availableConfigs.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              {totalW > 0 && totalH > 0 && availableConfigs.length === 0 && (
+                <div className="mps-field-error">⚠️ No valid configurations for {totalW}"×{totalH}" — Custom Quote Required.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── PRICE BADGE ── */}
+      {(totalW > 0 || totalH > 0) && (
+        <div className={`opening-price-badge ${baseResult.ok ? "opening-price-badge--ok" : "opening-price-badge--error"}`}>
+          {baseResult.ok ? (
+            <>
+              <span className="opening-price-badge__label">{baseResult.label}:</span>
+              <span className="opening-price-badge__value">{fmt(baseResult.price)}</span>
+              <span className="opening-price-badge__hint">({baseResult.message})</span>
+            </>
+          ) : <span>⚠ {baseResult.message}</span>}
+        </div>
+      )}
+
+      {/* ── REQUIRED DEPENDENCIES ── */}
+      <details className="override-details" open>
+        <summary className="override-summary">⚙ Required Configuration</summary>
+        <div className="override-resolved-grid">
+          <Sel label="Mount Type"    value={opening.mountType}   options={CV_MOUNT_TYPES}   onChange={v => set("mountType", v)} required />
+          <Sel label="Housing Seal"  value={opening.housingSeal} options={CV_HOUSING_SEALS} onChange={v => set("housingSeal", v)} required />
+
+          <div className="mps-field">
+            <label className="mps-label">
+              Handle
+              {isDoor && (opening.handle === "Die Cast" || opening.handle === "Recessed") && (
+                <span className="motor-badge motor-badge--extra" style={{ marginLeft: 8 }}>
+                  +{fmt(isDouble ? 120 : 60)}
+                </span>
+              )}
+            </label>
+            <select className="mps-select" value={opening.handle} onChange={e => set("handle", e.target.value)}>
+              <option value="Standard">Standard Handle (included)</option>
+              <option value="Die Cast">Die Cast Handle (+${isDouble ? 120 : 60})</option>
+              <option value="Recessed">Recessed Handle / Low Profile (+${isDouble ? 120 : 60})</option>
+            </select>
+          </div>
+
+          <Sel label="Housing Color" value={opening.housingColor} options={CV_HOUSING_COLORS} onChange={v => set("housingColor", v)} required />
+
+          <div className="mps-field">
+            <label className="mps-label">Mesh Type</label>
+            <select className="mps-select" value={opening.meshType} onChange={e => set("meshType", e.target.value)}>
+              {availableMeshes.map(m => <option key={m} value={m}>{m === "Standard" ? "Standard Mesh" : `${m} Mesh`}</option>)}
+            </select>
+            {!availableMeshes.includes("Pet") && totalW > 0 && (
+              <div className="wire-guide-notice-inline">
+                Pet/Solar Mesh unavailable — width &gt; {isDouble ? CV_PET_MESH_MAX_DOUBLE : CV_PET_MESH_MAX_SINGLE}"
+              </div>
+            )}
+          </div>
+
+          <Sel label="Mesh Color"    value={opening.meshColor}  options={CV_MESH_COLORS}  onChange={v => set("meshColor", v)} required />
+
+          <div className="mps-field">
+            <label className="mps-label">Top Support &amp; Rail</label>
+            <select className="mps-select" value={opening.topRail} onChange={e => set("topRail", e.target.value)}>
+              {CV_TOP_RAILS.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+            <div className="wire-guide-notice-inline">Color locked to Housing: <strong>{opening.housingColor}</strong></div>
+          </div>
+
+          <Sel label="Bottom Threshold &amp; Rail" value={opening.bottomRail} options={CV_BOTTOM_RAILS} onChange={v => set("bottomRail", v)} required />
+
+          <Sel label="Bottom Rail Color" value={opening.bottomRailColor} options={CV_BOTTOM_COLORS} onChange={v => set("bottomRailColor", v)} required />
+        </div>
+      </details>
+
+      {/* ── OPTIONAL ADD-ONS ── */}
+      <details className="override-details">
+        <summary className="override-summary">
+          ✦ Optional Add-Ons
+          {addonsTotal > 0 && <span className="ps-addons-running-total" style={{ marginLeft: 12 }}>+{fmt(addonsTotal)}</span>}
+        </summary>
+
+        {/* Arched Fixed Frame */}
+        {isDoor && opening.doorConfig && (
+          <div className="structural-item-card">
+            <Toggle
+              label={`Add Arched Fixed Frame Screen (${isDouble ? "Double Arch +$800" : "Single Arch +$450"})`}
+              checked={!!opening.archedAddon}
+              onChange={v => set("archedAddon", v)}
+            />
+            {opening.archedAddon && (
+              <div className="structural-fields-grid">
+                <Field label="Arch Width (in)"  type="number" value={opening.archWidth}  onChange={v => set("archWidth", v)}  allowFractions={false} />
+                <Field label="Arch Height (in)" type="number" value={opening.archHeight} onChange={v => set("archHeight", v)} allowFractions={false} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Internal Magnet */}
+        <Toggle
+          label={`Internal Magnet (${isDouble ? "+$160" : "+$80"})`}
+          checked={!!opening.internalMagnet}
+          onChange={v => set("internalMagnet", v)}
+        />
+
+        {/* Chrome Latch */}
+        <Toggle label="Chrome Latch (+$25)" checked={!!opening.chromeLatch} onChange={v => set("chromeLatch", v)} />
+        {opening.chromeLatch && (
+          <Sel label="Latch Size" value={opening.chromeLatchSize} options={CV_LATCH_SIZES} onChange={v => set("chromeLatchSize", v)} />
+        )}
+
+        {/* Pet Guard — TBD pricing */}
+        {((isDoor && opening.doorConfig === "Single Door" && totalW <= CV_PET_MESH_MAX_SINGLE) ||
+          (isDoor && opening.doorConfig === "Double Door" && totalW <= CV_PET_MESH_MAX_DOUBLE)) && (
+          <>
+            <Toggle label="Pet Guard (pricing TBD)" checked={!!opening.petGuard} onChange={v => set("petGuard", v)} />
+            {opening.petGuard && (
+              <div className="wire-guide-notice-inline">
+                Rail color locked to Housing: <strong>{opening.housingColor}</strong> · Pricing TBD
+              </div>
+            )}
+          </>
+        )}
+      </details>
+
+      <div className="form-group">
+        <label>Opening Notes</label>
+        <textarea rows="2" value={opening.notes || ""} onChange={e => set("notes", e.target.value)}
+          placeholder="Special instructions for this opening…" />
+      </div>
+
+      <PhotoUpload label="Opening Photo" value={opening.openingPhoto} onChange={v => set("openingPhoto", v)} />
+
+      {openingTotal > 0 && (
+        <div className="opening-total">
+          Opening Total: <strong>{fmt(openingTotal)}</strong>
+          {addonsTotal > 0 && <> ({fmt(baseResult.price)} base + {fmt(addonsTotal)} add-ons)</>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ClearviewProductCard({
+  line, index, snapshot,
+  clearviewData, onClearviewChange,
+  productNotes, onProductNoteChange,
+  isExpanded, onToggleExpand,
+}) {
+  const openings = clearviewData[line.id] || [createClearviewOpening()];
+  const setOpenings = (next) => onClearviewChange(line.id, next);
+
+  const updateOpening = (id, updated) => setOpenings(openings.map(o => o.id === id ? updated : o));
+  const removeOpening = (id) => setOpenings(openings.filter(o => o.id !== id));
+  const addOpening    = () => setOpenings([...openings, createClearviewOpening()]);
+
+  const grandLineTotal = calcClearviewLineTotal(
+    openings.map(o => ({
+      ...o,
+      widthIn:  safeParseFloat(o.widthFt)  * 12 + safeParseFloat(o.widthIn),
+      heightIn: safeParseFloat(o.heightFt) * 12 + safeParseFloat(o.heightIn),
+    }))
+  );
+
+  // Initialize at least one opening
+  useEffect(() => {
+    if (!clearviewData[line.id]) onClearviewChange(line.id, [createClearviewOpening()]);
+    // eslint-disable-next-line
+  }, []);
+
+  return (
+    <div className="ps-product-card mps-product-card">
+      <div className="ps-product-header ps-product-header--clickable"
+        onClick={onToggleExpand} style={{ cursor: "pointer", userSelect: "none" }}>
+        <div className="ps-product-number">#{index + 1}</div>
+        <div className="ps-product-name">{line.product}</div>
+        <div className="ps-product-price">{fmt(grandLineTotal)}</div>
+        <span className="ps-product-expand-icon" style={{
+          marginLeft: "12px", fontSize: "1.2em",
+          transition: "transform 0.2s",
+          transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
+        }}>▼</span>
+      </div>
+
+      {isExpanded && (
+        <>
+          <div className="ps-detail-grid">
+            <div className="ps-detail-item"><span className="ps-detail-label">Product</span><span className="ps-detail-value">{line.product}</span></div>
+            <div className="ps-detail-item"><span className="ps-detail-label">Category</span><span className="ps-detail-value">{line.category}</span></div>
+            <div className="ps-detail-item"><span className="ps-detail-label">Openings</span><span className="ps-detail-value">{openings.length}</span></div>
+          </div>
+
+          <div className="product-note-section">
+            <label className="mps-label">📝 Product Notes</label>
+            <textarea className="product-note-textarea"
+              placeholder="Add any important notes about this product…"
+              value={productNotes || ""} onChange={e => onProductNoteChange(line.id, e.target.value)} rows={3} />
+          </div>
+
+          <div className="mps-builder">
+            <div className="mps-builder-header">
+              <div className="mps-builder-title">
+                <span className="mps-builder-icon">🚪</span> Openings Configuration
+                <span className="mps-builder-hint">— Each opening can be a Door or Window/Dutch with its own configuration</span>
+              </div>
+            </div>
+
+            {openings.map((opening, idx) => (
+              <ClearviewOpeningEditor
+                key={opening.id}
+                opening={opening}
+                index={idx}
+                onChange={u => updateOpening(opening.id, u)}
+                onRemove={() => removeOpening(opening.id)}
+                showRemove={openings.length > 1}
+              />
+            ))}
+
+            <button type="button" className="add-opening-btn" onClick={addOpening}>+ Add Opening</button>
+          </div>
+
+          <div className="mps-line-total">
+            <span className="mps-line-grand">Line Total: {fmt(grandLineTotal)}</span>
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 function calcStormRailCost(opening, effectiveTrackType, productName) {
@@ -4541,10 +5063,11 @@ export default function ProductSummary() {
   const [mraConfig,            setMraConfig]            = useState(() => loadFromSession()?.mraConfig            || {});
   const [mpsControls, setMpsControls] = useState(() => loadFromSession()?.mpsControls || {});
   const [awningControls, setAwningControls] = useState(() => loadFromSession()?.awningControls || {});
+  const [clearviewData, setClearviewData] = useState(() => loadFromSession()?.clearviewData || {});
 
   useEffect(() => {
-  saveToSession({ addonSelections, mpsData, fieldAddonValues, productNotes, signature, windSensorSelections, mraConfig, mpsControls, awningControls });
-}, [addonSelections, mpsData, fieldAddonValues, productNotes, signature, windSensorSelections, mraConfig, mpsControls, awningControls]);
+  saveToSession({ addonSelections, mpsData, fieldAddonValues, productNotes, signature, windSensorSelections, mraConfig, mpsControls, awningControls, clearviewData });
+}, [addonSelections, mpsData, fieldAddonValues, productNotes, signature, windSensorSelections, mraConfig, mpsControls, awningControls, clearviewData]);
 
   const handleProductNoteChange = (lineId, note) => setProductNotes(prev => ({ ...prev, [lineId]: note }));
 
@@ -4563,6 +5086,7 @@ export default function ProductSummary() {
   };
 
   const handleMPSChange = (lineId, areas) => setMpsData(prev => ({...prev, [lineId]: areas}));
+  const handleClearviewChange = (lineId, openings) => setClearviewData(prev => ({ ...prev, [lineId]: openings }));
   const handleWindSensorChange = (lineId, selections) => setWindSensorSelections(prev => ({ ...prev, [lineId]: selections }));
   const handleMRAConfigChange  = (lineId, cfg) => setMraConfig(prev => ({ ...prev, [lineId]: cfg }));
 
@@ -4576,6 +5100,7 @@ export default function ProductSummary() {
       setWindSensorSelections({});
       setMraConfig({});
       setMpsControls({});
+      setClearviewData({});
     }
   };
 
@@ -4612,9 +5137,10 @@ const toggleProductExpand = (lineId) => {
   setExpandedProducts(prev => ({ ...prev, [lineId]: !prev[lineId] }));
 };
 
-const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand, windSensorGrand, mraMatrixGrand, controlsGrand } = useMemo(() => {
+const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand, windSensorGrand, mraMatrixGrand, controlsGrand,clearviewGrand } = useMemo(() => {
     if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0, mpsOpeningsProductGrand:0, windSensorGrand:0, mraMatrixGrand:0, controlsGrand:0 };
     const configured = snapshot.productLines.filter(l => l.category && l.product);
+    let clearviewGrand = 0;
 
     let addonGrand=0, structuralGrand=0, openingsGrand=0, appBaseMPSGrand=0, windGrand=0, mraGrand=0, ctrlGrand=0;
 
@@ -4696,6 +5222,15 @@ const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeni
 
   // Awning controls
   ctrlGrand += calcAwningControlCost(awningControls[line.id], totalAwningQty);
+} else if (CLEARVIEW_PRODUCTS.includes(line.product)) {
+  const ops = clearviewData[line.id] || [];
+  clearviewGrand += calcClearviewLineTotal(
+    ops.map(o => ({
+      ...o,
+      widthIn:  safeParseFloat(o.widthFt)  * 12 + safeParseFloat(o.widthIn),
+      heightIn: safeParseFloat(o.heightFt) * 12 + safeParseFloat(o.heightIn),
+    }))
+  );
 } else {
         const qty    = parseInt(line.quantity, 10) || 1;
         const addons = getAddonsForProduct(line.product);
@@ -4706,20 +5241,28 @@ const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeni
     });
 
     const nonMPSNonMRAOriginal = (snapshot.pricingSummary?.subtotal || 0) -
-      snapshot.productLines
-        .filter(l => l.category && l.product && (MPS_PRODUCTS.includes(l.product) || AWNING_PRODUCTS.includes(l.product)))
-        .reduce((s, l) => { const e = snapshot.productLines.find(l2 => l2.id === l.id); return s + (e?.pricing?.lineSubtotal || 0); }, 0);
+  snapshot.productLines
+    .filter(l => l.category && l.product && (
+      MPS_PRODUCTS.includes(l.product) ||
+      AWNING_PRODUCTS.includes(l.product) ||
+      CLEARVIEW_PRODUCTS.includes(l.product)   // ← add
+    ))
+    .reduce((s, l) => { const e = snapshot.productLines.find(l2 => l2.id === l.id); return s + (e?.pricing?.lineSubtotal || 0); }, 0);
 
     return {
-      summaryAddonGrandTotal:  addonGrand,
-      mpsStructuralGrand:      structuralGrand,
-      mpsOpeningsProductGrand: openingsGrand,
-      windSensorGrand:         windGrand,
-      mraMatrixGrand:          mraGrand,
-      controlsGrand:           ctrlGrand,
-      subtotalWithAddons: nonMPSNonMRAOriginal + openingsGrand + appBaseMPSGrand + addonGrand + structuralGrand + windGrand + mraGrand + ctrlGrand,
-    };
-  }, [snapshot, addonSelections, mpsData, fieldAddonValues, windSensorSelections, mraConfig, mpsControls, awningControls]);
+  summaryAddonGrandTotal:  addonGrand,
+  mpsStructuralGrand:      structuralGrand,
+  mpsOpeningsProductGrand: openingsGrand,
+  windSensorGrand:         windGrand,
+  mraMatrixGrand:          mraGrand,
+  controlsGrand:           ctrlGrand,
+  clearviewGrand,                                                              // ← new
+  subtotalWithAddons:
+    nonMPSNonMRAOriginal + openingsGrand + appBaseMPSGrand + addonGrand +
+    structuralGrand + windGrand + mraGrand + ctrlGrand + clearviewGrand,       // ← include
+};
+}, [snapshot, addonSelections, mpsData, fieldAddonValues, windSensorSelections, mraConfig, mpsControls, awningControls, clearviewData]);
+//                                                                                                                       ↑ add to deps
 
   const discountPercent = snapshot?.pricingSummary?.discountPercent || 0;
   const discountAmount  = subtotalWithAddons * (discountPercent / 100);
@@ -4809,7 +5352,24 @@ const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeni
     />
   );
 }
-                if (MPS_PRODUCTS.includes(line.product)) {
+if (CLEARVIEW_PRODUCTS.includes(line.product)) {
+  return (
+    <ClearviewProductCard
+      key={line.id}
+      line={line}
+      index={idx}
+      snapshot={snapshot}
+      clearviewData={clearviewData}
+      onClearviewChange={handleClearviewChange}
+      productNotes={productNotes[line.id]}
+      onProductNoteChange={handleProductNoteChange}
+      isExpanded={!!expandedProducts[line.id]}
+      onToggleExpand={() => toggleProductExpand(line.id)}
+    />
+  );
+}
+
+ if (MPS_PRODUCTS.includes(line.product)) {
   return (
     <MPSProductCard
       key={line.id}
@@ -4862,6 +5422,7 @@ const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeni
             {windSensorGrand         > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Wind Sensor(s)</span><span className="ps-addon-highlight">+{fmt(windSensorGrand)}</span></div>}
             {mpsStructuralGrand      > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Structural Adjustments (L-Channel / Buildout / Storm Rail / Custom Color / Premium Fabric)</span><span className="ps-addon-highlight">+{fmt(mpsStructuralGrand)}</span></div>}
             {controlsGrand           > 0 && ( <div className="ps-pricing-row ps-addon-total-row"><span>Controls</span> <span className="ps-addon-highlight">+{fmt(controlsGrand)}</span></div>)}
+            {clearviewGrand > 0 && ( <div className="ps-pricing-row ps-addon-total-row"><span>ClearView Doors (per-opening pricing)</span><span className="ps-addon-highlight">{fmt(clearviewGrand)}</span></div>)}
             <div className="ps-pricing-row ps-subtotal-addons-row"><span>Subtotal (incl. all adjustments)</span><span>{fmt(subtotalWithAddons)}</span></div>
             <div className="ps-pricing-row"><span>Discount ({discountPercent}%)</span><span className="ps-discount-value">−{fmt(discountAmount)}</span></div>
             {discount?.percent > 20 && <div className="ps-pricing-row ps-manager-row"><span>Manager Approval</span><span>{discount.managerName||"—"}</span></div>}

@@ -115,26 +115,18 @@ const products = [
     }
   },
   {
-    name: "Clearview Retractable Screen Doors",
-    pricingModel: "matrix",
-    dimensionUnit: "in",
-    prices: {
-      48: {98:695},
-      60: {98:545},
-      68: {98:895},
-      96: {98:1390}
-    }
-  },
-  {
-    name: "Clearview Oversized Doors",
-    pricingModel: "matrix",
-    dimensionUnit: "in",
-    prices: {
-      55: {120:895},
-      68: {120:1295},
-      136: {98:1695, 120:2095}
-    }
-  },
+  name: "Clearview Retractable Screen Doors",
+  pricingModel: "matrix",
+  dimensionUnit: "in",
+  prices: {
+    48:  {98: 695},
+    55:  {120: 895},
+    60:  {98: 545},
+    68:  {98: 895,  120: 1295},
+    96:  {98: 1390},
+    136: {98: 1695, 120: 2095}
+  }
+},
   {
     name: "Duralum Solid Patio Cover",
     pricingModel: "tier_per_sqft",
@@ -196,7 +188,7 @@ const productCatalog = {
   "Retractable Screens/MPS": [
     "Motorized Power Screen 5in Cassette","Motorized Power Screen 6in Cassette",
     "Motorized Power Screen open roll","Vista View Single Housing Unit","Vista View Double Housing Units",
-    "Single Horizon View Retractable Screens","Clearview Retractable Screen Doors","Clearview Oversized Doors"
+    "Single Horizon View Retractable Screens","Clearview Retractable Screen Doors",
   ],
   "Retractable Awnings": [
     // CHANGE 1 & 2: Replaced separate Motor A/B products with unified products
@@ -211,6 +203,7 @@ const MPS_PRODUCTS = [
   "Motorized Power Screen 5in Cassette",
   "Motorized Power Screen 6in Cassette",
   "Motorized Power Screen open roll",
+  "Clearview Retractable Screen Doors",
 ];
 
 // ── Awning products that are fully configured in ProductSummary (like MPS — no width/height on intake) ──
