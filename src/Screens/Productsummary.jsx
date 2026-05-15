@@ -74,14 +74,66 @@ const AWNING_MOTOR_550 = {
 // ─────────────────────────────────────────────────────────────
 const CLEARVIEW_PRODUCTS = ["Clearview Retractable Screen Doors"];
 
+const CV_OPENING_LABELS = [
+  "Front Door", "Back Door", "Side Door", "Garage Door", "Patio Door",
+  "French Door", "Sliding Door", "Kitchen Door", "Laundry Door",
+  "Master Bedroom", "Guest Bedroom", "Office", "Window", "Dutch Door",
+  "Cabana Door", "Balcony Door", "Pool Door", "Other / Custom",
+];
+
 const CV_INSTALL_TYPES   = ["Door", "Window/Dutch"];
 const CV_SLIDE_DIRS      = ["Horizontal", "Vertical"];
 const CV_DOOR_CONFIGS    = ["Single Door", "Single Over Double", "Double Door"];
 const CV_MOUNT_TYPES     = ["Surface Mount", "Inside Mount", "Into Reveal"];
-const CV_HOUSING_SEALS   = ["Thin Pile", "Thick Pile", "Bug Flap"];
+const CV_HOUSING_SEALS = ["Thin Profile", "Thick Profile", "Bug Flap"];
 const CV_HANDLES         = ["Standard", "Die Cast", "Recessed"];
-const CV_HOUSING_COLORS  = ["White","Off White","Almond","Bronze","Champagne Brown","Dark Brown","Black","Green","Silver"];
-const CV_BOTTOM_COLORS   = CV_HOUSING_COLORS.filter(c => c !== "Green"); // Green excluded for bottom
+const CV_RAIL_OPTIONS = [
+  "Deco", "Square Sill", "Out Sill", "Break Sill",
+  "Top Sill", "Round Sill", '2" Sill', '5" Sill',
+];
+
+const CV_HOUSING_COLORS = [
+  "White", "Off-White", "Almond", "Bronze", "Champagne", "Brown",
+  "Dark Brown", "Black", "Green", "Silver",
+];
+const CV_WINDOW_SASH_COLORS = ["White", "Black", "Bronze", "Silver"];
+
+const CV_DOOR_VARIANTS = [
+  { id: "single_standard",  short: "Single Door (Standard)",
+    label: "ClearView Retractable Single Door Screen Door",
+    minWidth: 0,  maxWidth: 48,  minHeight: 0,  maxHeight: 98,  price: 695 },
+
+  { id: "single_height_os", short: "Single Door (Height Oversized)",
+    label: "ClearView Retractable Single Door Height Oversized Screen Door",
+    minWidth: 0,  maxWidth: 48,  minHeight: 98, maxHeight: 120, price: 895 },
+
+  { id: "sod_standard",     short: "Single Over Double (Standard)",
+    label: "ClearView Retractable Single Over Double Screen Door",
+    minWidth: 0,  maxWidth: 68,  minHeight: 0,  maxHeight: 98,  price: 895 },
+
+  { id: "sod_height_os",    short: "Single Over Double (Height Oversized)",
+    label: "ClearView Retractable Single Over Double Height Oversized Screen Door",
+    minWidth: 0,  maxWidth: 68,  minHeight: 98, maxHeight: 120, price: 1295 },
+
+  { id: "double_standard",  short: "Double Door (Standard)",
+    label: "ClearView Retractable Double Door Screen Door",
+    minWidth: 0,  maxWidth: 96,  minHeight: 0,  maxHeight: 98,  price: 1390 },
+
+  { id: "double_height_os", short: "Double Door (Height Oversized)",
+    label: "ClearView Retractable Double Door Height Oversized Screen Door",
+    minWidth: 0,  maxWidth: 98,  minHeight: 98, maxHeight: 120, price: 1795 },
+
+  { id: "double_width_os",  short: "Double Door (Width Oversized)",
+    label: "ClearView Retractable Double Door Width Oversized Screen Door",
+    minWidth: 96, maxWidth: 136, minHeight: 0,  maxHeight: 98,  price: 1695 },
+
+  { id: "double_wh_os",     short: "Double Door (Width + Height Oversized)",
+    label: "ClearView Retractable Double Door Width + Height Oversized Screen Door",
+    minWidth: 96, maxWidth: 136, minHeight: 98, maxHeight: 120, price: 2095 },
+];
+
+const CV_RAIL_COLORS = [...CV_HOUSING_COLORS, "Mill"];
+const CV_BOTTOM_COLORS = CV_HOUSING_COLORS.filter(c => c !== "Green"); // Green excluded for bottom
 const CV_MESH_TYPES_ALL  = ["Standard", "Pet", "Solar"];
 const CV_MESH_COLORS     = ["Black", "Gray"];
 const CV_TOP_RAILS       = ["Deco", "Square Sill", "Out Sill", "Break Sill"];
@@ -97,7 +149,22 @@ const CV_MAX_W_WINDOW    = 60;
 const CV_PET_MESH_MAX_SINGLE = 42;
 const CV_PET_MESH_MAX_DOUBLE = 84;
 
+function isDoubleVariant(variantId) {
+  return typeof variantId === "string" && variantId.startsWith("double_");
+}
+
 function isDoubleConfig(cfg) { return cfg === "Double Door"; }
+
+function getAvailableDoorVariants(widthIn, heightIn) {
+  const w = parseFloat(widthIn) || 0;
+  const h = parseFloat(heightIn) || 0;
+  if (!w || !h || h > CV_MAX_HEIGHT) return [];
+  return CV_DOOR_VARIANTS.filter(v => {
+    const wOk = (v.minWidth === 0 ? w > 0 : w > v.minWidth) && w <= v.maxWidth;
+    const hOk = (v.minHeight === 0 ? h > 0 : h > v.minHeight) && h <= v.maxHeight;
+    return wOk && hOk;
+  });
+}
 
 function getAvailableDoorConfigs(widthIn, heightIn) {
   const w = parseFloat(widthIn) || 0;
@@ -110,19 +177,24 @@ function getAvailableDoorConfigs(widthIn, heightIn) {
   return out;
 }
 
-function getAvailableMeshTypes(widthIn, doorConfig) {
+function getAvailableMeshTypes(widthIn, variantId) {
   const w = parseFloat(widthIn) || 0;
-  const max = doorConfig === "Double Door" ? CV_PET_MESH_MAX_DOUBLE : CV_PET_MESH_MAX_SINGLE;
-  return w > 0 && w <= max ? CV_MESH_TYPES_ALL : ["Standard"];
+  const types = ["Standard"];
+  if (!w) return types;
+  const isDouble = isDoubleVariant(variantId);
+  const petMax = isDouble ? CV_PET_MESH_MAX_DOUBLE : CV_PET_MESH_MAX_SINGLE;
+  if (w <= petMax) types.push("Pet");
+  if (w <= 42)     types.push("Solar");
+  return types;
 }
 
 function calcClearviewOpeningBasePrice(opening) {
-  const w = parseFloat(opening.widthIn)  || 0;
+  const w = parseFloat(opening.widthIn) || 0;
   const h = parseFloat(opening.heightIn) || 0;
   if (!w || !h) return { ok: false, price: 0, label: "", message: "Enter valid width and height (inches)." };
   if (h > CV_MAX_HEIGHT) return { ok: false, price: 0, label: "", message: `Height ${h}" exceeds ${CV_MAX_HEIGHT}" — Custom Quote Required.` };
 
-  // ── WINDOW / DUTCH DOOR FLOW ──
+  // Window / Dutch flow unchanged
   if (opening.installType === "Window/Dutch") {
     const dir  = opening.slideDirection || "Horizontal";
     const effW = dir === "Vertical" ? h : w;
@@ -132,50 +204,53 @@ function calcClearviewOpeningBasePrice(opening) {
     return { ok: true, price: 545, label: `ClearView – Window (${dir})`, message: `Window/Dutch (${dir}): $545 flat` };
   }
 
-  // ── DOOR FLOW ──
-  const cfg = opening.doorConfig;
-  if (!cfg) return { ok: false, price: 0, label: "", message: "Select a door configuration." };
+  const variantId = opening.doorVariant;
+  if (!variantId) return { ok: false, price: 0, label: "", message: "Select a door configuration." };
 
-  if (cfg === "Single Door") {
-    if (w > CV_MAX_W_SINGLE) return { ok: false, price: 0, label: "", message: `Width ${w}" exceeds ${CV_MAX_W_SINGLE}" max for Single Door — Custom Quote Required.` };
-    if (h <= 98) return { ok: true, price: 695, label: "ClearView – Single Door",                    message: "Standard (h ≤ 98\")" };
-    return       { ok: true, price: 895, label: "ClearView – Single Door (Height Oversized)",        message: "Height Oversized (98\" < h ≤ 120\")" };
+  const variant = CV_DOOR_VARIANTS.find(v => v.id === variantId);
+  if (!variant) return { ok: false, price: 0, label: "", message: "Unknown door variant — please re-select." };
+
+  const wOk = (variant.minWidth === 0 ? w > 0 : w > variant.minWidth) && w <= variant.maxWidth;
+  const hOk = (variant.minHeight === 0 ? h > 0 : h > variant.minHeight) && h <= variant.maxHeight;
+  if (!wOk || !hOk) {
+    return { ok: false, price: 0, label: "", message: `Dimensions ${w}"×${h}" no longer match ${variant.short} — re-select configuration.` };
   }
 
-  if (cfg === "Single Over Double") {
-    if (w > CV_MAX_W_SOD) return { ok: false, price: 0, label: "", message: `Width ${w}" exceeds ${CV_MAX_W_SOD}" max for Single Over Double — Custom Quote Required.` };
-    if (h <= 98) return { ok: true, price: 895,  label: "ClearView – Single Over Double",            message: "Standard (h ≤ 98\")" };
-    return       { ok: true, price: 1295, label: "ClearView – Single Over Double (Height Oversized)", message: "Height Oversized" };
-  }
-
-  if (cfg === "Double Door") {
-    if (w > CV_MAX_W_DOUBLE) return { ok: false, price: 0, label: "", message: `Width ${w}" exceeds ${CV_MAX_W_DOUBLE}" max for Double Door — Custom Quote Required.` };
-    if (w <= 96  && h <= 98)              return { ok: true, price: 1390, label: "ClearView – Double Door",                          message: "Standard" };
-    if (w <= 96  && h > 98 && h <= 120)   return { ok: true, price: 1795, label: "ClearView – Double Door (Height Oversized)",       message: "Height Oversized" };
-    if (w > 96   && w <= 136 && h <= 98)  return { ok: true, price: 1695, label: "ClearView – Double Door (Width Oversized)",        message: "Width Oversized" };
-    if (w > 96   && w <= 144 && h > 98 && h <= 120)
-      return { ok: true, price: 2095, label: "ClearView – Double Door (Width + Height Oversized)", message: "Width + Height Oversized" };
-    return { ok: false, price: 0, label: "", message: "Combination not supported — Custom Quote Required." };
-  }
-
-  return { ok: false, price: 0, label: "", message: "Unsupported configuration." };
+  return { ok: true, price: variant.price, label: variant.label, message: variant.short };
 }
 
 function calcClearviewOpeningAddons(opening) {
   let total = 0;
-  const isDouble = isDoubleConfig(opening.doorConfig);
+  const isDouble = isDoubleVariant(opening.doorVariant);
+  const isDoor   = opening.installType === "Door";
+  const heightIn = parseFloat(opening.heightIn) || 0;
 
-  // Required: Handle upgrade
-  if (opening.installType === "Door" && (opening.handle === "Die Cast" || opening.handle === "Recessed")) {
+  // Required handle upgrade (door only)
+  if (isDoor && (opening.handle === "Die Cast" || opening.handle === "Recessed")) {
     total += isDouble ? 120 : 60;
   }
-  // Optional: Arched Fixed Frame
-  if (opening.archedAddon) total += isDouble ? 800 : 450;
-  // Optional: Internal Magnet
+
+  // Arched Fixed Frame
+  if (opening.archedAddon)   total += isDouble ? 800 : 450;
+  // Internal Magnet
   if (opening.internalMagnet) total += isDouble ? 160 : 80;
-  // Optional: Chrome Latch
-  if (opening.chromeLatch) total += 25;
-  // Pet Guard: TBD (not added until price provided)
+  // Chrome Latch
+  if (opening.chromeLatch)    total += 25;
+
+  // TASK 6: Pet / Solar mesh upcharge
+  if (opening.meshType === "Pet" || opening.meshType === "Solar") total += 95;
+
+  // TASK 9: Pet Guard
+  if (opening.petGuard) total += isDouble ? 250 : 125;
+
+  // TASK 7: Internal Pin Lock — flat $125
+  if (opening.internalPinLock) total += 125;
+
+  // TASK 7: External Pin Lock — auto-determined by door height
+  if (opening.externalPinLock) total += heightIn > 84 ? 65 : 45;
+
+  // TASK 8: Window Sash Lock — flat $25
+  if (opening.windowSashLock) total += 25;
 
   return total;
 }
@@ -1554,36 +1629,63 @@ function createBuildout() {
 function createClearviewOpening() {
   return {
     id: uid(),
+    // TASK 1: label dropdown + custom mode
+    labelMode: "preset",   // "preset" | "custom"
     label: "",
-    // measurement (decimal inches — supports ft+in input UI)
-    widthFt: "", widthIn: "",   // input fields
-    heightFt: "", heightIn: "", // input fields (these store the final inch total too)
-    // Step 3 flow
+
+    // measurement (ft + in inputs)
+    widthFt: "", widthIn: "",
+    heightFt: "", heightIn: "",
+
     installType: "Door",
     slideDirection: "Horizontal",
-    doorConfig: "",
+
+    // TASK 4: door variant id (replaces doorConfig)
+    doorVariant: "",
+
     // Required dependencies
     mountType: "Surface Mount",
-    housingSeal: "Thin Pile",
+    housingSeal: "Thin Profile",   // TASK 5
     handle: "Standard",
     housingColor: "White",
     meshType: "Standard",
     meshColor: "Black",
-    topRail: "Deco",
-    bottomRail: "Out Sill",
-    bottomRailColor: "White",
+
+    // TASK 11: multi-select rails (max 2 each)
+    topRails:    ["Deco"],
+    bottomRails: ["Out Sill"],
+    topRailColor:    "",   // empty → falls back to housingColor in dropdown
+    bottomRailColor: "",   // required — user must select
+
     // Optional add-ons
     archedAddon: false,
     archWidth: "", archHeight: "",
     internalMagnet: false,
     chromeLatch: false,
     chromeLatchSize: "Small",
+
+    // TASK 9
     petGuard: false,
+    petGuardRailColor: "", // empty → falls back to housingColor
+
+    // TASK 7: Internal Pin Lock
+    internalPinLock: false,
+    internalPinLockDirection: "Left to Right",
+    internalPinLockMeasurement: "",
+
+    // TASK 7: External Pin Lock (Short/Long auto-determined)
+    externalPinLock: false,
+    externalPinLockDirection: "Left to Right",
+    externalPinLockMeasurement: "",
+
+    // TASK 8: Window Sash Lock
+    windowSashLock: false,
+    windowSashLockColor: "White",
+
     notes: "",
     openingPhoto: null,
   };
 }
-
 function createOpening(productName = "", areaDefaults = {}) {
   return {
     id: uid(), label: "",
@@ -1646,8 +1748,7 @@ function createMRAConfig() {
 function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove }) {
   const set = (field, val) => onChange({ ...opening, [field]: val });
 
-  // Width / Height inches — derived from ft+in fields (use Field allowFractions style)
-  // Keep raw inches input simple: total = (ft * 12) + in
+  // ── Dimensions ──
   const widthFtDec  = safeParseFloat(opening.widthFt);
   const widthInDec  = safeParseFloat(opening.widthIn);
   const heightFtDec = safeParseFloat(opening.heightFt);
@@ -1655,7 +1756,7 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
   const totalW = widthFtDec * 12 + widthInDec;
   const totalH = heightFtDec * 12 + heightInDec;
 
-  // Sync inches into the field used by pricing functions
+  // Mirror computed inches back into the opening for downstream calc helpers
   useEffect(() => {
     const newW = totalW || "";
     const newH = totalH || "";
@@ -1665,43 +1766,120 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
     // eslint-disable-next-line
   }, [totalW, totalH]);
 
-  // Pricing helpers want widthIn/heightIn — alias so calc functions read decimals directly
+  // Build a "pricing-shape" opening so calc fns can read widthIn / heightIn directly
   const pricingOpening = { ...opening, widthIn: totalW, heightIn: totalH };
-  const baseResult     = calcClearviewOpeningBasePrice(pricingOpening);
-  const addonsTotal    = calcClearviewOpeningAddons(pricingOpening);
-  const openingTotal   = baseResult.ok ? baseResult.price + addonsTotal : 0;
+  const baseResult   = calcClearviewOpeningBasePrice(pricingOpening);
+  const addonsTotal  = calcClearviewOpeningAddons(pricingOpening);
+  const openingTotal = baseResult.ok ? baseResult.price + addonsTotal : 0;
 
-  const availableConfigs = getAvailableDoorConfigs(totalW, totalH);
-  const availableMeshes  = getAvailableMeshTypes(totalW, opening.doorConfig);
-  const isDouble         = isDoubleConfig(opening.doorConfig);
-  const isWindow         = opening.installType === "Window/Dutch";
-  const isDoor           = opening.installType === "Door";
+  const availableVariants = getAvailableDoorVariants(totalW, totalH);
+  const availableMeshes   = getAvailableMeshTypes(totalW, opening.doorVariant);
+  const isDouble = isDoubleVariant(opening.doorVariant);
+  const isWindow = opening.installType === "Window/Dutch";
+  const isDoor   = opening.installType === "Door";
 
-  // Hide pet/solar mesh if width-restricted — also reset selection if invalid
+  // Normalize legacy / missing array fields safely
+  const topRails    = Array.isArray(opening.topRails)
+    ? opening.topRails
+    : (opening.topRail ? [opening.topRail] : []);
+  const bottomRails = Array.isArray(opening.bottomRails)
+    ? opening.bottomRails
+    : (opening.bottomRail ? [opening.bottomRail] : []);
+
+  // TASK 2 + 4: Auto-clear variant if dimensions change to where it no longer fits
+  useEffect(() => {
+    if (opening.doorVariant && availableVariants.length > 0 &&
+        !availableVariants.find(v => v.id === opening.doorVariant)) {
+      set("doorVariant", "");
+    }
+    // eslint-disable-next-line
+  }, [availableVariants.map(v => v.id).join(",")]);
+
+  // TASK 6: Reset invalid mesh type when width changes
   useEffect(() => {
     if (!availableMeshes.includes(opening.meshType)) set("meshType", "Standard");
     // eslint-disable-next-line
   }, [availableMeshes.join(",")]);
 
-  // Top rail color locks to housingColor (display only)
-  // Bottom rail color: defaults to housing unless housing is Green
+  // TASK 6: Force mesh color to Black when Pet/Solar is selected
   useEffect(() => {
-    if (opening.housingColor === "Green") {
-      if (opening.bottomRailColor === "Green") set("bottomRailColor", "White");
-    } else {
-      if (opening.bottomRailColor !== opening.housingColor) set("bottomRailColor", opening.housingColor);
+    if ((opening.meshType === "Pet" || opening.meshType === "Solar") && opening.meshColor !== "Black") {
+      set("meshColor", "Black");
     }
     // eslint-disable-next-line
-  }, [opening.housingColor]);
+  }, [opening.meshType]);
+
+  // TASK 1: Label handlers
+  const handleLabelSelect = (val) => {
+    if (val === "Other / Custom") {
+      onChange({ ...opening, labelMode: "custom", label: "" });
+    } else {
+      onChange({ ...opening, labelMode: "preset", label: val });
+    }
+  };
+  const labelDropdownValue = opening.labelMode === "custom"
+    ? "Other / Custom"
+    : (CV_OPENING_LABELS.includes(opening.label) ? opening.label : "");
+
+  // TASK 11: Toggle handler with 2-item cap
+  const toggleRail = (field, currentList, opt) => {
+    const isChecked = currentList.includes(opt);
+    if (isChecked) {
+      set(field, currentList.filter(x => x !== opt));
+    } else {
+      if (currentList.length >= 2) return;
+      set(field, [...currentList, opt]);
+    }
+  };
+
+  // TASK 7: External pin lock variant preview (auto Short / Long)
+  const externalPinPrice   = totalH > 84 ? 65 : 45;
+  const externalPinVariant = totalH > 84 ? "Long" : "Short";
+
+  // Inline style for multi-select chip
+  const chipStyle = (checked, disabled) => ({
+    padding: "6px 10px",
+    borderRadius: 6,
+    border: checked ? "1.5px solid var(--ps-primary,#3498db)" : "1px solid var(--ps-border,#ddd)",
+    background: checked ? "var(--ps-primary-soft,#e8f4fd)" : (disabled ? "#f5f5f5" : "#fff"),
+    cursor: disabled ? "not-allowed" : "pointer",
+    opacity: disabled ? 0.55 : 1,
+    fontSize: "0.9em",
+    userSelect: "none",
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
+  });
 
   return (
     <div className="opening-card">
       <div className="opening-header">
         <div className="opening-num">Opening {index + 1}</div>
+
+        {/* TASK 1: Label dropdown + custom text */}
         <div className="opening-label-wrap">
-          <input className="opening-label-input" placeholder="Opening label (e.g. Front Entry)"
-            value={opening.label} onChange={e => set("label", e.target.value)} />
+          <div style={{ display: "flex", gap: 8, flex: 1, flexWrap: "wrap", alignItems: "center" }}>
+            <select
+              className="mps-select"
+              value={labelDropdownValue}
+              onChange={e => handleLabelSelect(e.target.value)}
+              style={{ flex: "0 1 240px", minWidth: 200 }}
+            >
+              <option value="">— Select Opening Label —</option>
+              {CV_OPENING_LABELS.map(l => <option key={l} value={l}>{l}</option>)}
+            </select>
+            {opening.labelMode === "custom" && (
+              <input
+                className="opening-label-input"
+                placeholder="Enter custom opening label"
+                value={opening.label}
+                onChange={e => set("label", e.target.value)}
+                style={{ flex: 1, minWidth: 180 }}
+              />
+            )}
+          </div>
         </div>
+
         {openingTotal > 0 && <div className="opening-structural-badge">{fmt(openingTotal)}</div>}
         {showRemove && (
           <button type="button" className="opening-remove ctrl-btn-danger" onClick={onRemove}>
@@ -1751,10 +1929,10 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
         </div>
 
         <Sel label="Install Type" value={opening.installType} options={CV_INSTALL_TYPES}
-          onChange={v => onChange({ ...opening, installType: v, doorConfig: "" })} required />
+          onChange={v => onChange({ ...opening, installType: v, doorVariant: "" })} required />
       </div>
 
-      {/* ── WINDOW FLOW ── */}
+      {/* WINDOW FLOW */}
       {isWindow && (
         <div className="skylight-config-section">
           <div className="skylight-config-title">🪟 Window / Dutch Door Configuration</div>
@@ -1768,28 +1946,39 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
         </div>
       )}
 
-      {/* ── DOOR FLOW ── */}
+      {/* DOOR FLOW — TASK 4 variant dropdown */}
       {isDoor && (
         <div className="skylight-config-section">
           <div className="skylight-config-title">🚪 Door Configuration</div>
           <div className="opening-grid-3">
-            <div className="mps-field">
+            <div className="mps-field" style={{ gridColumn: "1 / -1" }}>
               <label className="mps-label">Door Configuration <span className="mps-req">*</span></label>
-              <select className="mps-select" value={opening.doorConfig}
-                onChange={e => set("doorConfig", e.target.value)}
-                disabled={availableConfigs.length === 0}>
-                <option value="">{availableConfigs.length === 0 ? "— enter valid dimensions first —" : "— Select —"}</option>
-                {availableConfigs.map(c => <option key={c} value={c}>{c}</option>)}
+              <select
+                className="mps-select"
+                value={opening.doorVariant}
+                onChange={e => set("doorVariant", e.target.value)}
+                disabled={availableVariants.length === 0}
+              >
+                <option value="">
+                  {availableVariants.length === 0
+                    ? "— enter valid dimensions first —"
+                    : "— Select Door Variant —"}
+                </option>
+                {availableVariants.map(v => (
+                  <option key={v.id} value={v.id}>{v.label} — {fmt(v.price)}</option>
+                ))}
               </select>
-              {totalW > 0 && totalH > 0 && availableConfigs.length === 0 && (
-                <div className="mps-field-error">⚠️ No valid configurations for {totalW}"×{totalH}" — Custom Quote Required.</div>
+              {totalW > 0 && totalH > 0 && availableVariants.length === 0 && (
+                <div className="mps-field-error">
+                  ⚠️ No valid configurations for {totalW}"×{totalH}" — Custom Quote Required.
+                </div>
               )}
             </div>
           </div>
         </div>
       )}
 
-      {/* ── PRICE BADGE ── */}
+      {/* PRICE BADGE */}
       {(totalW > 0 || totalH > 0) && (
         <div className={`opening-price-badge ${baseResult.ok ? "opening-price-badge--ok" : "opening-price-badge--error"}`}>
           {baseResult.ok ? (
@@ -1802,12 +1991,13 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
         </div>
       )}
 
-      {/* ── REQUIRED DEPENDENCIES ── */}
+      {/* ── REQUIRED CONFIG ── */}
       <details className="override-details" open>
         <summary className="override-summary">⚙ Required Configuration</summary>
         <div className="override-resolved-grid">
           <Sel label="Mount Type"    value={opening.mountType}   options={CV_MOUNT_TYPES}   onChange={v => set("mountType", v)} required />
-          <Sel label="Housing Seal"  value={opening.housingSeal} options={CV_HOUSING_SEALS} onChange={v => set("housingSeal", v)} required />
+          {/* TASK 5: Housing Style with Thin Profile default */}
+          <Sel label="Housing Style" value={opening.housingSeal} options={CV_HOUSING_SEALS} onChange={v => set("housingSeal", v)} required />
 
           <div className="mps-field">
             <label className="mps-label">
@@ -1825,33 +2015,139 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
             </select>
           </div>
 
+          {/* TASK 10: Housing Color (Champagne / Brown split) */}
           <Sel label="Housing Color" value={opening.housingColor} options={CV_HOUSING_COLORS} onChange={v => set("housingColor", v)} required />
 
+          {/* TASK 6: Mesh Type with +$95 badge */}
           <div className="mps-field">
-            <label className="mps-label">Mesh Type</label>
+            <label className="mps-label">
+              Mesh Type
+              {(opening.meshType === "Pet" || opening.meshType === "Solar") && (
+                <span className="motor-badge motor-badge--extra" style={{ marginLeft: 8 }}>+$95</span>
+              )}
+            </label>
             <select className="mps-select" value={opening.meshType} onChange={e => set("meshType", e.target.value)}>
-              {availableMeshes.map(m => <option key={m} value={m}>{m === "Standard" ? "Standard Mesh" : `${m} Mesh`}</option>)}
+              {availableMeshes.map(m => (
+                <option key={m} value={m}>
+                  {m === "Standard" ? "Standard Mesh" : `${m} Mesh (+$95)`}
+                </option>
+              ))}
             </select>
-            {!availableMeshes.includes("Pet") && totalW > 0 && (
+            {totalW > 0 && !availableMeshes.includes("Pet") && (
               <div className="wire-guide-notice-inline">
-                Pet/Solar Mesh unavailable — width &gt; {isDouble ? CV_PET_MESH_MAX_DOUBLE : CV_PET_MESH_MAX_SINGLE}"
+                Pet Mesh unavailable — width &gt; {isDouble ? CV_PET_MESH_MAX_DOUBLE : CV_PET_MESH_MAX_SINGLE}"
+              </div>
+            )}
+            {totalW > 0 && !availableMeshes.includes("Solar") && (
+              <div className="wire-guide-notice-inline">
+                Solar Mesh unavailable — width &gt; 42"
               </div>
             )}
           </div>
 
-          <Sel label="Mesh Color"    value={opening.meshColor}  options={CV_MESH_COLORS}  onChange={v => set("meshColor", v)} required />
-
+          {/* TASK 6: Mesh Color — Pet/Solar locked to Black */}
           <div className="mps-field">
-            <label className="mps-label">Top Support &amp; Rail</label>
-            <select className="mps-select" value={opening.topRail} onChange={e => set("topRail", e.target.value)}>
-              {CV_TOP_RAILS.map(r => <option key={r} value={r}>{r}</option>)}
+            <label className="mps-label">Mesh Color <span className="mps-req">*</span></label>
+            <select
+              className="mps-select"
+              value={opening.meshColor}
+              onChange={e => set("meshColor", e.target.value)}
+              disabled={opening.meshType === "Pet" || opening.meshType === "Solar"}
+            >
+              {((opening.meshType === "Pet" || opening.meshType === "Solar") ? ["Black"] : CV_MESH_COLORS)
+                .map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <div className="wire-guide-notice-inline">Color locked to Housing: <strong>{opening.housingColor}</strong></div>
+            {(opening.meshType === "Pet" || opening.meshType === "Solar") && (
+              <div className="wire-guide-notice-inline">
+                {opening.meshType} Mesh is only available in <strong>Black</strong>.
+              </div>
+            )}
           </div>
 
-          <Sel label="Bottom Threshold &amp; Rail" value={opening.bottomRail} options={CV_BOTTOM_RAILS} onChange={v => set("bottomRail", v)} required />
+          {/* TASK 11: Top Support & Rail — multi-select (max 2) */}
+          <div className="mps-field" style={{ gridColumn: "1 / -1" }}>
+            <label className="mps-label">
+              Top Support &amp; Rail <span className="mps-req">*</span>
+              <span style={{ fontWeight: 400, opacity: 0.65, marginLeft: 6 }}>(select up to 2)</span>
+            </label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {CV_RAIL_OPTIONS.map(opt => {
+                const checked = topRails.includes(opt);
+                const disabled = !checked && topRails.length >= 2;
+                return (
+                  <label key={opt} style={chipStyle(checked, disabled)}>
+                    <input type="checkbox" checked={checked} disabled={disabled}
+                      onChange={() => toggleRail("topRails", topRails, opt)}
+                      style={{ margin: 0 }} />
+                    {opt}
+                  </label>
+                );
+              })}
+            </div>
+            <div style={{ fontSize: "0.85em", opacity: 0.7, marginTop: 4 }}>
+              Selected: {topRails.length === 0 ? "none" : topRails.join(", ")}
+            </div>
+          </div>
 
-          <Sel label="Bottom Rail Color" value={opening.bottomRailColor} options={CV_BOTTOM_COLORS} onChange={v => set("bottomRailColor", v)} required />
+          {/* TASK 11: Top Rail Color — defaults to housing (display-time fallback) */}
+          <div className="mps-field">
+            <label className="mps-label">
+              Top Support &amp; Rail Color
+              <span style={{ fontWeight: 400, opacity: 0.65, marginLeft: 6 }}>
+                (defaults to Housing: <strong>{opening.housingColor}</strong>)
+              </span>
+            </label>
+            <select
+              className="mps-select"
+              value={opening.topRailColor || opening.housingColor}
+              onChange={e => set("topRailColor", e.target.value)}
+            >
+              {CV_RAIL_COLORS.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+
+          {/* TASK 11: Bottom Threshold & Rail — multi-select (max 2) */}
+          <div className="mps-field" style={{ gridColumn: "1 / -1" }}>
+            <label className="mps-label">
+              Bottom Threshold &amp; Rail <span className="mps-req">*</span>
+              <span style={{ fontWeight: 400, opacity: 0.65, marginLeft: 6 }}>(select up to 2)</span>
+            </label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {CV_RAIL_OPTIONS.map(opt => {
+                const checked = bottomRails.includes(opt);
+                const disabled = !checked && bottomRails.length >= 2;
+                return (
+                  <label key={opt} style={chipStyle(checked, disabled)}>
+                    <input type="checkbox" checked={checked} disabled={disabled}
+                      onChange={() => toggleRail("bottomRails", bottomRails, opt)}
+                      style={{ margin: 0 }} />
+                    {opt}
+                  </label>
+                );
+              })}
+            </div>
+            <div style={{ fontSize: "0.85em", opacity: 0.7, marginTop: 4 }}>
+              Selected: {bottomRails.length === 0 ? "none" : bottomRails.join(", ")}
+            </div>
+          </div>
+
+          {/* TASK 11: Bottom Rail Color — REQUIRED, user must pick */}
+          <div className="mps-field">
+            <label className="mps-label">
+              Bottom Threshold &amp; Rail Color <span className="mps-req">*</span>
+            </label>
+            <select
+              className="mps-select"
+              value={opening.bottomRailColor || ""}
+              onChange={e => set("bottomRailColor", e.target.value)}
+            >
+              <option value="">— Select bottom rail color —</option>
+              {CV_RAIL_COLORS.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            {!opening.bottomRailColor && (
+              <div className="mps-field-error">⚠️ Bottom rail color is required.</div>
+            )}
+          </div>
         </div>
       </details>
 
@@ -1859,11 +2155,13 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
       <details className="override-details">
         <summary className="override-summary">
           ✦ Optional Add-Ons
-          {addonsTotal > 0 && <span className="ps-addons-running-total" style={{ marginLeft: 12 }}>+{fmt(addonsTotal)}</span>}
+          {addonsTotal > 0 && (
+            <span className="ps-addons-running-total" style={{ marginLeft: 12 }}>+{fmt(addonsTotal)}</span>
+          )}
         </summary>
 
-        {/* Arched Fixed Frame */}
-        {isDoor && opening.doorConfig && (
+        {/* Arched */}
+        {isDoor && opening.doorVariant && (
           <div className="structural-item-card">
             <Toggle
               label={`Add Arched Fixed Frame Screen (${isDouble ? "Double Arch +$800" : "Single Arch +$450"})`}
@@ -1892,18 +2190,117 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
           <Sel label="Latch Size" value={opening.chromeLatchSize} options={CV_LATCH_SIZES} onChange={v => set("chromeLatchSize", v)} />
         )}
 
-        {/* Pet Guard — TBD pricing */}
-        {((isDoor && opening.doorConfig === "Single Door" && totalW <= CV_PET_MESH_MAX_SINGLE) ||
-          (isDoor && opening.doorConfig === "Double Door" && totalW <= CV_PET_MESH_MAX_DOUBLE)) && (
-          <>
-            <Toggle label="Pet Guard (pricing TBD)" checked={!!opening.petGuard} onChange={v => set("petGuard", v)} />
+        {/* TASK 9: Pet Guard with priced rail color */}
+        {isDoor && opening.doorVariant && (
+          <div className="structural-item-card">
+            <Toggle
+              label={`Pet Guard (${isDouble ? "+$250 Double" : "+$125 Single"})`}
+              checked={!!opening.petGuard}
+              onChange={v => set("petGuard", v)}
+            />
             {opening.petGuard && (
-              <div className="wire-guide-notice-inline">
-                Rail color locked to Housing: <strong>{opening.housingColor}</strong> · Pricing TBD
+              <div className="structural-fields-grid">
+                <div className="mps-field">
+                  <label className="mps-label">
+                    Pet Guard Rail Color
+                    <span style={{ fontWeight: 400, opacity: 0.65, marginLeft: 6 }}>
+                      (defaults to Housing: <strong>{opening.housingColor}</strong>)
+                    </span>
+                  </label>
+                  <select
+                    className="mps-select"
+                    value={opening.petGuardRailColor || opening.housingColor}
+                    onChange={e => set("petGuardRailColor", e.target.value)}
+                  >
+                    {CV_HOUSING_COLORS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
               </div>
             )}
-          </>
+          </div>
         )}
+
+        {/* TASK 7: Internal Pin Lock */}
+        <div className="structural-item-card">
+          <Toggle
+            label="Internal Pin Lock (+$125)"
+            checked={!!opening.internalPinLock}
+            onChange={v => set("internalPinLock", v)}
+          />
+          {opening.internalPinLock && (
+            <div className="structural-fields-grid">
+              <Sel
+                label="Pull Direction"
+                value={opening.internalPinLockDirection}
+                options={["Left to Right", "Right to Left"]}
+                onChange={v => set("internalPinLockDirection", v)}
+                required
+              />
+              <Field
+                label="Pin Lock Placement (in. from bottom)"
+                type="number"
+                value={opening.internalPinLockMeasurement}
+                onChange={v => set("internalPinLockMeasurement", v)}
+                placeholder="e.g. 36"
+                allowFractions={false}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* TASK 7: External Pin Lock — auto Short/Long by door height */}
+        <div className="structural-item-card">
+          <Toggle
+            label={`External Pin Lock (${externalPinVariant} +$${externalPinPrice})`}
+            checked={!!opening.externalPinLock}
+            onChange={v => set("externalPinLock", v)}
+          />
+          {opening.externalPinLock && (
+            <>
+              <div className="storm-rail-badge" style={{ borderLeftColor: "var(--ps-info,#3498db)" }}>
+                Auto-determined: <strong>{externalPinVariant} External Pin Lock</strong>
+                {" "}(door height {totalH || "—"}" {totalH > 84 ? "> 84" : "≤ 84"}") — <strong>+{fmt(externalPinPrice)}</strong>
+              </div>
+              <div className="structural-fields-grid">
+                <Sel
+                  label="Pull Direction"
+                  value={opening.externalPinLockDirection}
+                  options={["Left to Right", "Right to Left"]}
+                  onChange={v => set("externalPinLockDirection", v)}
+                  required
+                />
+                <Field
+                  label="Pin Lock Placement (in. from bottom)"
+                  type="number"
+                  value={opening.externalPinLockMeasurement}
+                  onChange={v => set("externalPinLockMeasurement", v)}
+                  placeholder="e.g. 36"
+                  allowFractions={false}
+                />
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* TASK 8: Window Sash Lock */}
+        <div className="structural-item-card">
+          <Toggle
+            label="Window Sash Lock (+$25)"
+            checked={!!opening.windowSashLock}
+            onChange={v => set("windowSashLock", v)}
+          />
+          {opening.windowSashLock && (
+            <div className="structural-fields-grid">
+              <Sel
+                label="Window Sash Lock Color"
+                value={opening.windowSashLockColor}
+                options={CV_WINDOW_SASH_COLORS}
+                onChange={v => set("windowSashLockColor", v)}
+                required
+              />
+            </div>
+          )}
+        </div>
       </details>
 
       <div className="form-group">
@@ -5298,6 +5695,7 @@ const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeni
                   <span className="ps-detail-label">{label}</span>
                   <span className="ps-detail-value">{value||"—"}</span>
                 </div>
+
               ))}
           </div>
         </section>
