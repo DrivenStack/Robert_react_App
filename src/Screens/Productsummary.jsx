@@ -69,6 +69,8 @@ const AWNING_MOTOR_550 = {
   brand: "Somfy",
 };
 
+
+
 // ─────────────────────────────────────────────────────────────
 // CLEARVIEW RETRACTABLE SCREEN DOORS
 // ─────────────────────────────────────────────────────────────
@@ -76,9 +78,8 @@ const CLEARVIEW_PRODUCTS = ["Clearview Retractable Screen Doors"];
 
 const CV_OPENING_LABELS = [
   "Front Door", "Back Door", "Side Door", "Garage Door", "Patio Door",
-  "French Door", "Sliding Door", "Kitchen Door", "Laundry Door",
-  "Master Bedroom", "Guest Bedroom", "Office", "Window", "Dutch Door",
-  "Cabana Door", "Balcony Door", "Pool Door", "Other / Custom",
+  "French Door", "Sliding Door", "Dutch Door", "Cabana Door",
+  "Balcony Door", "Pool Door", "Other / Custom",
 ];
 
 const CV_INSTALL_TYPES   = ["Door", "Window/Dutch"];
@@ -870,6 +871,119 @@ function getMRAPrice(productName, projection, widthFt) {
   return { ok: true, price: Number(price), message: `Matrix price: ${fmt(price)} (Width=${wKey}ft × Projection=${projection})` };
 }
 
+// ─────────────────────────────────────────────────────────────
+// MEASUREMENT MODE — TASK 2
+// Global toggle: "inches" (default) | "feet_inches"
+// ─────────────────────────────────────────────────────────────
+const MeasurementModeContext = React.createContext('inches');
+const useMeasurementMode = () => React.useContext(MeasurementModeContext);
+
+// Normalize a (ftValue, inValue) pair to target mode.
+// Returns plain strings — wrap in MeasurementValue at call site if needed.
+function normalizeMeasurement(ftValue, inValue, targetMode) {
+  const ftDec  = safeParseFloat(ftValue);
+  const inDec  = safeParseFloat(inValue);
+  const totalIn = ftDec * 12 + inDec;
+
+  if (totalIn <= 0) return { ftValue: '', inValue: '' };
+
+  if (targetMode === 'inches') {
+    const cleanIn = Number.isInteger(totalIn) ? String(totalIn) : String(+totalIn.toFixed(4));
+    return { ftValue: '', inValue: cleanIn };
+  }
+
+  // feet + inches
+  const newFt    = Math.floor(totalIn / 12);
+  const newInDec = +(totalIn - newFt * 12).toFixed(4);
+  const cleanIn  = Number.isInteger(newInDec) ? String(newInDec) : String(newInDec);
+  return {
+    ftValue: newFt > 0 ? String(newFt) : '',
+    inValue: newInDec > 0 ? cleanIn : (newFt > 0 ? '0' : ''),
+  };
+}
+
+// Migrate ALL stored measurement data to the target mode.
+// Handles MPS (MeasurementValue + derived width/height), MRA (MeasurementValue), Clearview (plain strings).
+function migrateAllMeasurementData(targetMode, { mpsData, mraConfig, clearviewData }) {
+  // MPS
+  const newMpsData = {};
+  for (const [lineId, areas] of Object.entries(mpsData || {})) {
+    newMpsData[lineId] = (areas || []).map(area => ({
+      ...area,
+      openings: (area.openings || []).map(o => {
+        const w = normalizeMeasurement(o.widthFt,  o.widthIn,  targetMode);
+        const h = normalizeMeasurement(o.heightFt, o.heightIn, targetMode);
+        const totalWidthFt  = safeParseFloat(w.ftValue) + safeParseFloat(w.inValue) / 12;
+        const totalHeightFt = safeParseFloat(h.ftValue) + safeParseFloat(h.inValue) / 12;
+        return {
+          ...o,
+          widthFt:  MeasurementValue.fromInput(w.ftValue),
+          widthIn:  MeasurementValue.fromInput(w.inValue),
+          heightFt: MeasurementValue.fromInput(h.ftValue),
+          heightIn: MeasurementValue.fromInput(h.inValue),
+          width:    new MeasurementValue(String(totalWidthFt  || ''), totalWidthFt  || null),
+          height:   new MeasurementValue(String(totalHeightFt || ''), totalHeightFt || null),
+        };
+      }),
+    }));
+  }
+
+  // MRA
+  const newMraConfig = {};
+  for (const [lineId, cfg] of Object.entries(mraConfig || {})) {
+    const w = normalizeMeasurement(cfg.widthFt, cfg.widthIn, targetMode);
+    newMraConfig[lineId] = {
+      ...cfg,
+      widthFt: MeasurementValue.fromInput(w.ftValue),
+      widthIn: MeasurementValue.fromInput(w.inValue),
+    };
+  }
+
+  // Clearview
+  const newClearviewData = {};
+  for (const [lineId, openings] of Object.entries(clearviewData || {})) {
+    newClearviewData[lineId] = (openings || []).map(o => {
+      const w = normalizeMeasurement(o.widthFt,  o.widthIn,  targetMode);
+      const h = normalizeMeasurement(o.heightFt, o.heightIn, targetMode);
+      return {
+        ...o,
+        widthFt:  w.ftValue,
+        widthIn:  w.inValue,
+        heightFt: h.ftValue,
+        heightIn: h.inValue,
+      };
+    });
+  }
+
+  return { mpsData: newMpsData, mraConfig: newMraConfig, clearviewData: newClearviewData };
+}
+
+function MeasurementModeToggle({ mode, onChange, label = "📏 Measurement Mode" }) {
+  const btn = (active) => ({
+    padding: '6px 12px',
+    border: 'none',
+    borderRadius: 6,
+    fontSize: '0.85em',
+    fontWeight: 600,
+    cursor: 'pointer',
+    background: active ? 'var(--ps-primary, #3498db)' : 'transparent',
+    color: active ? '#fff' : 'var(--ps-text, #333)',
+    transition: 'all 0.15s ease',
+  });
+  return (
+    <div className="measurement-mode-toggle" style={{
+      display: 'inline-flex', alignItems: 'center', gap: 2,
+      padding: 3, background: 'var(--ps-surface-alt, #f3f4f6)',
+      borderRadius: 8, border: '1px solid var(--ps-border, #ddd)',
+    }}>
+      <span style={{ padding: '0 10px 0 8px', fontSize: '0.78em', fontWeight: 600, opacity: 0.7 }}>
+        {label}:
+      </span>
+      <button type="button" style={btn(mode === 'inches')}      onClick={() => onChange('inches')}>Inches Only</button>
+      <button type="button" style={btn(mode === 'feet_inches')} onClick={() => onChange('feet_inches')}>Feet + Inches</button>
+    </div>
+  );
+}
 // ─────────────────────────────────────────────────────────────
 // SUNBRELLA FABRIC DATA — awnings only
 // ─────────────────────────────────────────────────────────────
@@ -1746,6 +1860,7 @@ function createMRAConfig() {
 }
 
 function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove }) {
+  const measurementMode = useMeasurementMode();
   const set = (field, val) => onChange({ ...opening, [field]: val });
 
   // ── Dimensions ──
@@ -1786,7 +1901,7 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
     ? opening.bottomRails
     : (opening.bottomRail ? [opening.bottomRail] : []);
 
-  // TASK 2 + 4: Auto-clear variant if dimensions change to where it no longer fits
+  // Auto-clear variant if dimensions change to where it no longer fits
   useEffect(() => {
     if (opening.doorVariant && availableVariants.length > 0 &&
         !availableVariants.find(v => v.id === opening.doorVariant)) {
@@ -1795,13 +1910,13 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
     // eslint-disable-next-line
   }, [availableVariants.map(v => v.id).join(",")]);
 
-  // TASK 6: Reset invalid mesh type when width changes
+  // Reset invalid mesh type when width changes
   useEffect(() => {
     if (!availableMeshes.includes(opening.meshType)) set("meshType", "Standard");
     // eslint-disable-next-line
   }, [availableMeshes.join(",")]);
 
-  // TASK 6: Force mesh color to Black when Pet/Solar is selected
+  // Force mesh color to Black when Pet/Solar is selected
   useEffect(() => {
     if ((opening.meshType === "Pet" || opening.meshType === "Solar") && opening.meshColor !== "Black") {
       set("meshColor", "Black");
@@ -1809,7 +1924,7 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
     // eslint-disable-next-line
   }, [opening.meshType]);
 
-  // TASK 1: Label handlers
+  // Label handlers
   const handleLabelSelect = (val) => {
     if (val === "Other / Custom") {
       onChange({ ...opening, labelMode: "custom", label: "" });
@@ -1821,7 +1936,7 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
     ? "Other / Custom"
     : (CV_OPENING_LABELS.includes(opening.label) ? opening.label : "");
 
-  // TASK 11: Toggle handler with 2-item cap
+  // Toggle handler with 2-item cap
   const toggleRail = (field, currentList, opt) => {
     const isChecked = currentList.includes(opt);
     if (isChecked) {
@@ -1832,7 +1947,7 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
     }
   };
 
-  // TASK 7: External pin lock variant preview (auto Short / Long)
+  // External pin lock variant preview (auto Short / Long)
   const externalPinPrice   = totalH > 84 ? 65 : 45;
   const externalPinVariant = totalH > 84 ? "Long" : "Short";
 
@@ -1851,12 +1966,61 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
     gap: 4,
   });
 
+  // Inline renderer for one dimension (width OR height)
+  const renderDim = (labelText, ftField, inField, ftVal, inVal, totalDisplay) => {
+    if (measurementMode === 'inches') {
+      const inchesDisplay =
+        (safeParseFloat(ftVal) > 0)
+          ? String(safeParseFloat(ftVal) * 12 + safeParseFloat(inVal))
+          : (inVal || '');
+      return (
+        <div className="mps-field">
+          <label className="mps-label">{labelText} <span className="mps-req">*</span></label>
+          <div className="skylight-width-inputs">
+            <div className="skylight-width-input-wrap" style={{ flex: 1 }}>
+              <Field
+                label="" type="text" value={inchesDisplay}
+                onChange={v => {
+                  const display = typeof v === 'object' ? v.display : v;
+                  onChange({ ...opening, [ftField]: '', [inField]: display });
+                }}
+                placeholder="e.g. 96 or 90.5 or 90 1/2"
+                allowFractions={true}
+              />
+              <span className="skylight-dim-unit">in</span>
+            </div>
+          </div>
+          {totalDisplay > 0 && <div className="skylight-width-display">→ <strong>{totalDisplay}"</strong> total</div>}
+        </div>
+      );
+    }
+    return (
+      <div className="mps-field">
+        <label className="mps-label">{labelText} <span className="mps-req">*</span></label>
+        <div className="skylight-width-inputs">
+          <div className="skylight-width-input-wrap">
+            <Field label="" type="text" value={ftVal}
+              onChange={v => set(ftField, typeof v === 'object' ? v.display : v)}
+              placeholder="Feet" allowFractions={true} />
+            <span className="skylight-dim-unit">ft</span>
+          </div>
+          <div className="skylight-width-input-wrap">
+            <Field label="" type="text" value={inVal}
+              onChange={v => set(inField, typeof v === 'object' ? v.display : v)}
+              placeholder="Inches" allowFractions={true} />
+            <span className="skylight-dim-unit">in</span>
+          </div>
+        </div>
+        {totalDisplay > 0 && <div className="skylight-width-display">→ <strong>{totalDisplay}"</strong> total</div>}
+      </div>
+    );
+  };
+
   return (
     <div className="opening-card">
       <div className="opening-header">
         <div className="opening-num">Opening {index + 1}</div>
 
-        {/* TASK 1: Label dropdown + custom text */}
         <div className="opening-label-wrap">
           <div style={{ display: "flex", gap: 8, flex: 1, flexWrap: "wrap", alignItems: "center" }}>
             <select
@@ -1890,44 +2054,8 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
 
       {/* ── MEASUREMENTS ── */}
       <div className="opening-grid-3">
-        <div className="mps-field">
-          <label className="mps-label">Width <span className="mps-req">*</span></label>
-          <div className="skylight-width-inputs">
-            <div className="skylight-width-input-wrap">
-              <Field label="" type="text" value={opening.widthFt}
-                onChange={v => set("widthFt", typeof v === "object" ? v.display : v)}
-                placeholder="Feet" allowFractions={true} />
-              <span className="skylight-dim-unit">ft</span>
-            </div>
-            <div className="skylight-width-input-wrap">
-              <Field label="" type="text" value={opening.widthIn}
-                onChange={v => set("widthIn", typeof v === "object" ? v.display : v)}
-                placeholder="Inches" allowFractions={true} />
-              <span className="skylight-dim-unit">in</span>
-            </div>
-          </div>
-          {totalW > 0 && <div className="skylight-width-display">→ <strong>{totalW}"</strong> total</div>}
-        </div>
-
-        <div className="mps-field">
-          <label className="mps-label">Height <span className="mps-req">*</span></label>
-          <div className="skylight-width-inputs">
-            <div className="skylight-width-input-wrap">
-              <Field label="" type="text" value={opening.heightFt}
-                onChange={v => set("heightFt", typeof v === "object" ? v.display : v)}
-                placeholder="Feet" allowFractions={true} />
-              <span className="skylight-dim-unit">ft</span>
-            </div>
-            <div className="skylight-width-input-wrap">
-              <Field label="" type="text" value={opening.heightIn}
-                onChange={v => set("heightIn", typeof v === "object" ? v.display : v)}
-                placeholder="Inches" allowFractions={true} />
-              <span className="skylight-dim-unit">in</span>
-            </div>
-          </div>
-          {totalH > 0 && <div className="skylight-width-display">→ <strong>{totalH}"</strong> total</div>}
-        </div>
-
+        {renderDim("Width",  "widthFt",  "widthIn",  opening.widthFt,  opening.widthIn,  totalW)}
+        {renderDim("Height", "heightFt", "heightIn", opening.heightFt, opening.heightIn, totalH)}
         <Sel label="Install Type" value={opening.installType} options={CV_INSTALL_TYPES}
           onChange={v => onChange({ ...opening, installType: v, doorVariant: "" })} required />
       </div>
@@ -1946,7 +2074,7 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
         </div>
       )}
 
-      {/* DOOR FLOW — TASK 4 variant dropdown */}
+      {/* DOOR FLOW */}
       {isDoor && (
         <div className="skylight-config-section">
           <div className="skylight-config-title">🚪 Door Configuration</div>
@@ -1996,7 +2124,6 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
         <summary className="override-summary">⚙ Required Configuration</summary>
         <div className="override-resolved-grid">
           <Sel label="Mount Type"    value={opening.mountType}   options={CV_MOUNT_TYPES}   onChange={v => set("mountType", v)} required />
-          {/* TASK 5: Housing Style with Thin Profile default */}
           <Sel label="Housing Style" value={opening.housingSeal} options={CV_HOUSING_SEALS} onChange={v => set("housingSeal", v)} required />
 
           <div className="mps-field">
@@ -2015,10 +2142,8 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
             </select>
           </div>
 
-          {/* TASK 10: Housing Color (Champagne / Brown split) */}
           <Sel label="Housing Color" value={opening.housingColor} options={CV_HOUSING_COLORS} onChange={v => set("housingColor", v)} required />
 
-          {/* TASK 6: Mesh Type with +$95 badge */}
           <div className="mps-field">
             <label className="mps-label">
               Mesh Type
@@ -2045,7 +2170,6 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
             )}
           </div>
 
-          {/* TASK 6: Mesh Color — Pet/Solar locked to Black */}
           <div className="mps-field">
             <label className="mps-label">Mesh Color <span className="mps-req">*</span></label>
             <select
@@ -2064,7 +2188,7 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
             )}
           </div>
 
-          {/* TASK 11: Top Support & Rail — multi-select (max 2) */}
+          {/* Top Support & Rail — multi-select (max 2) */}
           <div className="mps-field" style={{ gridColumn: "1 / -1" }}>
             <label className="mps-label">
               Top Support &amp; Rail <span className="mps-req">*</span>
@@ -2089,7 +2213,6 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
             </div>
           </div>
 
-          {/* TASK 11: Top Rail Color — defaults to housing (display-time fallback) */}
           <div className="mps-field">
             <label className="mps-label">
               Top Support &amp; Rail Color
@@ -2106,7 +2229,7 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
             </select>
           </div>
 
-          {/* TASK 11: Bottom Threshold & Rail — multi-select (max 2) */}
+          {/* Bottom Threshold & Rail — multi-select (max 2) */}
           <div className="mps-field" style={{ gridColumn: "1 / -1" }}>
             <label className="mps-label">
               Bottom Threshold &amp; Rail <span className="mps-req">*</span>
@@ -2131,7 +2254,6 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
             </div>
           </div>
 
-          {/* TASK 11: Bottom Rail Color — REQUIRED, user must pick */}
           <div className="mps-field">
             <label className="mps-label">
               Bottom Threshold &amp; Rail Color <span className="mps-req">*</span>
@@ -2160,7 +2282,6 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
           )}
         </summary>
 
-        {/* Arched */}
         {isDoor && opening.doorVariant && (
           <div className="structural-item-card">
             <Toggle
@@ -2177,20 +2298,17 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
           </div>
         )}
 
-        {/* Internal Magnet */}
         <Toggle
           label={`Internal Magnet (${isDouble ? "+$160" : "+$80"})`}
           checked={!!opening.internalMagnet}
           onChange={v => set("internalMagnet", v)}
         />
 
-        {/* Chrome Latch */}
         <Toggle label="Chrome Latch (+$25)" checked={!!opening.chromeLatch} onChange={v => set("chromeLatch", v)} />
         {opening.chromeLatch && (
           <Sel label="Latch Size" value={opening.chromeLatchSize} options={CV_LATCH_SIZES} onChange={v => set("chromeLatchSize", v)} />
         )}
 
-        {/* TASK 9: Pet Guard with priced rail color */}
         {isDoor && opening.doorVariant && (
           <div className="structural-item-card">
             <Toggle
@@ -2220,7 +2338,6 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
           </div>
         )}
 
-        {/* TASK 7: Internal Pin Lock */}
         <div className="structural-item-card">
           <Toggle
             label="Internal Pin Lock (+$125)"
@@ -2248,7 +2365,6 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
           )}
         </div>
 
-        {/* TASK 7: External Pin Lock — auto Short/Long by door height */}
         <div className="structural-item-card">
           <Toggle
             label={`External Pin Lock (${externalPinVariant} +$${externalPinPrice})`}
@@ -2282,7 +2398,6 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
           )}
         </div>
 
-        {/* TASK 8: Window Sash Lock */}
         <div className="structural-item-card">
           <Toggle
             label="Window Sash Lock (+$25)"
@@ -3322,6 +3437,7 @@ function OpeningEditor({
   opening, index, areaDefaults, productName, areaMotorId,
   onChange, onRemove, showRemove, allOpenings,
 }) {
+  const measurementMode = useMeasurementMode();
   const structural   = calcOpeningStructural(opening, areaDefaults, areaMotorId, productName);
   const openingPrice = calcOpeningBasePrice(opening, productName);
   const openingTotal = openingPrice + structural;
@@ -3405,6 +3521,86 @@ function OpeningEditor({
   const lChannelTotal  = lChannels.reduce((s, lc) => s + calcLChannelCost(lc), 0);
   const buildoutTotal  = buildouts.reduce((s, bo)  => s + calcBuildoutCost(bo),  0);
 
+  // Inline dimension renderer (handles both modes — keeps MeasurementValue + derived width/height)
+  const renderMPSDim = (labelText, ftField, inField, totalField, totalMV) => {
+    const ftCurrent = opening[ftField];
+    const inCurrent = opening[inField];
+
+    const writePair = (newFtMV, newInMV) => {
+      const ftVal = newFtMV?.decimal || 0;
+      const inVal = newInMV?.decimal || 0;
+      const totalFt = ftVal + inVal / 12;
+      onChange({
+        ...opening,
+        [ftField]: newFtMV,
+        [inField]: newInMV,
+        [totalField]: new MeasurementValue(String(totalFt || ''), totalFt || null),
+      });
+    };
+
+    if (measurementMode === 'inches') {
+      const currentFtDec = ftCurrent && typeof ftCurrent === 'object' ? ftCurrent.decimal || 0 : parseFloat(ftCurrent) || 0;
+      const currentInDec = inCurrent && typeof inCurrent === 'object' ? inCurrent.decimal || 0 : parseFloat(inCurrent) || 0;
+      const collapsedDisplay = currentFtDec > 0
+        ? String(currentFtDec * 12 + currentInDec)
+        : (inCurrent?.display || inCurrent || '');
+
+      return (
+        <div className="mps-field">
+          <label className="mps-label">{labelText} <span className="mps-req">*</span></label>
+          <div className="skylight-width-inputs">
+            <div className="skylight-width-input-wrap" style={{ flex: 1 }}>
+              <Field
+                label="" type="text" value={collapsedDisplay}
+                onChange={v => {
+                  const inMV = v && typeof v === 'object' && 'decimal' in v ? v : MeasurementValue.fromInput(String(v));
+                  writePair(MeasurementValue.fromInput(''), inMV);
+                }}
+                placeholder="e.g. 96 or 90.5 or 90 1/2"
+                allowFractions={true}
+              />
+              <span className="skylight-dim-unit">in</span>
+            </div>
+          </div>
+          {totalMV?.decimal > 0 && (
+            <div className="skylight-width-display">→ <strong>{toFeetKey(totalMV)}ft</strong> bracket</div>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="mps-field">
+        <label className="mps-label">{labelText} <span className="mps-req">*</span></label>
+        <div className="skylight-width-inputs">
+          <div className="skylight-width-input-wrap">
+            <Field label="" type="text" value={ftCurrent || ""}
+              onChange={v => {
+                const ft = v && typeof v === 'object' && 'decimal' in v ? v : MeasurementValue.fromInput(String(v));
+                const inV = inCurrent && typeof inCurrent === 'object' ? inCurrent : MeasurementValue.fromInput(String(inCurrent || ''));
+                writePair(ft, inV);
+              }}
+              placeholder="Feet" allowFractions={true} />
+            <span className="skylight-dim-unit">ft</span>
+          </div>
+          <div className="skylight-width-input-wrap">
+            <Field label="" type="text" value={inCurrent || ""}
+              onChange={v => {
+                const inV = v && typeof v === 'object' && 'decimal' in v ? v : MeasurementValue.fromInput(String(v));
+                const ft  = ftCurrent && typeof ftCurrent === 'object' ? ftCurrent : MeasurementValue.fromInput(String(ftCurrent || ''));
+                writePair(ft, inV);
+              }}
+              placeholder="Inches" allowFractions={true} />
+            <span className="skylight-dim-unit">in</span>
+          </div>
+        </div>
+        {totalMV?.decimal > 0 && (
+          <div className="skylight-width-display">→ <strong>{toFeetKey(totalMV)}ft</strong> bracket</div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="opening-card">
       <div className="opening-header">
@@ -3423,92 +3619,8 @@ function OpeningEditor({
       </div>
 
       <div className="opening-grid-3">
-        <div className="mps-field">
-          <label className="mps-label">Width <span className="mps-req">*</span></label>
-          <div className="skylight-width-inputs">
-            <div className="skylight-width-input-wrap">
-              <Field label="" type="text" value={opening.widthFt || ""}
-                onChange={v => {
-                  const ft = v && typeof v === 'object' && 'decimal' in v ? v : MeasurementValue.fromInput(String(v));
-                  const inVal = opening.widthIn && typeof opening.widthIn === 'object' ? opening.widthIn.decimal || 0 : parseFloat(opening.widthIn) || 0;
-                  const ftVal = ft.decimal || 0;
-                  const totalFt = ftVal + (inVal / 12);
-                  onChange({
-                    ...opening,
-                    widthFt: ft,
-                    width: new MeasurementValue(String(totalFt || ''), totalFt || null),
-                  });
-                }}
-                placeholder="Feet" allowFractions={true} />
-              <span className="skylight-dim-unit">ft</span>
-            </div>
-            <div className="skylight-width-input-wrap">
-              <Field label="" type="text" value={opening.widthIn || ""}
-                onChange={v => {
-                  const inV = v && typeof v === 'object' && 'decimal' in v ? v : MeasurementValue.fromInput(String(v));
-                  const ftVal = opening.widthFt && typeof opening.widthFt === 'object' ? opening.widthFt.decimal || 0 : parseFloat(opening.widthFt) || 0;
-                  const inVal = inV.decimal || 0;
-                  const totalFt = ftVal + (inVal / 12);
-                  onChange({
-                    ...opening,
-                    widthIn: inV,
-                    width: new MeasurementValue(String(totalFt || ''), totalFt || null),
-                  });
-                }}
-                placeholder="Inches" allowFractions={true} />
-              <span className="skylight-dim-unit">in</span>
-            </div>
-          </div>
-          {opening.width?.decimal > 0 && (
-            <div className="skylight-width-display">
-              → <strong>{toFeetKey(opening.width)}ft</strong> bracket
-            </div>
-          )}
-        </div>
-
-        <div className="mps-field">
-          <label className="mps-label">Height <span className="mps-req">*</span></label>
-          <div className="skylight-width-inputs">
-            <div className="skylight-width-input-wrap">
-              <Field label="" type="text" value={opening.heightFt || ""}
-                onChange={v => {
-                  const ft = v && typeof v === 'object' && 'decimal' in v ? v : MeasurementValue.fromInput(String(v));
-                  const inVal = opening.heightIn && typeof opening.heightIn === 'object' ? opening.heightIn.decimal || 0 : parseFloat(opening.heightIn) || 0;
-                  const ftVal = ft.decimal || 0;
-                  const totalFt = ftVal + (inVal / 12);
-                  onChange({
-                    ...opening,
-                    heightFt: ft,
-                    height: new MeasurementValue(String(totalFt || ''), totalFt || null),
-                  });
-                }}
-                placeholder="Feet" allowFractions={true} />
-              <span className="skylight-dim-unit">ft</span>
-            </div>
-            <div className="skylight-width-input-wrap">
-              <Field label="" type="text" value={opening.heightIn || ""}
-                onChange={v => {
-                  const inV = v && typeof v === 'object' && 'decimal' in v ? v : MeasurementValue.fromInput(String(v));
-                  const ftVal = opening.heightFt && typeof opening.heightFt === 'object' ? opening.heightFt.decimal || 0 : parseFloat(opening.heightFt) || 0;
-                  const inVal = inV.decimal || 0;
-                  const totalFt = ftVal + (inVal / 12);
-                  onChange({
-                    ...opening,
-                    heightIn: inV,
-                    height: new MeasurementValue(String(totalFt || ''), totalFt || null),
-                  });
-                }}
-                placeholder="Inches" allowFractions={true} />
-              <span className="skylight-dim-unit">in</span>
-            </div>
-          </div>
-          {opening.height?.decimal > 0 && (
-            <div className="skylight-width-display">
-              → <strong>{toFeetKey(opening.height)}ft</strong> bracket
-            </div>
-          )}
-        </div>
-
+        {renderMPSDim("Width",  "widthFt",  "widthIn",  "width",  opening.width)}
+        {renderMPSDim("Height", "heightFt", "heightIn", "height", opening.height)}
         <Sel label="Motor Side" value={opening.motorSide} options={MPS_DEFAULTS.motorSides} onChange={v => set("motorSide", v)} required />
       </div>
 
@@ -3761,7 +3873,7 @@ function OpeningEditor({
           </div>
         </div>
         {lChannels.length === 0 && (
-          <div className="structural-empty">No L-channels added. Click "Add L-Channel" if required.</div>
+          <div className="structural-empty">No l-channels added. Click "Add L-Channel" if required.</div>
         )}
         {lChannels.map((lc, idx) => (
           <LChannelItem key={lc.id} lc={lc} index={idx}
@@ -4721,8 +4833,9 @@ function GenericMRACard({
   productNotes, onProductNoteChange,
   totalAwningQty,
   manufacturerGroups,
-  awningControlState, onAwningControlChange, // NEW props
+  awningControlState, onAwningControlChange,
 }) {
+  const measurementMode = useMeasurementMode();
   const cfg = mraConfig[line.id] || createMRAConfig();
 
   const getMeasurementDecimal = (measurement) => {
@@ -4781,6 +4894,63 @@ function GenericMRACard({
     return `${ftDisplay}' ${inDisplay}"`;
   };
 
+  // Inline width renderer
+  const renderMRAWidth = () => {
+    if (measurementMode === 'inches') {
+      const ftDec = getMeasurementDecimal(cfg.widthFt);
+      const inDec = getMeasurementDecimal(cfg.widthIn);
+      const collapsedDisplay = ftDec > 0
+        ? String(ftDec * 12 + inDec)
+        : (cfg.widthIn?.display || cfg.widthIn || '');
+
+      return (
+        <div className="mps-field skylight-width-field">
+          <label className="mps-label">Width <span className="mps-req">*</span></label>
+          <div className="skylight-width-inputs">
+            <div className="skylight-width-input-wrap" style={{ flex: 1 }}>
+              <Field label="" type="text" value={collapsedDisplay}
+                onChange={v => {
+                  const mv = v && typeof v === 'object' && 'decimal' in v ? v : MeasurementValue.fromInput(String(v));
+                  setConfig({ widthFt: MeasurementValue.fromInput(''), widthIn: mv });
+                }}
+                placeholder="e.g. 96 or 18.5 or 18 1/2"
+                allowFractions={true} />
+              <span className="skylight-dim-unit">in</span>
+            </div>
+          </div>
+          {(cfg.widthFt || cfg.widthIn) && (
+            <div className="skylight-width-display">
+              Width: <strong>{collapsedDisplay}"</strong>
+              {widthFtKey && <span style={{ marginLeft: 6, color: "var(--ps-text-muted,#888)" }}>(→ {widthFtKey}ft bracket)</span>}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="mps-field skylight-width-field">
+        <label className="mps-label">Width <span className="mps-req">*</span></label>
+        <div className="skylight-width-inputs">
+          <div className="skylight-width-input-wrap">
+            <Field label="" type="text" value={cfg.widthFt} onChange={v => setConfig({ widthFt: v })} placeholder="0" allowFractions={true} />
+            <span className="skylight-dim-unit">ft</span>
+          </div>
+          <div className="skylight-width-input-wrap">
+            <Field label="" type="text" value={cfg.widthIn} onChange={v => setConfig({ widthIn: v })} placeholder="0" min="0" max="11" allowFractions={true} />
+            <span className="skylight-dim-unit">in</span>
+          </div>
+        </div>
+        {(cfg.widthFt || cfg.widthIn) && (
+          <div className="skylight-width-display">
+            Width: <strong>{getWidthDisplay()}</strong>
+            {widthFtKey && <span style={{ marginLeft: 6, color: "var(--ps-text-muted,#888)" }}>(→ {widthFtKey}ft bracket)</span>}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="ps-product-card skylight-mra-card">
       <div className="ps-product-header">
@@ -4792,7 +4962,6 @@ function GenericMRACard({
         <div className="ps-product-price">{fmt(grandLineTotal)}</div>
       </div>
 
-      {/* Motor Display Banner */}
       <div className="motor-info-banner">
         <span className="motor-info-icon">⚡</span>
         <div className="motor-info-content">
@@ -4839,25 +5008,7 @@ function GenericMRACard({
             )}
           </div>
 
-          <div className="mps-field skylight-width-field">
-            <label className="mps-label">Width <span className="mps-req">*</span></label>
-            <div className="skylight-width-inputs">
-              <div className="skylight-width-input-wrap">
-                <Field label="" type="text" value={cfg.widthFt} onChange={v => setConfig({ widthFt: v })} placeholder="0" allowFractions={true} />
-                <span className="skylight-dim-unit">ft</span>
-              </div>
-              <div className="skylight-width-input-wrap">
-                <Field label="" type="text" value={cfg.widthIn} onChange={v => setConfig({ widthIn: v })} placeholder="0" min="0" max="11" allowFractions={true} />
-                <span className="skylight-dim-unit">in</span>
-              </div>
-            </div>
-            {(cfg.widthFt || cfg.widthIn) && (
-              <div className="skylight-width-display">
-                Width: <strong>{getWidthDisplay()}</strong>
-                {widthFtKey && <span style={{ marginLeft: "6px", color: "var(--ps-text-muted,#888)" }}>(→ {widthFtKey}ft bracket)</span>}
-              </div>
-            )}
-          </div>
+          {renderMRAWidth()}
         </div>
 
         {cfg.projection && widthFtKey && (
@@ -4869,7 +5020,6 @@ function GenericMRACard({
           </div>
         )}
 
-        {/* LED Toggle — only for Skyline Motorized */}
         {isSkylightType && (
           <div className="mps-field" style={{ marginTop: "16px" }}>
             <Toggle
@@ -4885,7 +5035,6 @@ function GenericMRACard({
           </div>
         )}
 
-        {/* Power Cord */}
         <div className="mps-field" style={{ marginTop: "12px" }}>
           <label className="mps-label">
             Power Cord
@@ -4906,7 +5055,6 @@ function GenericMRACard({
           </select>
         </div>
 
-        {/* Cassette Color — only for Skyline Motorized */}
         {isSkylightType && (
           <div className="skylight-cassette-section">
             <div className="skylight-config-title" style={{ marginTop: "16px" }}>🎨 Cassette Color</div>
@@ -5006,14 +5154,12 @@ function GenericMRACard({
         />
       </div>
 
-      {/* Controls Section — same UX as MPS */}
       <AwningControlSection
         totalAwningQty={totalAwningQty}
         controlState={awningControlState || { includedReplaced: false, replacementControlId: "", additionalControls: [] }}
         onControlChange={onAwningControlChange}
       />
 
-      {/* Accessories (Roof Mount Brackets, TaHoma, Sensors only) */}
       <FieldAddonSection
         productName={line.product}
         fieldAddonValues={fieldAddonValues}
@@ -5046,8 +5192,9 @@ function SkylightMRACard({
   productNotes, onProductNoteChange,
   totalAwningQty,
   manufacturerGroups,
-  awningControlState, onAwningControlChange,  // ← NEW
+  awningControlState, onAwningControlChange,
 }) {
+  const measurementMode = useMeasurementMode();
   const cfg = mraConfig[line.id] || createMRAConfig();
 
   const getMeasurementDecimal = (measurement) => {
@@ -5068,24 +5215,19 @@ function SkylightMRACard({
   const totalWidthFt   = widthFtDecimal + (widthInDecimal / 12);
   const widthFtKey     = totalWidthFt > 0 ? Math.ceil(totalWidthFt) : null;
 
-  // Motor (Skyline Plus always 550)
   const awningMotor = getAwningMotor("Skyline Plus MRA", widthFtKey);
 
-  // LED logic
   const includeLED = cfg.includeLED !== false;
   const ledDeduct  = includeLED ? 0 : -LED_DEDUCT_AMOUNT;
 
-  // Power cord (lives only in config — never in accessories)
   const powerCordCost = getAwningPowerCordPrice(cfg.powerCord || "10ft");
 
-  // Matrix price
   const priceResult = widthFtKey && cfg.projection
     ? getMRAPriceWithNewProjections("Skyline Plus MRA", cfg.projection, widthFtKey)
     : { ok: false, price: 0, message: "" };
   const unitPrice   = priceResult.ok ? priceResult.price : 0;
   const matrixTotal = unitPrice * qty;
 
-  // Accessory + cassette + control costs
   const fieldTotal         = calcFieldAddonTotal(fieldAddonValues, "Skyline Plus MRA");
   const cassetteIsCustom   = cfg.cassetteColor?.toLowerCase().includes("custom");
   const customCassetteCost = cassetteIsCustom ? (parseFloat(cfg.customCassetteColorPrice) || 0) : 0;
@@ -5110,6 +5252,63 @@ function SkylightMRACard({
     return `${ftDisplay}' ${inDisplay}"`;
   };
 
+  // Inline width renderer
+  const renderMRAWidth = () => {
+    if (measurementMode === 'inches') {
+      const ftDec = getMeasurementDecimal(cfg.widthFt);
+      const inDec = getMeasurementDecimal(cfg.widthIn);
+      const collapsedDisplay = ftDec > 0
+        ? String(ftDec * 12 + inDec)
+        : (cfg.widthIn?.display || cfg.widthIn || '');
+
+      return (
+        <div className="mps-field skylight-width-field">
+          <label className="mps-label">Width <span className="mps-req">*</span></label>
+          <div className="skylight-width-inputs">
+            <div className="skylight-width-input-wrap" style={{ flex: 1 }}>
+              <Field label="" type="text" value={collapsedDisplay}
+                onChange={v => {
+                  const mv = v && typeof v === 'object' && 'decimal' in v ? v : MeasurementValue.fromInput(String(v));
+                  setConfig({ widthFt: MeasurementValue.fromInput(''), widthIn: mv });
+                }}
+                placeholder="e.g. 96 or 18.5 or 18 1/2"
+                allowFractions={true} />
+              <span className="skylight-dim-unit">in</span>
+            </div>
+          </div>
+          {(cfg.widthFt || cfg.widthIn) && (
+            <div className="skylight-width-display">
+              Width: <strong>{collapsedDisplay}"</strong>
+              {widthFtKey && <span style={{ marginLeft: 6, color: "var(--ps-text-muted,#888)" }}>(→ {widthFtKey}ft bracket)</span>}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="mps-field skylight-width-field">
+        <label className="mps-label">Width <span className="mps-req">*</span></label>
+        <div className="skylight-width-inputs">
+          <div className="skylight-width-input-wrap">
+            <Field label="" type="text" value={cfg.widthFt} onChange={v => setConfig({ widthFt: v })} placeholder="0" allowFractions={true} />
+            <span className="skylight-dim-unit">ft</span>
+          </div>
+          <div className="skylight-width-input-wrap">
+            <Field label="" type="text" value={cfg.widthIn} onChange={v => setConfig({ widthIn: v })} placeholder="0" min="0" max="11" allowFractions={true} />
+            <span className="skylight-dim-unit">in</span>
+          </div>
+        </div>
+        {(cfg.widthFt || cfg.widthIn) && (
+          <div className="skylight-width-display">
+            Width: <strong>{getWidthDisplay()}</strong>
+            {widthFtKey && <span style={{ marginLeft: 6, color: "var(--ps-text-muted,#888)" }}>(→ {widthFtKey}ft bracket)</span>}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="ps-product-card skylight-mra-card">
       <div className="ps-product-header">
@@ -5121,7 +5320,6 @@ function SkylightMRACard({
         <div className="ps-product-price">{fmt(grandLineTotal)}</div>
       </div>
 
-      {/* Motor banner */}
       <div className="motor-info-banner">
         <span className="motor-info-icon">⚡</span>
         <div className="motor-info-content">
@@ -5141,7 +5339,6 @@ function SkylightMRACard({
         <div className="ps-detail-item"><span className="ps-detail-label">Operation</span><span className="ps-detail-value" style={{ textTransform: "capitalize" }}>{line.operation}</span></div>
       </div>
 
-      {/* ── CONFIGURATION ────────────────────────────── */}
       <div className="skylight-config-section">
         <div className="skylight-config-title">📐 Awning Configuration</div>
         <div className="skylight-config-grid">
@@ -5163,25 +5360,7 @@ function SkylightMRACard({
             )}
           </div>
 
-          <div className="mps-field skylight-width-field">
-            <label className="mps-label">Width <span className="mps-req">*</span></label>
-            <div className="skylight-width-inputs">
-              <div className="skylight-width-input-wrap">
-                <Field label="" type="text" value={cfg.widthFt} onChange={v => setConfig({ widthFt: v })} placeholder="0" allowFractions={true} />
-                <span className="skylight-dim-unit">ft</span>
-              </div>
-              <div className="skylight-width-input-wrap">
-                <Field label="" type="text" value={cfg.widthIn} onChange={v => setConfig({ widthIn: v })} placeholder="0" min="0" max="11" allowFractions={true} />
-                <span className="skylight-dim-unit">in</span>
-              </div>
-            </div>
-            {(cfg.widthFt || cfg.widthIn) && (
-              <div className="skylight-width-display">
-                Width: <strong>{getWidthDisplay()}</strong>
-                {widthFtKey && <span style={{ marginLeft: "6px", color: "var(--ps-text-muted,#888)" }}>(→ {widthFtKey}ft bracket)</span>}
-              </div>
-            )}
-          </div>
+          {renderMRAWidth()}
         </div>
 
         {cfg.projection && widthFtKey && (
@@ -5193,7 +5372,6 @@ function SkylightMRACard({
           </div>
         )}
 
-        {/* LED Toggle */}
         <div className="mps-field" style={{ marginTop: "16px" }}>
           <Toggle
             label="Include LED Lights (built-in)"
@@ -5207,7 +5385,6 @@ function SkylightMRACard({
           )}
         </div>
 
-        {/* Power Cord — lives ONLY here, never in accessories */}
         <div className="mps-field" style={{ marginTop: "12px" }}>
           <label className="mps-label">
             Power Cord
@@ -5228,7 +5405,6 @@ function SkylightMRACard({
           </select>
         </div>
 
-        {/* Cassette Color */}
         <div className="skylight-cassette-section">
           <div className="skylight-config-title" style={{ marginTop: "16px" }}>🎨 Cassette Color</div>
 
@@ -5314,7 +5490,6 @@ function SkylightMRACard({
         </div>
       </div>
 
-      {/* Product notes */}
       <div className="product-note-section">
         <label className="mps-label">📝 Product Notes</label>
         <textarea
@@ -5326,14 +5501,12 @@ function SkylightMRACard({
         />
       </div>
 
-      {/* ── CONTROLS (same UX as MPS / GenericMRACard) ── */}
       <AwningControlSection
         totalAwningQty={totalAwningQty}
         controlState={awningControlState || { includedReplaced: false, replacementControlId: "", additionalControls: [] }}
         onControlChange={onAwningControlChange}
       />
 
-      {/* ── ACCESSORIES (Roof Mount Brackets, TaHoma, Wind Sensor, Sun/Wind) ── */}
       <FieldAddonSection
         productName="Skyline Plus MRA"
         fieldAddonValues={fieldAddonValues}
@@ -5341,7 +5514,6 @@ function SkylightMRACard({
         lineId={line.id}
       />
 
-      {/* Line total */}
       <div className="mps-line-total">
         {priceResult.ok
           ? <span>Matrix Price: {fmt(unitPrice)}{qty > 1 ? ` × ${qty} = ${fmt(matrixTotal)}` : ""}</span>
@@ -5458,34 +5630,55 @@ export default function ProductSummary() {
   const [signature,            setSignature]            = useState(() => loadFromSession()?.signature            || null);
   const [windSensorSelections, setWindSensorSelections] = useState(() => loadFromSession()?.windSensorSelections || {});
   const [mraConfig,            setMraConfig]            = useState(() => loadFromSession()?.mraConfig            || {});
-  const [mpsControls, setMpsControls] = useState(() => loadFromSession()?.mpsControls || {});
-  const [awningControls, setAwningControls] = useState(() => loadFromSession()?.awningControls || {});
-  const [clearviewData, setClearviewData] = useState(() => loadFromSession()?.clearviewData || {});
+  const [mpsControls,          setMpsControls]          = useState(() => loadFromSession()?.mpsControls          || {});
+  const [awningControls,       setAwningControls]       = useState(() => loadFromSession()?.awningControls       || {});
+  const [clearviewData,        setClearviewData]        = useState(() => loadFromSession()?.clearviewData        || {});
+
+  // ✅ MOVED UP — must be declared before any useEffect / handler that references it
+  const [measurementMode, setMeasurementMode] = useState(
+    () => loadFromSession()?.measurementMode || 'inches'
+  );
 
   useEffect(() => {
-  saveToSession({ addonSelections, mpsData, fieldAddonValues, productNotes, signature, windSensorSelections, mraConfig, mpsControls, awningControls, clearviewData });
-}, [addonSelections, mpsData, fieldAddonValues, productNotes, signature, windSensorSelections, mraConfig, mpsControls, awningControls, clearviewData]);
+    saveToSession({
+      addonSelections, mpsData, fieldAddonValues, productNotes, signature,
+      windSensorSelections, mraConfig, mpsControls, awningControls, clearviewData,
+      measurementMode,
+    });
+  }, [addonSelections, mpsData, fieldAddonValues, productNotes, signature,
+      windSensorSelections, mraConfig, mpsControls, awningControls, clearviewData,
+      measurementMode]);
 
-  const handleProductNoteChange = (lineId, note) => setProductNotes(prev => ({ ...prev, [lineId]: note }));
+  const handleProductNoteChange = (lineId, note) =>
+    setProductNotes(prev => ({ ...prev, [lineId]: note }));
 
   const handleFieldAddonChange = (lineId, addonId, val) =>
-    setFieldAddonValues(prev => ({...prev, [lineId]: {...(prev[lineId]||{}), [addonId]: val}}));
+    setFieldAddonValues(prev => ({ ...prev, [lineId]: { ...(prev[lineId] || {}), [addonId]: val } }));
 
   const handleMpsControlsChange = (lineId, updated) =>
-  setMpsControls(prev => ({ ...prev, [lineId]: updated }));
+    setMpsControls(prev => ({ ...prev, [lineId]: updated }));
 
   const handleAwningControlsChange = (lineId, updated) =>
-  setAwningControls(prev => ({ ...prev, [lineId]: updated }));
+    setAwningControls(prev => ({ ...prev, [lineId]: updated }));
+
+  const handleMeasurementModeChange = (newMode) => {
+    if (newMode === measurementMode) return;
+    const migrated = migrateAllMeasurementData(newMode, { mpsData, mraConfig, clearviewData });
+    setMpsData(migrated.mpsData);
+    setMraConfig(migrated.mraConfig);
+    setClearviewData(migrated.clearviewData);
+    setMeasurementMode(newMode);
+  };
 
   const handleAddonToggle = (lineId, addonId) => {
     if (addonId === "__RESET__") { setAddonSelections(prev => ({ ...prev, [lineId]: {} })); return; }
-    setAddonSelections(prev => ({...prev, [lineId]: {...(prev[lineId]||{}), [addonId]: !(prev[lineId]?.[addonId])}}));
+    setAddonSelections(prev => ({ ...prev, [lineId]: { ...(prev[lineId] || {}), [addonId]: !(prev[lineId]?.[addonId]) } }));
   };
 
-  const handleMPSChange = (lineId, areas) => setMpsData(prev => ({...prev, [lineId]: areas}));
-  const handleClearviewChange = (lineId, openings) => setClearviewData(prev => ({ ...prev, [lineId]: openings }));
+  const handleMPSChange        = (lineId, areas)      => setMpsData(prev => ({ ...prev, [lineId]: areas }));
+  const handleClearviewChange  = (lineId, openings)   => setClearviewData(prev => ({ ...prev, [lineId]: openings }));
   const handleWindSensorChange = (lineId, selections) => setWindSensorSelections(prev => ({ ...prev, [lineId]: selections }));
-  const handleMRAConfigChange  = (lineId, cfg) => setMraConfig(prev => ({ ...prev, [lineId]: cfg }));
+  const handleMRAConfigChange  = (lineId, cfg)        => setMraConfig(prev => ({ ...prev, [lineId]: cfg }));
 
   const handleGlobalReset = () => {
     if (window.confirm("Reset ALL areas, openings, add-ons, and notes for the entire quote? This cannot be undone.")) {
@@ -5497,10 +5690,11 @@ export default function ProductSummary() {
       setWindSensorSelections({});
       setMraConfig({});
       setMpsControls({});
+      setAwningControls({});
       setClearviewData({});
+      setMeasurementMode('inches');
     }
   };
-
   if (!snapshot) {
     return (
       <div className="ps-page">
@@ -5666,6 +5860,7 @@ const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeni
   const grandTotal      = subtotalWithAddons - discountAmount;
 
   return (
+    <MeasurementModeContext.Provider value={measurementMode}>
     <div className="ps-page">
       <header className="ps-header">
         <div className="ps-header-glow"/>
@@ -5674,7 +5869,7 @@ const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeni
           <p>Review your order, configure areas &amp; openings, and select add-ons</p>
         </div>
       </header>
-
+   
       <div className="ps-body">
         <div className="ps-nav-row">
           <button className="ps-btn ps-btn-back" onClick={()=>navigate("/")}>← Back to Form</button>
@@ -5710,7 +5905,7 @@ const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeni
                                       line.product === "Open Roll Motorized Retractable Awning";
 
                 if (isSkylightMRA) {
-  return (
+         return (
     <SkylightMRACard
       key={line.id}
       line={{ ...line, product: "Skyline Plus MRA" }}
@@ -5750,6 +5945,8 @@ const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeni
     />
   );
 }
+
+
 if (CLEARVIEW_PRODUCTS.includes(line.product)) {
   return (
     <ClearviewProductCard
@@ -5859,5 +6056,6 @@ if (CLEARVIEW_PRODUCTS.includes(line.product)) {
         </div>
       </div>
     </div>
-  );
+  </MeasurementModeContext.Provider>  
+ );
 }
