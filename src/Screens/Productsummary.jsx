@@ -847,6 +847,11 @@ function safeParseFloat(val) {
   return parseFloat(val) || 0;
 }
 
+function safeMeasurementDisplay(v) {
+  if (v && typeof v === "object" && "display" in v) return v.display || "";
+  return v == null ? "" : String(v);
+}
+
 function getMRAPrice(productName, projection, widthFt) {
   let matrix;
   if (productName === "Skyline Plus MRA" || productName === "Motor B Retractable Awning") {
@@ -4888,68 +4893,88 @@ function GenericMRACard({
   const cassetteSpecs = isSkylightType ? (SKYLINE_CASSETTE_SPECS[line.product] || null) : null;
   const badgeLabel    = isSkylightType ? "Motor A + B Merged" : "Open Roll";
 
-  const getWidthDisplay = () => {
-    const ftDisplay = cfg.widthFt?.display || cfg.widthFt || '0';
-    const inDisplay = cfg.widthIn?.display || cfg.widthIn || '0';
-    return `${ftDisplay}' ${inDisplay}"`;
-  };
+ const getWidthDisplay = () => {
+  const ftDisplay = safeMeasurementDisplay(cfg.widthFt) || "0";
+  const inDisplay = safeMeasurementDisplay(cfg.widthIn) || "0";
+  return `${ftDisplay}' ${inDisplay}"`;
+};
+
+
 
   // Inline width renderer
   const renderMRAWidth = () => {
-    if (measurementMode === 'inches') {
-      const ftDec = getMeasurementDecimal(cfg.widthFt);
-      const inDec = getMeasurementDecimal(cfg.widthIn);
-      const collapsedDisplay = ftDec > 0
-        ? String(ftDec * 12 + inDec)
-        : (cfg.widthIn?.display || cfg.widthIn || '');
+  const ftStr = safeMeasurementDisplay(cfg.widthFt);
+  const inStr = safeMeasurementDisplay(cfg.widthIn);
+  const hasAnyValue = ftStr !== "" || inStr !== "";
 
-      return (
-        <div className="mps-field skylight-width-field">
-          <label className="mps-label">Width <span className="mps-req">*</span></label>
-          <div className="skylight-width-inputs">
-            <div className="skylight-width-input-wrap" style={{ flex: 1 }}>
-              <Field label="" type="text" value={collapsedDisplay}
-                onChange={v => {
-                  const mv = v && typeof v === 'object' && 'decimal' in v ? v : MeasurementValue.fromInput(String(v));
-                  setConfig({ widthFt: MeasurementValue.fromInput(''), widthIn: mv });
-                }}
-                placeholder="e.g. 96 or 18.5 or 18 1/2"
-                allowFractions={true} />
-              <span className="skylight-dim-unit">in</span>
-            </div>
-          </div>
-          {(cfg.widthFt || cfg.widthIn) && (
-            <div className="skylight-width-display">
-              Width: <strong>{collapsedDisplay}"</strong>
-              {widthFtKey && <span style={{ marginLeft: 6, color: "var(--ps-text-muted,#888)" }}>(→ {widthFtKey}ft bracket)</span>}
-            </div>
-          )}
-        </div>
-      );
-    }
+  if (measurementMode === 'inches') {
+    const ftDec = getMeasurementDecimal(cfg.widthFt);
+    const inDec = getMeasurementDecimal(cfg.widthIn);
+    const collapsedDisplay = ftDec > 0
+      ? String(ftDec * 12 + inDec)
+      : inStr;
 
     return (
       <div className="mps-field skylight-width-field">
         <label className="mps-label">Width <span className="mps-req">*</span></label>
         <div className="skylight-width-inputs">
-          <div className="skylight-width-input-wrap">
-            <Field label="" type="text" value={cfg.widthFt} onChange={v => setConfig({ widthFt: v })} placeholder="0" allowFractions={true} />
-            <span className="skylight-dim-unit">ft</span>
-          </div>
-          <div className="skylight-width-input-wrap">
-            <Field label="" type="text" value={cfg.widthIn} onChange={v => setConfig({ widthIn: v })} placeholder="0" min="0" max="11" allowFractions={true} />
+          <div className="skylight-width-input-wrap" style={{ flex: 1 }}>
+            <Field label="" type="text" value={collapsedDisplay}
+              onChange={v => {
+                const mv = v && typeof v === 'object' && 'decimal' in v
+                  ? v
+                  : MeasurementValue.fromInput(String(v));
+                setConfig({ widthFt: MeasurementValue.fromInput(''), widthIn: mv });
+              }}
+              placeholder="e.g. 96 or 18.5 or 18 1/2"
+              allowFractions={true} />
             <span className="skylight-dim-unit">in</span>
           </div>
         </div>
-        {(cfg.widthFt || cfg.widthIn) && (
+        {hasAnyValue && (
           <div className="skylight-width-display">
-            Width: <strong>{getWidthDisplay()}</strong>
-            {widthFtKey && <span style={{ marginLeft: 6, color: "var(--ps-text-muted,#888)" }}>(→ {widthFtKey}ft bracket)</span>}
+            Width: <strong>{collapsedDisplay}"</strong>
+            {widthFtKey && (
+              <span style={{ marginLeft: 6, color: "var(--ps-text-muted,#888)" }}>
+                (→ {widthFtKey}ft bracket)
+              </span>
+            )}
           </div>
         )}
       </div>
     );
-  };
+  }
+
+  return (
+    <div className="mps-field skylight-width-field">
+      <label className="mps-label">Width <span className="mps-req">*</span></label>
+      <div className="skylight-width-inputs">
+        <div className="skylight-width-input-wrap">
+          <Field label="" type="text" value={cfg.widthFt}
+            onChange={v => setConfig({ widthFt: v })}
+            placeholder="0" allowFractions={true} />
+          <span className="skylight-dim-unit">ft</span>
+        </div>
+        <div className="skylight-width-input-wrap">
+          <Field label="" type="text" value={cfg.widthIn}
+            onChange={v => setConfig({ widthIn: v })}
+            placeholder="0" min="0" max="11" allowFractions={true} />
+          <span className="skylight-dim-unit">in</span>
+        </div>
+      </div>
+      {hasAnyValue && (
+        <div className="skylight-width-display">
+          Width: <strong>{getWidthDisplay()}</strong>
+          {widthFtKey && (
+            <span style={{ marginLeft: 6, color: "var(--ps-text-muted,#888)" }}>
+              (→ {widthFtKey}ft bracket)
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
   return (
     <div className="ps-product-card skylight-mra-card">
@@ -5254,60 +5279,78 @@ function SkylightMRACard({
 
   // Inline width renderer
   const renderMRAWidth = () => {
-    if (measurementMode === 'inches') {
-      const ftDec = getMeasurementDecimal(cfg.widthFt);
-      const inDec = getMeasurementDecimal(cfg.widthIn);
-      const collapsedDisplay = ftDec > 0
-        ? String(ftDec * 12 + inDec)
-        : (cfg.widthIn?.display || cfg.widthIn || '');
+  const ftStr = safeMeasurementDisplay(cfg.widthFt);
+  const inStr = safeMeasurementDisplay(cfg.widthIn);
+  const hasAnyValue = ftStr !== "" || inStr !== "";
 
-      return (
-        <div className="mps-field skylight-width-field">
-          <label className="mps-label">Width <span className="mps-req">*</span></label>
-          <div className="skylight-width-inputs">
-            <div className="skylight-width-input-wrap" style={{ flex: 1 }}>
-              <Field label="" type="text" value={collapsedDisplay}
-                onChange={v => {
-                  const mv = v && typeof v === 'object' && 'decimal' in v ? v : MeasurementValue.fromInput(String(v));
-                  setConfig({ widthFt: MeasurementValue.fromInput(''), widthIn: mv });
-                }}
-                placeholder="e.g. 96 or 18.5 or 18 1/2"
-                allowFractions={true} />
-              <span className="skylight-dim-unit">in</span>
-            </div>
-          </div>
-          {(cfg.widthFt || cfg.widthIn) && (
-            <div className="skylight-width-display">
-              Width: <strong>{collapsedDisplay}"</strong>
-              {widthFtKey && <span style={{ marginLeft: 6, color: "var(--ps-text-muted,#888)" }}>(→ {widthFtKey}ft bracket)</span>}
-            </div>
-          )}
-        </div>
-      );
-    }
+  if (measurementMode === 'inches') {
+    const ftDec = getMeasurementDecimal(cfg.widthFt);
+    const inDec = getMeasurementDecimal(cfg.widthIn);
+    const collapsedDisplay = ftDec > 0
+      ? String(ftDec * 12 + inDec)
+      : inStr;
 
     return (
       <div className="mps-field skylight-width-field">
         <label className="mps-label">Width <span className="mps-req">*</span></label>
         <div className="skylight-width-inputs">
-          <div className="skylight-width-input-wrap">
-            <Field label="" type="text" value={cfg.widthFt} onChange={v => setConfig({ widthFt: v })} placeholder="0" allowFractions={true} />
-            <span className="skylight-dim-unit">ft</span>
-          </div>
-          <div className="skylight-width-input-wrap">
-            <Field label="" type="text" value={cfg.widthIn} onChange={v => setConfig({ widthIn: v })} placeholder="0" min="0" max="11" allowFractions={true} />
+          <div className="skylight-width-input-wrap" style={{ flex: 1 }}>
+            <Field label="" type="text" value={collapsedDisplay}
+              onChange={v => {
+                const mv = v && typeof v === 'object' && 'decimal' in v
+                  ? v
+                  : MeasurementValue.fromInput(String(v));
+                setConfig({ widthFt: MeasurementValue.fromInput(''), widthIn: mv });
+              }}
+              placeholder="e.g. 96 or 18.5 or 18 1/2"
+              allowFractions={true} />
             <span className="skylight-dim-unit">in</span>
           </div>
         </div>
-        {(cfg.widthFt || cfg.widthIn) && (
+        {hasAnyValue && (
           <div className="skylight-width-display">
-            Width: <strong>{getWidthDisplay()}</strong>
-            {widthFtKey && <span style={{ marginLeft: 6, color: "var(--ps-text-muted,#888)" }}>(→ {widthFtKey}ft bracket)</span>}
+            Width: <strong>{collapsedDisplay}"</strong>
+            {widthFtKey && (
+              <span style={{ marginLeft: 6, color: "var(--ps-text-muted,#888)" }}>
+                (→ {widthFtKey}ft bracket)
+              </span>
+            )}
           </div>
         )}
       </div>
     );
-  };
+  }
+
+  return (
+    <div className="mps-field skylight-width-field">
+      <label className="mps-label">Width <span className="mps-req">*</span></label>
+      <div className="skylight-width-inputs">
+        <div className="skylight-width-input-wrap">
+          <Field label="" type="text" value={cfg.widthFt}
+            onChange={v => setConfig({ widthFt: v })}
+            placeholder="0" allowFractions={true} />
+          <span className="skylight-dim-unit">ft</span>
+        </div>
+        <div className="skylight-width-input-wrap">
+          <Field label="" type="text" value={cfg.widthIn}
+            onChange={v => setConfig({ widthIn: v })}
+            placeholder="0" min="0" max="11" allowFractions={true} />
+          <span className="skylight-dim-unit">in</span>
+        </div>
+      </div>
+      {hasAnyValue && (
+        <div className="skylight-width-display">
+          Width: <strong>{getWidthDisplay()}</strong>
+          {widthFtKey && (
+            <span style={{ marginLeft: 6, color: "var(--ps-text-muted,#888)" }}>
+              (→ {widthFtKey}ft bracket)
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
   return (
     <div className="ps-product-card skylight-mra-card">
