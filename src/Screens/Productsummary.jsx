@@ -27,6 +27,21 @@ const AWNING_PRODUCTS = [
   "Motor B Open Roll Retractable Awning",
 ];
 
+
+const SCREEN_SYSTEM_PRODUCTS = [
+  "Vista View Plus Retractable Screen System",
+  "Single Horizon View Retractable Screens",
+  "Double Horizon View Retractable Screens",
+];
+
+// Mirrors the prices defined in App.js — used for display only.
+// The line total in the snapshot already accounts for these.
+const SCREEN_OPTIONAL_CONFIG_PRICES = {
+  "Corner Unit":        { price: 1200, unit: "per set"  },
+  "Custom Powder Coat": { price: 1500, unit: "per unit" },
+};
+
+
 const MRA_PROJECTION_OPTIONS = [
   "4'11\"",
   "6'11\"",
@@ -276,6 +291,178 @@ function getAwningMotor(productName, widthFtKey) {
   // Skyline Motorized and Open Roll: width-based
   if (widthFtKey && widthFtKey >= 19) return AWNING_MOTOR_550;
   return AWNING_MOTOR_535;
+}
+
+function ScreenSystemCard({
+  line, index, snapshot,
+  productNotes, onProductNoteChange,
+  isExpanded, onToggleExpand,
+}) {
+  const enriched  = snapshot.productLines.find(l => l.id === line.id);
+  const baseTotal = enriched?.pricing?.lineSubtotal || 0;
+  const basePrice = enriched?.pricing?.basePrice    || 0;
+  const priceNote = enriched?.pricing?.priceNote    || "";
+  const meta      = enriched?.productMeta           || {};
+  const qty       = parseInt(line.quantity, 10) || 1;
+
+  // Filter optionalConfigs to only those checked
+  const selectedOptKeys = Object.keys(line.optionalConfigs || {})
+    .filter(k => line.optionalConfigs[k]);
+
+  // Sum of opt configs (qty-aware) — for the breakdown line
+  const optConfigsTotal = selectedOptKeys.reduce((sum, name) => {
+    const info = SCREEN_OPTIONAL_CONFIG_PRICES[name];
+    return info ? sum + info.price * qty : sum;
+  }, 0);
+
+  return (
+    <div className="ps-product-card">
+      <div
+        className="ps-product-header ps-product-header--clickable"
+        onClick={onToggleExpand}
+        style={{ cursor: "pointer", userSelect: "none" }}
+      >
+        <div className="ps-product-number">#{index + 1}</div>
+        <div className="ps-product-name">
+          {line.product}
+          {meta.productLine && (
+            <span className="skylight-mra-badge">{meta.productLine}</span>
+          )}
+        </div>
+        <div className="ps-product-price">{fmt(baseTotal)}</div>
+        <span className="ps-product-expand-icon" style={{
+          marginLeft: "12px", fontSize: "1.2em",
+          transition: "transform 0.2s",
+          transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
+        }}>▼</span>
+      </div>
+
+      {isExpanded && (
+        <>
+          <div className="ps-detail-grid">
+            <div className="ps-detail-item">
+              <span className="ps-detail-label">Category</span>
+              <span className="ps-detail-value">{line.category}</span>
+            </div>
+            <div className="ps-detail-item">
+              <span className="ps-detail-label">Product</span>
+              <span className="ps-detail-value">{line.product}</span>
+            </div>
+            <div className="ps-detail-item">
+              <span className="ps-detail-label">Width</span>
+              <span className="ps-detail-value">{line.width ? `${line.width}"` : "—"}</span>
+            </div>
+            <div className="ps-detail-item">
+              <span className="ps-detail-label">Height</span>
+              <span className="ps-detail-value">{line.height ? `${line.height}"` : "—"}</span>
+            </div>
+            <div className="ps-detail-item">
+              <span className="ps-detail-label">Quantity</span>
+              <span className="ps-detail-value">{qty}</span>
+            </div>
+            <div className="ps-detail-item">
+              <span className="ps-detail-label">Operation</span>
+              <span className="ps-detail-value" style={{ textTransform: "capitalize" }}>
+                {line.operation}
+              </span>
+            </div>
+            {meta.maxWidth && meta.maxHeight && (
+              <div className="ps-detail-item">
+                <span className="ps-detail-label">Max Size</span>
+                <span className="ps-detail-value">
+                  {meta.maxWidth}" W × {meta.maxHeight}" H
+                </span>
+              </div>
+            )}
+            {line.housingColor && (
+              <div className="ps-detail-item">
+                <span className="ps-detail-label">Housing Color</span>
+                <span className="ps-detail-value">{line.housingColor}</span>
+              </div>
+            )}
+            {line.trackColor && (
+              <div className="ps-detail-item">
+                <span className="ps-detail-label">Track Color</span>
+                <span className="ps-detail-value">
+                  {line.trackColor}
+                  <span style={{ fontSize: "0.78em", opacity: 0.65, marginLeft: 6 }}>
+                    (auto-inherited)
+                  </span>
+                </span>
+              </div>
+            )}
+          </div>
+
+          {priceNote && (
+            <div className="ps-price-note">💡 {priceNote}</div>
+          )}
+
+          {selectedOptKeys.length > 0 && (
+            <div className="ps-addons-section">
+              <div className="ps-addons-title">
+                <span className="ps-addons-icon">✦</span> Optional Configurations
+                {optConfigsTotal > 0 && (
+                  <span className="ps-addons-running-total">
+                    +{fmt(optConfigsTotal)} included in line total
+                  </span>
+                )}
+              </div>
+              <div className="ps-addons-grid">
+                {selectedOptKeys.map(name => {
+                  const info = SCREEN_OPTIONAL_CONFIG_PRICES[name];
+                  return (
+                    <div key={name} className="ps-addon-item ps-addon-checked">
+                      <div className="ps-addon-content">
+                        <span className="ps-addon-name">{name}</span>
+                        {info && (
+                          <span className="ps-addon-price">
+                            +{fmt(info.price)} {info.unit}
+                            {qty > 1 && (
+                              <span className="ps-addon-per-unit">
+                                {" "}× {qty} = {fmt(info.price * qty)}
+                              </span>
+                            )}
+                          </span>
+                        )}
+                      </div>
+                      <span className="ps-addon-check-mark">✓</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="product-note-section">
+            <label className="mps-label">📝 Product Notes</label>
+            <textarea
+              className="product-note-textarea"
+              placeholder="Add any important notes about this product…"
+              value={productNotes || ""}
+              onChange={e => onProductNoteChange(line.id, e.target.value)}
+              rows={3}
+            />
+          </div>
+
+          {line.notes && (
+            <div className="ps-product-notes">
+              <span className="ps-detail-label">Notes from intake — </span>
+              {line.notes}
+            </div>
+          )}
+
+          <div className="mps-line-total">
+            <span>Base Price: {fmt(basePrice)}</span>
+            {optConfigsTotal > 0 && (
+              <span>+ Optional Configurations: {fmt(optConfigsTotal)}</span>
+            )}
+            {qty > 1 && <span>× Quantity: {qty}</span>}
+            <span className="mps-line-grand">Line Total: {fmt(baseTotal)}</span>
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -5999,6 +6186,21 @@ if (CLEARVIEW_PRODUCTS.includes(line.product)) {
       snapshot={snapshot}
       clearviewData={clearviewData}
       onClearviewChange={handleClearviewChange}
+      productNotes={productNotes[line.id]}
+      onProductNoteChange={handleProductNoteChange}
+      isExpanded={!!expandedProducts[line.id]}
+      onToggleExpand={() => toggleProductExpand(line.id)}
+    />
+  );
+}
+
+if (SCREEN_SYSTEM_PRODUCTS.includes(line.product)) {
+  return (
+    <ScreenSystemCard
+      key={line.id}
+      line={line}
+      index={idx}
+      snapshot={snapshot}
       productNotes={productNotes[line.id]}
       onProductNoteChange={handleProductNoteChange}
       isExpanded={!!expandedProducts[line.id]}

@@ -3,6 +3,26 @@ import { useNavigate } from 'react-router-dom';
 import './App.css';
 
 // ============================================================
+// SHARED CONFIG — VVP / Horizon View screen systems
+// ============================================================
+// Standard housing colors (track auto-inherits from housing color)
+const SCREEN_HOUSING_COLORS = ['White', 'Black', 'Bronze', 'Silver'];
+
+// Optional configurations available for VVP / Single Horizon / Double Horizon
+const SCREEN_OPTIONAL_CONFIGS = [
+  { name: 'Corner Unit',         price: 1200, unit: 'per set'  },
+  { name: 'Custom Powder Coat',  price: 1500, unit: 'per unit' },
+];
+
+// Single Horizon View tier definitions (used by Double Horizon for lookup)
+const SINGLE_HORIZON_WIDTH_TIERS  = [72,84,96,108,120,132,144,156,168,180,192,204,216,228,240,252];
+const SINGLE_HORIZON_HEIGHT_TIERS = [84,96,108,120,132];
+
+// Vista View Plus tier definitions
+const VVP_WIDTH_TIERS  = [72,96,108,120,132,144,156,168,180,192,204,228,240,252];
+const VVP_HEIGHT_TIERS = [84,96,108,120,135];
+
+// ============================================================
 // PRODUCT DATA
 // ============================================================
 const products = [
@@ -78,34 +98,45 @@ const products = [
       18: {3:3405,4:3510,5:3615,6:3720,7:3825,8:3930,9:4035,10:4140,11:4245,12:4350,13:4455,14:4560,15:4665,16:4770,17:4875,18:4980,19:5085,20:5190,21:5295,22:5400,23:5505,24:5610,25:5715,26:5820}
     }
   },
+  // ===== VISTA VIEW PLUS RETRACTABLE SCREEN SYSTEM =====
+  // (Renamed from "Vista View Single Housing Unit")
+  // Standard line: three-component full bar, larger/fuller structure.
+  // Max size: 252" W x 135" H. Round-up tier pricing.
   {
-    name: "Vista View Single Housing Unit",
+    name: "Vista View Plus Retractable Screen System",
+    productLine: "Vista View Plus",
+    description: "Standard retractable screen system — three-component full bar, larger/fuller structure.",
     pricingModel: "matrix",
     dimensionUnit: "in",
+    widthTiers:  VVP_WIDTH_TIERS,
+    heightTiers: VVP_HEIGHT_TIERS,
+    maxWidth: 252,
+    maxHeight: 135,
+    housingColors: SCREEN_HOUSING_COLORS,
+    optionalConfigurations: SCREEN_OPTIONAL_CONFIGS,
     prices: {
-      84:  {72:2950,96:3050,108:3150,120:3250,132:3350,144:3450,156:3550,168:3650,180:4850,192:4950,204:5050,228:5150,240:5250,252:5350,264:5450,276:5550},
-      96:  {72:3050,96:3150,108:3250,120:3350,132:3450,144:3550,156:3650,168:3750,180:4950,192:5050,204:5150,228:5250,240:5350,252:5450,264:5550,276:5650},
-      108: {72:3150,96:3250,108:3350,120:3450,132:3550,144:3650,156:3750,168:3850,180:5050,192:5150,204:5250,228:5350,240:5450,252:5550,264:5650,276:5750},
-      120: {72:3250,96:3350,108:3450,120:3550,132:3650,144:3750,156:3850,168:3950,180:5150,192:5250,204:5350,228:5450,240:5550,252:5650,264:5750,276:5850},
-      135: {72:3350,96:3450,108:3550,120:3650,132:3750,144:3850,156:3950,168:4050,180:5250,192:5350,204:5450,228:5550,240:5650,252:5750,264:5850,276:5950}
+      84:  {72:2950,96:3050,108:3150,120:3250,132:3350,144:3450,156:3550,168:3650,180:4850,192:4950,204:5050,228:5150,240:5250,252:5350},
+      96:  {72:3050,96:3150,108:3250,120:3350,132:3450,144:3550,156:3650,168:3750,180:4950,192:5050,204:5150,228:5250,240:5350,252:5450},
+      108: {72:3150,96:3250,108:3350,120:3450,132:3550,144:3650,156:3750,168:3850,180:5050,192:5150,204:5250,228:5350,240:5450,252:5550},
+      120: {72:3250,96:3350,108:3450,120:3550,132:3650,144:3750,156:3850,168:3950,180:5150,192:5250,204:5350,228:5450,240:5550,252:5650},
+      135: {72:3350,96:3450,108:3550,120:3650,132:3750,144:3850,156:3950,168:4050,180:5250,192:5350,204:5450,228:5550,240:5650,252:5750}
     }
   },
-  {
-    name: "Vista View Double Housing Units",
-    pricingModel: "matrix",
-    dimensionUnit: "in",
-    prices: {
-      84:  {192:5350,216:5450,240:5550,264:5650,288:5750,312:5850,336:5950},
-      96:  {192:5450,216:5550,240:5650,264:5750,288:5850,312:5950,336:6050},
-      108: {192:5550,216:5650,240:5750,264:5850,288:5950,312:6050,336:6150},
-      120: {192:5650,216:5750,240:5850,264:5950,288:6050,312:6150,336:6250},
-      135: {192:5750,216:5850,240:5950,264:6050,288:6150,312:6250,336:6350}
-    }
-  },
+  // ===== SINGLE HORIZON VIEW RETRACTABLE SCREENS =====
+  // Premium line: one-component full bar, lower-profile threshold.
+  // Max size: 252" W x 132" H. Round-up tier pricing.
   {
     name: "Single Horizon View Retractable Screens",
+    productLine: "Horizon View",
+    description: "Premium retractable screen — one-component full bar, lower-profile threshold.",
     pricingModel: "matrix",
     dimensionUnit: "in",
+    widthTiers:  SINGLE_HORIZON_WIDTH_TIERS,
+    heightTiers: SINGLE_HORIZON_HEIGHT_TIERS,
+    maxWidth: 252,
+    maxHeight: 132,
+    housingColors: SCREEN_HOUSING_COLORS,
+    optionalConfigurations: SCREEN_OPTIONAL_CONFIGS,
     prices: {
       84:  {72:4250,84:4350,96:4450,108:4550,120:4650,132:4750,144:4850,156:4950,168:5050,180:5150,192:5500,204:5750,216:5900,228:6050,240:6200,252:6350},
       96:  {72:4500,84:4600,96:4700,108:4800,120:4900,132:5000,144:5100,156:5200,168:5300,180:5400,192:5750,204:5900,216:6150,228:6250,240:6450,252:6500},
@@ -114,19 +145,39 @@ const products = [
       132: {72:5250,84:5350,96:5450,108:5550,120:5650,132:5750,144:5850,156:5950,168:6050,180:6150,192:6500,204:6700,216:6900,228:7100,240:7300,252:7500}
     }
   },
+  // ===== DOUBLE HORIZON VIEW RETRACTABLE SCREENS =====
+  // NOT an independent pricing table — dynamically derived from Single Horizon.
+  // Formula: (Single Horizon Price × 2) − 600
+  // Width: divide by 2, round UP to nearest Single Horizon width tier.
+  // Max size: 504" W x 132" H.
   {
-  name: "Clearview Retractable Screen Doors",
-  pricingModel: "matrix",
-  dimensionUnit: "in",
-  prices: {
-    48:  {98: 695},
-    55:  {120: 895},
-    60:  {98: 545},
-    68:  {98: 895,  120: 1295},
-    96:  {98: 1390},
-    136: {98: 1695, 120: 2095}
-  }
-},
+    name: "Double Horizon View Retractable Screens",
+    productLine: "Horizon View",
+    description: "Wide-opening premium retractable screen. Dynamically priced from Single Horizon View.",
+    pricingModel: "dynamic_double_horizon",
+    dimensionUnit: "in",
+    sourceProduct: "Single Horizon View Retractable Screens",
+    formula: { multiplier: 2, deduction: 600 },
+    widthIncrement: 12,   // generated in 12" increments
+    maxWidth: 504,
+    maxHeight: 132,
+    heightTiers: SINGLE_HORIZON_HEIGHT_TIERS,
+    housingColors: SCREEN_HOUSING_COLORS,
+    optionalConfigurations: SCREEN_OPTIONAL_CONFIGS,
+  },
+  {
+    name: "Clearview Retractable Screen Doors",
+    pricingModel: "matrix",
+    dimensionUnit: "in",
+    prices: {
+      48:  {98: 695},
+      55:  {120: 895},
+      60:  {98: 545},
+      68:  {98: 895,  120: 1295},
+      96:  {98: 1390},
+      136: {98: 1695, 120: 2095}
+    }
+  },
   {
     name: "Duralum Solid Patio Cover",
     pricingModel: "tier_per_sqft",
@@ -162,18 +213,17 @@ const products = [
       {minSqft:43, maxSqft:60, rate:125}
     ]
   },
-  // ── CHANGE 1: Skyline MRA — combined Motor A + Motor B QIP Square Box ──
-  // Pricing is the full merged table (Motor A rows 7–12, Motor B rows 13–20)
+  // ── Skyline MRA — combined Motor A + Motor B QIP Square Box ──
   {
     name: "Skyline Motorized Retractable Awning",
-    pricingModel: "mra_configured",  // handled in ProductSummary like MPS
+    pricingModel: "mra_configured",
   },
-  // ── CHANGE 2: Open Roll MRA — combined Motor A + Motor B Open Roll ──
+  // ── Open Roll MRA — combined Motor A + Motor B Open Roll ──
   {
     name: "Open Roll Motorized Retractable Awning",
-    pricingModel: "mra_configured",  // handled in ProductSummary like MPS
+    pricingModel: "mra_configured",
   },
-  // Keep Skylight Plus MRA (Motor B Retractable Awning) as before
+  // Skylight Plus MRA (Motor B Retractable Awning)
   {
     name: "Skyline Plus MRA",
     pricingModel: "mra_configured",
@@ -187,11 +237,13 @@ const productCatalog = {
   ],
   "Retractable Screens/MPS": [
     "Motorized Power Screen 5in Cassette","Motorized Power Screen 6in Cassette",
-    "Motorized Power Screen open roll","Vista View Single Housing Unit","Vista View Double Housing Units",
-    "Single Horizon View Retractable Screens","Clearview Retractable Screen Doors",
+    "Motorized Power Screen open roll",
+    "Vista View Plus Retractable Screen System",          // RENAMED from "Vista View Single Housing Unit"
+    "Single Horizon View Retractable Screens",
+    "Double Horizon View Retractable Screens",            // NEW (replaces "Vista View Double Housing Units")
+    "Clearview Retractable Screen Doors",
   ],
   "Retractable Awnings": [
-    // CHANGE 1 & 2: Replaced separate Motor A/B products with unified products
     "Skyline Plus MRA",
     "Skyline Motorized Retractable Awning",
     "Open Roll Motorized Retractable Awning",
@@ -206,8 +258,7 @@ const MPS_PRODUCTS = [
   "Clearview Retractable Screen Doors",
 ];
 
-// ── Awning products that are fully configured in ProductSummary (like MPS — no width/height on intake) ──
-// CHANGE 3: Skyline MRA and Open Roll MRA skip width/projection on intake form
+// ── Awning products that are fully configured in ProductSummary ──
 const MRA_CONFIGURED_PRODUCTS = [
   "Skyline Plus MRA",
   "Skyline Motorized Retractable Awning",
@@ -264,6 +315,21 @@ function toFeetNumber(value) {
   return n > 30 ? n / 12 : n;
 }
 
+// ─── Round-up to the next tier in a sorted tier array. ───
+// Examples (Single Horizon widths):
+//   roundUpToTier(101, [...,96,108,...]) → 108
+//   roundUpToTier(181, [...,180,192,...]) → 192
+//   roundUpToTier(120, [...,108,120,...]) → 120  (exact match stays)
+// Returns null if value exceeds the maximum tier.
+function roundUpToTier(value, tiers) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0 || !Array.isArray(tiers) || !tiers.length) return null;
+  for (const t of tiers) {
+    if (n <= t) return t;
+  }
+  return null; // exceeds max
+}
+
 function findProduct(productName) {
   return products.find(p => p.name === productName) || null;
 }
@@ -272,6 +338,17 @@ function getTierRate(tiers, sqft) {
   if (!Array.isArray(tiers)) return null;
   const t = tiers.find(x => sqft >= x.minSqft && sqft <= x.maxSqft);
   return t ? t.rate : null;
+}
+
+// ─── Validate dimensions against product max size ───
+function validateMaxSize(p, widthVal, heightVal) {
+  if (p.maxWidth && widthVal > p.maxWidth) {
+    return { ok: false, message: `Width ${widthVal}" exceeds maximum ${p.maxWidth}" for ${p.name}.` };
+  }
+  if (p.maxHeight && heightVal > p.maxHeight) {
+    return { ok: false, message: `Height ${heightVal}" exceeds maximum ${p.maxHeight}" for ${p.name}.` };
+  }
+  return { ok: true };
 }
 
 function getBasePriceUnified(line) {
@@ -283,25 +360,89 @@ function getBasePriceUnified(line) {
     return {ok:true, price:0, message:"Configured in Product Summary screen."};
   }
 
+  // ─── DYNAMIC DOUBLE HORIZON PRICING ───
+  // Pulls Single Horizon price using (width ÷ 2 rounded up to tier) × (height rounded up).
+  // Final price = (Single Horizon price × 2) − 600.
+  if (p.pricingModel === "dynamic_double_horizon") {
+    const widthVal  = parseInt(line.width, 10);
+    const heightVal = parseInt(line.height, 10);
+    if (!widthVal || !heightVal || isNaN(widthVal) || isNaN(heightVal)) {
+      return {ok:false, price:0, message:"Enter valid width and height in inches."};
+    }
+    const maxCheck = validateMaxSize(p, widthVal, heightVal);
+    if (!maxCheck.ok) return {ok:false, price:0, message: maxCheck.message};
+
+    const source = findProduct(p.sourceProduct);
+    if (!source || !source.prices) {
+      return {ok:false, price:0, message:`Source product "${p.sourceProduct}" not found.`};
+    }
+
+    const halfWidth = widthVal / 2;
+    const widthKey  = roundUpToTier(halfWidth, source.widthTiers);
+    const heightKey = roundUpToTier(heightVal,  source.heightTiers);
+
+    if (!widthKey) {
+      return {ok:false, price:0, message:`Half-width ${halfWidth}" exceeds Single Horizon max ${source.maxWidth}".`};
+    }
+    if (!heightKey) {
+      return {ok:false, price:0, message:`Height ${heightVal}" exceeds Single Horizon max height tier.`};
+    }
+    const singlePrice = source.prices?.[heightKey]?.[widthKey];
+    if (singlePrice == null) {
+      return {ok:false, price:0, message:`No Single Horizon price at width=${widthKey}", height=${heightKey}".`};
+    }
+    const doublePrice = (singlePrice * p.formula.multiplier) - p.formula.deduction;
+    return {
+      ok: true,
+      price: Number(doublePrice),
+      message: `Double Horizon: (Single ${widthKey}"×${heightKey}" $${singlePrice} × 2) − $${p.formula.deduction} = $${doublePrice} [width ${widthVal}÷2=${halfWidth}→${widthKey} tier, height ${heightVal}→${heightKey} tier]`
+    };
+  }
+
   if (p.pricingModel === "matrix") {
     let widthKey, projectionKey, unitLabel;
+
     if (p.dimensionUnit === "in") {
-      widthKey = parseInt(line.width, 10);
-      projectionKey = parseInt(line.height, 10);
-      unitLabel = "in";
-      if (!widthKey || !projectionKey || isNaN(widthKey) || isNaN(projectionKey))
+      const widthVal  = parseInt(line.width, 10);
+      const heightVal = parseInt(line.height, 10);
+      if (!widthVal || !heightVal || isNaN(widthVal) || isNaN(heightVal)) {
         return {ok:false, price:0, message:"Enter valid width and height in inches (e.g. 96 and 84)."};
+      }
+
+      // Max-size validation (blocks quote if exceeded)
+      const maxCheck = validateMaxSize(p, widthVal, heightVal);
+      if (!maxCheck.ok) return {ok:false, price:0, message: maxCheck.message};
+
+      // Round-up to tier if tier arrays defined; otherwise fall back to exact lookup.
+      if (Array.isArray(p.widthTiers) && Array.isArray(p.heightTiers)) {
+        widthKey      = roundUpToTier(widthVal,  p.widthTiers);
+        projectionKey = roundUpToTier(heightVal, p.heightTiers);
+        if (!widthKey || !projectionKey) {
+          return {ok:false, price:0, message:`Dimensions exceed pricing tiers for ${p.name}.`};
+        }
+      } else {
+        widthKey      = widthVal;
+        projectionKey = heightVal;
+      }
+      unitLabel = "in";
     } else {
-      widthKey = toFeetKey(line.width);
+      widthKey      = toFeetKey(line.width);
       projectionKey = toFeetKey(line.height);
       unitLabel = "ft";
-      if (!widthKey || !projectionKey)
+      if (!widthKey || !projectionKey) {
         return {ok:false, price:0, message:"Enter valid width and projection."};
+      }
     }
+
     const base = p?.prices?.[projectionKey]?.[widthKey] ?? null;
-    if (base == null)
+    if (base == null) {
       return {ok:false, price:0, message:`No matrix price for Width=${widthKey}${unitLabel}, Height=${projectionKey}${unitLabel}.`};
-    return {ok:true, price:Number(base), message:`Matrix price: $${base} (Width=${widthKey}${unitLabel}, Height=${projectionKey}${unitLabel})`};
+    }
+    return {
+      ok: true,
+      price: Number(base),
+      message: `Matrix price: $${base} (Width=${widthKey}${unitLabel}, Height=${projectionKey}${unitLabel}, rounded up to tier)`
+    };
   }
 
   if (p.pricingModel === "tier_per_sqft") {
@@ -340,11 +481,27 @@ function calcLineTotal(line) {
   if (SUMMARY_CONFIGURED_PRODUCTS.includes(line.product)) return 0;
   const base = getBasePriceUnified(line);
   if (!base.ok) return 0;
-  let total = base.price * (parseInt(line.quantity, 10) || 1);
-  if (line.operation === 'motorized') total += 250 * (parseInt(line.quantity, 10) || 1);
+
+  const qty = parseInt(line.quantity, 10) || 1;
+  let total = base.price * qty;
+
+  if (line.operation === 'motorized') total += 250 * qty;
+
+  // Generic add-ons (global)
   line.addons.forEach((checked, idx) => {
-    if (checked) total += addOns[idx].price * (parseInt(line.quantity, 10) || 1);
+    if (checked) total += addOns[idx].price * qty;
   });
+
+  // Product-specific optional configurations (Corner Unit / Custom Powder Coat for VVP & Horizon)
+  const p = findProduct(line.product);
+  if (p?.optionalConfigurations && line.optionalConfigs) {
+    p.optionalConfigurations.forEach(opt => {
+      if (line.optionalConfigs[opt.name]) {
+        total += opt.price * qty;
+      }
+    });
+  }
+
   return total;
 }
 
@@ -375,6 +532,16 @@ function ProductLine({ line, lineNumber, onUpdate, onRemove, showRemove }) {
 
   const widthLabel  = p?.pricingModel === 'matrix_axes' ? 'Width (ft)' : p?.dimensionUnit === 'in' ? 'Width (inches)' : 'Width';
   const heightLabel = p?.pricingModel === 'matrix_axes' ? "Projection (4' 11\" or inches)" : p?.dimensionUnit === 'in' ? 'Height (inches)' : 'Projection or Height';
+
+  // Helpers for product-specific options
+  const updateHousingColor = (color) => {
+    // Track color auto-inherits from housing color (per spec).
+    onUpdate({ ...line, housingColor: color, trackColor: color });
+  };
+  const toggleOptionalConfig = (name) => {
+    const current = line.optionalConfigs || {};
+    onUpdate({ ...line, optionalConfigs: { ...current, [name]: !current[name] } });
+  };
 
   return (
     <div className="product-line">
@@ -414,7 +581,7 @@ function ProductLine({ line, lineNumber, onUpdate, onRemove, showRemove }) {
         </div>
       </div>
 
-      {/* CHANGE 3: Show "configured on next screen" notice for all summary-configured products */}
+      {/* "Configured on next screen" notice for MPS/MRA */}
       {isSummaryConfigure && (
         <div className="alert alert-info mps-intake-notice">
           <span>ℹ️</span>
@@ -465,6 +632,58 @@ function ProductLine({ line, lineNumber, onUpdate, onRemove, showRemove }) {
             </div>
           </div>
 
+          {/* Max-size hint for VVP / Horizon products */}
+          {(p?.maxWidth || p?.maxHeight) && (
+            <div className="price-hint" style={{ marginTop: '-8px', marginBottom: '12px' }}>
+              📏 Max size: {p.maxWidth}" W × {p.maxHeight}" H
+              {p.pricingModel === 'dynamic_double_horizon' && p.widthIncrement && (
+                <> · Widths typically specified in {p.widthIncrement}" increments</>
+              )}
+            </div>
+          )}
+
+          {/* ── Housing color (auto-inherits to track) — for VVP / Horizon screen systems ── */}
+          {Array.isArray(p?.housingColors) && p.housingColors.length > 0 && (
+            <div className="grid-2">
+              <div className="form-group">
+                <label>Housing Color</label>
+                <select
+                  value={line.housingColor || ''}
+                  onChange={e => updateHousingColor(e.target.value)}
+                >
+                  <option value="">Select Housing Color</option>
+                  {p.housingColors.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                {line.housingColor && (
+                  <div className="price-hint" style={{ marginTop: '4px' }}>
+                    🎨 Top track auto-set to: <strong>{line.housingColor}</strong>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── Optional configurations — Corner Unit, Custom Powder Coat ── */}
+          {Array.isArray(p?.optionalConfigurations) && p.optionalConfigurations.length > 0 && (
+            <div className="form-group">
+              <label>Optional Configurations</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
+                {p.optionalConfigurations.map(opt => (
+                  <label key={opt.name} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'normal' }}>
+                    <input
+                      type="checkbox"
+                      checked={!!(line.optionalConfigs && line.optionalConfigs[opt.name])}
+                      onChange={() => toggleOptionalConfig(opt.name)}
+                    />
+                    <span>{opt.name} — <strong>${opt.price.toLocaleString()}</strong> {opt.unit}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="grid-2">
             <div className="form-group">
               <label>Product Notes</label>
@@ -509,19 +728,23 @@ let idCounter = 1;
 function createEmptyLine() {
   return {
     id: idCounter++,
-    category:   '',
-    product:    '',
-    width:      '',
-    height:     '',
-    sqft:       '',
-    quantity:   1,
-    mount:      '',
-    fabric:     '',
-    color:      '',
-    operation:  'manual',
-    addons:     addOns.map(() => false),
-    notes:      '',
-    photoCount: 0,
+    category:        '',
+    product:         '',
+    width:           '',
+    height:          '',
+    sqft:            '',
+    quantity:        1,
+    mount:           '',
+    fabric:          '',
+    color:           '',
+    operation:       'manual',
+    addons:          addOns.map(() => false),
+    notes:           '',
+    photoCount:      0,
+    // VVP / Horizon screen-specific fields
+    housingColor:    '',
+    trackColor:      '',   // auto-set from housingColor (display only)
+    optionalConfigs: {},   // { 'Corner Unit': bool, 'Custom Powder Coat': bool }
   };
 }
 
@@ -543,9 +766,17 @@ function loadInitialState() {
       const maxId = parsed.productLines?.reduce((m, l) => Math.max(m, l.id || 0), 0) || 0;
       if (maxId >= idCounter) idCounter = maxId + 1;
       if (!parsed.customer.installationDate) parsed.customer.installationDate = '';
+      // Migrate older saved lines that lack the new VVP/Horizon fields
+      const migratedLines = (parsed.productLines?.length ? parsed.productLines : [createEmptyLine()])
+        .map(l => ({
+          housingColor:    '',
+          trackColor:      '',
+          optionalConfigs: {},
+          ...l,
+        }));
       return {
         customer: parsed.customer || { name:'', email:'', phone:'', address:'', installationDate:'' },
-        productLines: parsed.productLines?.length ? parsed.productLines : [createEmptyLine()],
+        productLines: migratedLines,
         discount: parsed.discount || { percent:0, managerName:'', managerEmail:'', approvalCode:'' },
         createdAt: parsed.createdAt || new Date().toISOString(),
         lastUpdated: parsed.lastUpdated || new Date().toISOString(),
@@ -589,7 +820,13 @@ export default function App() {
         const priceResult = (line.category && line.product && !isSummaryConfigure) ? getBasePriceUnified(line) : null;
         return {
           ...line,
-          productMeta: { pricingModel: p?.pricingModel || null, dimensionUnit: p?.dimensionUnit || 'ft' },
+          productMeta: {
+            pricingModel:   p?.pricingModel  || null,
+            dimensionUnit:  p?.dimensionUnit || 'ft',
+            productLine:    p?.productLine   || null,
+            maxWidth:       p?.maxWidth      || null,
+            maxHeight:      p?.maxHeight     || null,
+          },
           pricing: {
             basePrice:    priceResult?.ok ? priceResult.price : 0,
             priceNote:    priceResult?.message || (isSummaryConfigure ? 'Priced on Product Summary screen' : ''),
@@ -609,6 +846,22 @@ export default function App() {
     if (productLines.length === 0) {
       alert('Please add at least one product.'); return false;
     }
+
+    // Check for any over-max-size lines first (clear, actionable error)
+    for (const line of productLines) {
+      if (!line.category || !line.product) continue;
+      if (SUMMARY_CONFIGURED_PRODUCTS.includes(line.product)) continue;
+      const result = getBasePriceUnified(line);
+      const p = findProduct(line.product);
+      if (!result.ok && p && (p.maxWidth || p.maxHeight)) {
+        // If this line specifically failed due to max size, surface the message
+        if (/exceeds maximum/i.test(result.message)) {
+          alert(`Cannot generate quote: ${result.message}\n\nPlease adjust dimensions or contact admin for override.`);
+          return false;
+        }
+      }
+    }
+
     const hasValid = productLines.some(line => {
       if (!line.category || !line.product) return false;
       if (SUMMARY_CONFIGURED_PRODUCTS.includes(line.product)) return true;
