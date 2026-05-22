@@ -163,7 +163,7 @@ const CV_MAX_W_SOD       = 68;
 const CV_MAX_W_DOUBLE    = 144;
 const CV_MAX_W_WINDOW    = 60;
 const CV_PET_MESH_MAX_SINGLE = 42;
-const CV_PET_MESH_MAX_DOUBLE = 84;
+const CV_PET_MESH_MAX_DOUBLE = 80;
 
 function isDoubleVariant(variantId) {
   return typeof variantId === "string" && variantId.startsWith("double_");
@@ -210,14 +210,46 @@ function calcClearviewOpeningBasePrice(opening) {
   if (!w || !h) return { ok: false, price: 0, label: "", message: "Enter valid width and height (inches)." };
   if (h > CV_MAX_HEIGHT) return { ok: false, price: 0, label: "", message: `Height ${h}" exceeds ${CV_MAX_HEIGHT}" — Custom Quote Required.` };
 
-  // Window / Dutch flow unchanged
+  // Window / Dutch flow
   if (opening.installType === "Window/Dutch") {
     const dir  = opening.slideDirection || "Horizontal";
     const effW = dir === "Vertical" ? h : w;
-    if (effW > CV_MAX_W_WINDOW) {
-      return { ok: false, price: 0, label: "", message: `Effective width ${effW}" exceeds ${CV_MAX_W_WINDOW}" max for Window — Custom Quote Required.` };
+
+    // Standard Dutch Door limits: max 55" wide, max 60" tall
+    const dutchMaxW = 55;
+    const dutchMaxH = 60;
+
+    if (effW <= dutchMaxW && h <= dutchMaxH) {
+      // Standard Dutch Door / Window pricing
+      return { ok: true, price: 545, label: `ClearView – Window/Dutch (${dir})`, message: `Window/Dutch (${dir}): $545 flat` };
     }
-    return { ok: true, price: 545, label: `ClearView – Window (${dir})`, message: `Window/Dutch (${dir}): $545 flat` };
+
+    // Exceeds Dutch Door limits — fall through to Single Door pricing logic
+    // Check Single Door max width
+    if (effW > CV_MAX_W_SINGLE) {
+      return { ok: false, price: 0, label: "", message: `Effective width ${effW}" exceeds ${CV_MAX_W_SINGLE}" max for Single Door — Custom Quote Required.` };
+    }
+
+    // Find matching single door variant
+    const singleVariants = CV_DOOR_VARIANTS.filter(v =>
+      v.id.startsWith("single_")
+    );
+    const matchedVariant = singleVariants.find(v => {
+      const wOk = (v.minWidth === 0 ? effW > 0 : effW > v.minWidth) && effW <= v.maxWidth;
+      const hOk = (v.minHeight === 0 ? h > 0 : h > v.minHeight) && h <= v.maxHeight;
+      return wOk && hOk;
+    });
+
+    if (!matchedVariant) {
+      return { ok: false, price: 0, label: "", message: `Dimensions ${effW}"×${h}" exceed Dutch Door limits — no matching Single Door variant found. Custom Quote Required.` };
+    }
+
+    return {
+      ok: true,
+      price: matchedVariant.price,
+      label: `ClearView – Window/Dutch (${dir}) → Single Door Pricing`,
+      message: `Exceeds Dutch Door limits (${dutchMaxW}"W / ${dutchMaxH}"H) — using Single Door pricing: ${matchedVariant.short}`,
+    };
   }
 
   const variantId = opening.doorVariant;
@@ -2299,17 +2331,22 @@ function ClearviewOpeningEditor({ opening, index, onChange, onRemove, showRemove
       )}
 
       {/* PRICE BADGE */}
-      {(totalW > 0 || totalH > 0) && (
-        <div className={`opening-price-badge ${baseResult.ok ? "opening-price-badge--ok" : "opening-price-badge--error"}`}>
-          {baseResult.ok ? (
-            <>
-              <span className="opening-price-badge__label">{baseResult.label}:</span>
-              <span className="opening-price-badge__value">{fmt(baseResult.price)}</span>
-              <span className="opening-price-badge__hint">({baseResult.message})</span>
-            </>
-          ) : <span>⚠ {baseResult.message}</span>}
-        </div>
-      )}
+{(totalW > 0 || totalH > 0) && (
+  <div className={`opening-price-badge ${baseResult.ok ? "opening-price-badge--ok" : "opening-price-badge--error"}`}>
+    {baseResult.ok ? (
+      <>
+        <span className="opening-price-badge__label">{baseResult.label}:</span>
+        <span className="opening-price-badge__value">{fmt(baseResult.price)}</span>
+        <span className="opening-price-badge__hint">({baseResult.message})</span>
+        {isWindow && baseResult.label.includes("Single Door Pricing") && (
+          <div style={{ marginTop: 6, fontSize: "0.82em", color: "var(--ps-warn, #e67e22)", fontWeight: 500 }}>
+            ⚠ Dimensions exceed Dutch Door/Window standard limits (55"W / 60"H) — Single Door pricing applied automatically.
+          </div>
+        )}
+      </>
+    ) : <span>⚠ {baseResult.message}</span>}
+  </div>
+)}
 
       {/* ── REQUIRED CONFIG ── */}
       <details className="override-details" open>
