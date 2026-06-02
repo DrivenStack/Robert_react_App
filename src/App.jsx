@@ -265,8 +265,18 @@ const MRA_CONFIGURED_PRODUCTS = [
   "Open Roll Motorized Retractable Awning",
 ];
 
+const SCREEN_SYSTEM_PRODUCTS = [
+  "Vista View Plus Retractable Screen System",
+  "Single Horizon View Retractable Screens",
+  "Double Horizon View Retractable Screens",
+];
+
 // Combined: all products that skip width/height on intake form
-const SUMMARY_CONFIGURED_PRODUCTS = [...MPS_PRODUCTS, ...MRA_CONFIGURED_PRODUCTS];
+const SUMMARY_CONFIGURED_PRODUCTS = [
+  ...MPS_PRODUCTS,
+  ...MRA_CONFIGURED_PRODUCTS,
+  ...SCREEN_SYSTEM_PRODUCTS,
+];
 
 const mountTypes = ['Inside Mount','Outside Mount','Ceiling Mount','Wall Mount'];
 const fabrics = ['Light Filtering','Room Darkening','Blackout','Sheer','Solar Screen','Canvas','Wood','Faux Wood'];

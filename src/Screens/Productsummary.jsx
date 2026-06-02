@@ -85,6 +85,99 @@ const AWNING_MOTOR_550 = {
 };
 
 
+const SINGLE_HORIZON_WIDTH_TIERS  = [72,84,96,108,120,132,144,156,168,180,192,204,216,228,240,252];
+const SINGLE_HORIZON_HEIGHT_TIERS = [84,96,108,120,132];
+const VVP_WIDTH_TIERS  = [72,96,108,120,132,144,156,168,180,192,204,228,240,252];
+const VVP_HEIGHT_TIERS = [84,96,108,120,135];
+
+const SCREEN_HOUSING_COLORS = ['White','Black','Bronze','Silver'];
+const SCREEN_OPTIONAL_CONFIGS = [
+  { name: 'Corner Unit',        price: 1200, unit: 'per set'  },
+  { name: 'Custom Powder Coat', price: 1500, unit: 'per unit' },
+];
+
+const VVP_PRICES = {
+  84:  {72:2950,96:3050,108:3150,120:3250,132:3350,144:3450,156:3550,168:3650,180:4850,192:4950,204:5050,228:5150,240:5250,252:5350},
+  96:  {72:3050,96:3150,108:3250,120:3350,132:3450,144:3550,156:3650,168:3750,180:4950,192:5050,204:5150,228:5250,240:5350,252:5450},
+  108: {72:3150,96:3250,108:3350,120:3450,132:3550,144:3650,156:3750,168:3850,180:5050,192:5150,204:5250,228:5350,240:5450,252:5550},
+  120: {72:3250,96:3350,108:3450,120:3550,132:3650,144:3750,156:3850,168:3950,180:5150,192:5250,204:5350,228:5450,240:5550,252:5650},
+  135: {72:3350,96:3450,108:3550,120:3650,132:3750,144:3850,156:3950,168:4050,180:5250,192:5350,204:5450,228:5550,240:5650,252:5750}
+};
+
+const SINGLE_HORIZON_PRICES = {
+  84:  {72:4250,84:4350,96:4450,108:4550,120:4650,132:4750,144:4850,156:4950,168:5050,180:5150,192:5500,204:5750,216:5900,228:6050,240:6200,252:6350},
+  96:  {72:4500,84:4600,96:4700,108:4800,120:4900,132:5000,144:5100,156:5200,168:5300,180:5400,192:5750,204:5900,216:6150,228:6250,240:6450,252:6500},
+  108: {72:4750,84:4850,96:4950,108:5050,120:5150,132:5250,144:5350,156:5450,168:5550,180:5650,192:6000,204:6250,216:6400,228:6550,240:6650,252:6850},
+  120: {72:5000,84:5100,96:5200,108:5300,120:5400,132:5500,144:5600,156:5700,168:5800,180:5900,192:6250,204:6450,216:6650,228:6850,240:7000,252:7200},
+  132: {72:5250,84:5350,96:5450,108:5550,120:5650,132:5750,144:5850,156:5950,168:6050,180:6150,192:6500,204:6700,216:6900,228:7100,240:7300,252:7500}
+};
+
+
+const SCREEN_PRODUCT_CONFIG = {
+  "Vista View Plus Retractable Screen System": {
+    pricingModel: "matrix", widthTiers: VVP_WIDTH_TIERS, heightTiers: VVP_HEIGHT_TIERS,
+    maxWidth: 252, maxHeight: 135, prices: VVP_PRICES,
+  },
+  "Single Horizon View Retractable Screens": {
+    pricingModel: "matrix", widthTiers: SINGLE_HORIZON_WIDTH_TIERS, heightTiers: SINGLE_HORIZON_HEIGHT_TIERS,
+    maxWidth: 252, maxHeight: 132, prices: SINGLE_HORIZON_PRICES,
+  },
+  "Double Horizon View Retractable Screens": {
+    pricingModel: "dynamic_double_horizon",
+    sourceProduct: "Single Horizon View Retractable Screens",
+    formula: { multiplier: 2, deduction: 600 },
+    maxWidth: 504, maxHeight: 132,
+  },
+};
+
+function getScreenSystemPrice(productName, widthIn, heightIn) {
+  const cfg = SCREEN_PRODUCT_CONFIG[productName];
+  if (!cfg) return { ok:false, price:0, message:"Unknown screen product." };
+  const w = parseInt(widthIn,10), h = parseInt(heightIn,10);
+  if (!w || !h || isNaN(w) || isNaN(h)) return { ok:false, price:0, message:"Enter valid width & height (inches)." };
+  if (cfg.maxWidth  && w > cfg.maxWidth)  return { ok:false, price:0, message:`Width ${w}" exceeds max ${cfg.maxWidth}".` };
+  if (cfg.maxHeight && h > cfg.maxHeight) return { ok:false, price:0, message:`Height ${h}" exceeds max ${cfg.maxHeight}".` };
+
+  if (cfg.pricingModel === "dynamic_double_horizon") {
+    const src  = SCREEN_PRODUCT_CONFIG[cfg.sourceProduct];
+    const wKey = roundUpToTier(w / 2, src.widthTiers);
+    const hKey = roundUpToTier(h, src.heightTiers);
+    if (!wKey) return { ok:false, price:0, message:`Half-width ${w/2}" exceeds Single Horizon max.` };
+    if (!hKey) return { ok:false, price:0, message:`Height ${h}" exceeds tier.` };
+    const single = src.prices?.[hKey]?.[wKey];
+    if (single == null) return { ok:false, price:0, message:`No Single Horizon price at ${wKey}×${hKey}.` };
+    const dbl = single * cfg.formula.multiplier - cfg.formula.deduction;
+    return { ok:true, price:Number(dbl),
+      message:`Double Horizon: (Single ${wKey}"×${hKey}" ${fmt(single)} ×2) − ${fmt(cfg.formula.deduction)}` };
+  }
+
+  const wKey = roundUpToTier(w, cfg.widthTiers);
+  const hKey = roundUpToTier(h, cfg.heightTiers);
+  if (!wKey || !hKey) return { ok:false, price:0, message:"Dimensions exceed pricing tiers." };
+  const base = cfg.prices?.[hKey]?.[wKey];
+  if (base == null) return { ok:false, price:0, message:`No price at W=${wKey}", H=${hKey}".` };
+  return { ok:true, price:Number(base), message:`Matrix price: ${fmt(base)} (W=${wKey}", H=${hKey}", rounded up)` };
+}
+
+function calcScreenLineTotal(productName, cfg = {}) {
+  const base = getScreenSystemPrice(productName, cfg.width, cfg.height);
+  if (!base.ok) return 0;
+  const qty = parseInt(cfg.quantity,10) || 1;
+  let total = base.price * qty;
+  SCREEN_OPTIONAL_CONFIGS.forEach(opt => { if (cfg.optionalConfigs?.[opt.name]) total += opt.price * qty; });
+  return total;
+}
+
+function createScreenConfig() {
+  return { width:"", height:"", quantity:1, housingColor:"", trackColor:"", optionalConfigs:{} };
+}
+
+function roundUpToTier(value, tiers) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0 || !Array.isArray(tiers) || !tiers.length) return null;
+  for (const t of tiers) if (n <= t) return t;
+  return null;
+}
 
 // ─────────────────────────────────────────────────────────────
 // CLEARVIEW RETRACTABLE SCREEN DOORS
@@ -327,169 +420,123 @@ function getAwningMotor(productName, widthFtKey) {
 
 function ScreenSystemCard({
   line, index, snapshot,
+  screenData, onScreenChange,
   productNotes, onProductNoteChange,
   isExpanded, onToggleExpand,
 }) {
-  const enriched  = snapshot.productLines.find(l => l.id === line.id);
-  const baseTotal = enriched?.pricing?.lineSubtotal || 0;
-  const basePrice = enriched?.pricing?.basePrice    || 0;
-  const priceNote = enriched?.pricing?.priceNote    || "";
-  const meta      = enriched?.productMeta           || {};
-  const qty       = parseInt(line.quantity, 10) || 1;
+  const meta = snapshot.productLines.find(l => l.id === line.id)?.productMeta || {};
+  const cfg  = screenData[line.id] || createScreenConfig();
+  const setCfg = (updates) => onScreenChange(line.id, { ...cfg, ...updates });
 
-  // Filter optionalConfigs to only those checked
-  const selectedOptKeys = Object.keys(line.optionalConfigs || {})
-    .filter(k => line.optionalConfigs[k]);
+  const productCfg  = SCREEN_PRODUCT_CONFIG[line.product] || {};
+  const qty         = parseInt(cfg.quantity, 10) || 1;
+  const priceResult = getScreenSystemPrice(line.product, cfg.width, cfg.height);
+  const lineTotal   = calcScreenLineTotal(line.product, cfg);
 
-  // Sum of opt configs (qty-aware) — for the breakdown line
-  const optConfigsTotal = selectedOptKeys.reduce((sum, name) => {
-    const info = SCREEN_OPTIONAL_CONFIG_PRICES[name];
-    return info ? sum + info.price * qty : sum;
-  }, 0);
+  const optConfigsTotal = SCREEN_OPTIONAL_CONFIGS.reduce(
+    (s, opt) => cfg.optionalConfigs?.[opt.name] ? s + opt.price * qty : s, 0);
+
+  const updateHousingColor   = (color) => setCfg({ housingColor: color, trackColor: color });
+  const toggleOptionalConfig = (name)  =>
+    setCfg({ optionalConfigs: { ...(cfg.optionalConfigs || {}), [name]: !(cfg.optionalConfigs?.[name]) } });
 
   return (
-    <div className="ps-product-card">
-      <div
-        className="ps-product-header ps-product-header--clickable"
-        onClick={onToggleExpand}
-        style={{ cursor: "pointer", userSelect: "none" }}
-      >
+    <div className="ps-product-card mps-product-card">
+      <div className="ps-product-header ps-product-header--clickable"
+        onClick={onToggleExpand} style={{ cursor:"pointer", userSelect:"none" }}>
         <div className="ps-product-number">#{index + 1}</div>
         <div className="ps-product-name">
           {line.product}
-          {meta.productLine && (
-            <span className="skylight-mra-badge">{meta.productLine}</span>
-          )}
+          {meta.productLine && <span className="skylight-mra-badge">{meta.productLine}</span>}
         </div>
-        <div className="ps-product-price">{fmt(baseTotal)}</div>
+        <div className="ps-product-price">{fmt(lineTotal)}</div>
         <span className="ps-product-expand-icon" style={{
-          marginLeft: "12px", fontSize: "1.2em",
-          transition: "transform 0.2s",
-          transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
-        }}>▼</span>
+          marginLeft:"12px", fontSize:"1.2em", transition:"transform 0.2s",
+          transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}>▼</span>
       </div>
 
       {isExpanded && (
         <>
           <div className="ps-detail-grid">
-            <div className="ps-detail-item">
-              <span className="ps-detail-label">Category</span>
-              <span className="ps-detail-value">{line.category}</span>
+            <div className="ps-detail-item"><span className="ps-detail-label">Category</span><span className="ps-detail-value">{line.category}</span></div>
+            <div className="ps-detail-item"><span className="ps-detail-label">Product</span><span className="ps-detail-value">{line.product}</span></div>
+            {productCfg.maxWidth && (
+              <div className="ps-detail-item"><span className="ps-detail-label">Max Size</span>
+                <span className="ps-detail-value">{productCfg.maxWidth}" W × {productCfg.maxHeight}" H</span></div>
+            )}
+          </div>
+
+          <div className="skylight-config-section">
+            <div className="skylight-config-title">📐 Dimensions &amp; Configuration</div>
+            <div className="opening-grid-3">
+              <Field label="Width (inches)"  type="number" value={cfg.width}
+                onChange={v => setCfg({ width: typeof v === "object" ? v.display : v })}
+                placeholder="e.g. 120" allowFractions={false} min="0" required />
+              <Field label="Height (inches)" type="number" value={cfg.height}
+                onChange={v => setCfg({ height: typeof v === "object" ? v.display : v })}
+                placeholder="e.g. 96" allowFractions={false} min="0" required />
+              <Field label="Quantity" type="number" value={String(cfg.quantity ?? 1)}
+                onChange={v => setCfg({ quantity: parseInt(v, 10) || 1 })} min="1" allowFractions={false} />
             </div>
-            <div className="ps-detail-item">
-              <span className="ps-detail-label">Product</span>
-              <span className="ps-detail-value">{line.product}</span>
-            </div>
-            <div className="ps-detail-item">
-              <span className="ps-detail-label">Width</span>
-              <span className="ps-detail-value">{line.width ? `${line.width}"` : "—"}</span>
-            </div>
-            <div className="ps-detail-item">
-              <span className="ps-detail-label">Height</span>
-              <span className="ps-detail-value">{line.height ? `${line.height}"` : "—"}</span>
-            </div>
-            <div className="ps-detail-item">
-              <span className="ps-detail-label">Quantity</span>
-              <span className="ps-detail-value">{qty}</span>
-            </div>
-            <div className="ps-detail-item">
-              <span className="ps-detail-label">Operation</span>
-              <span className="ps-detail-value" style={{ textTransform: "capitalize" }}>
-                {line.operation}
-              </span>
-            </div>
-            {meta.maxWidth && meta.maxHeight && (
-              <div className="ps-detail-item">
-                <span className="ps-detail-label">Max Size</span>
-                <span className="ps-detail-value">
-                  {meta.maxWidth}" W × {meta.maxHeight}" H
-                </span>
+
+            {(cfg.width || cfg.height) && (
+              <div className={`opening-price-badge ${priceResult.ok ? "opening-price-badge--ok" : "opening-price-badge--error"}`}>
+                {priceResult.ok
+                  ? <><span className="opening-price-badge__label">Unit price:</span>
+                      <span className="opening-price-badge__value">{fmt(priceResult.price)}</span>
+                      <span className="opening-price-badge__hint">({priceResult.message})</span></>
+                  : <span>⚠ {priceResult.message}</span>}
               </div>
             )}
-            {line.housingColor && (
-              <div className="ps-detail-item">
-                <span className="ps-detail-label">Housing Color</span>
-                <span className="ps-detail-value">{line.housingColor}</span>
-              </div>
-            )}
-            {line.trackColor && (
-              <div className="ps-detail-item">
-                <span className="ps-detail-label">Track Color</span>
-                <span className="ps-detail-value">
-                  {line.trackColor}
-                  <span style={{ fontSize: "0.78em", opacity: 0.65, marginLeft: 6 }}>
-                    (auto-inherited)
-                  </span>
-                </span>
+
+            <div className="opening-grid-3" style={{ marginTop: 12 }}>
+              <Sel label="Housing Color" value={cfg.housingColor}
+                options={SCREEN_HOUSING_COLORS} onChange={updateHousingColor} />
+            </div>
+            {cfg.housingColor && (
+              <div className="storm-rail-badge" style={{ borderLeftColor:"var(--ps-info,#3498db)" }}>
+                🎨 Top track auto-set to: <strong>{cfg.trackColor || cfg.housingColor}</strong>
               </div>
             )}
           </div>
 
-          {priceNote && (
-            <div className="ps-price-note">💡 {priceNote}</div>
-          )}
-
-          {selectedOptKeys.length > 0 && (
-            <div className="ps-addons-section">
-              <div className="ps-addons-title">
-                <span className="ps-addons-icon">✦</span> Optional Configurations
-                {optConfigsTotal > 0 && (
-                  <span className="ps-addons-running-total">
-                    +{fmt(optConfigsTotal)} included in line total
-                  </span>
-                )}
-              </div>
-              <div className="ps-addons-grid">
-                {selectedOptKeys.map(name => {
-                  const info = SCREEN_OPTIONAL_CONFIG_PRICES[name];
-                  return (
-                    <div key={name} className="ps-addon-item ps-addon-checked">
-                      <div className="ps-addon-content">
-                        <span className="ps-addon-name">{name}</span>
-                        {info && (
-                          <span className="ps-addon-price">
-                            +{fmt(info.price)} {info.unit}
-                            {qty > 1 && (
-                              <span className="ps-addon-per-unit">
-                                {" "}× {qty} = {fmt(info.price * qty)}
-                              </span>
-                            )}
-                          </span>
-                        )}
-                      </div>
-                      <span className="ps-addon-check-mark">✓</span>
-                    </div>
-                  );
-                })}
-              </div>
+          <div className="ps-addons-section">
+            <div className="ps-addons-title">
+              <span className="ps-addons-icon">✦</span> Optional Configurations
+              {optConfigsTotal > 0 && <span className="ps-addons-running-total">+{fmt(optConfigsTotal)} selected</span>}
             </div>
-          )}
+            <div className="ps-addons-grid">
+              {SCREEN_OPTIONAL_CONFIGS.map(opt => {
+                const checked = !!cfg.optionalConfigs?.[opt.name];
+                return (
+                  <label key={opt.name} className={`ps-addon-item ${checked ? "ps-addon-checked" : ""}`}>
+                    <input type="checkbox" className="ps-addon-checkbox" checked={checked}
+                      onChange={() => toggleOptionalConfig(opt.name)} />
+                    <div className="ps-addon-content">
+                      <span className="ps-addon-name">{opt.name}</span>
+                      <span className="ps-addon-price">+{fmt(opt.price)} {opt.unit}
+                        {qty > 1 && <span className="ps-addon-per-unit"> × {qty} = {fmt(opt.price * qty)}</span>}</span>
+                    </div>
+                    {checked && <span className="ps-addon-check-mark">✓</span>}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
 
           <div className="product-note-section">
             <label className="mps-label">📝 Product Notes</label>
-            <textarea
-              className="product-note-textarea"
+            <textarea className="product-note-textarea" rows={3}
               placeholder="Add any important notes about this product…"
-              value={productNotes || ""}
-              onChange={e => onProductNoteChange(line.id, e.target.value)}
-              rows={3}
-            />
+              value={productNotes || ""} onChange={e => onProductNoteChange(line.id, e.target.value)} />
           </div>
 
-          {line.notes && (
-            <div className="ps-product-notes">
-              <span className="ps-detail-label">Notes from intake — </span>
-              {line.notes}
-            </div>
-          )}
-
           <div className="mps-line-total">
-            <span>Base Price: {fmt(basePrice)}</span>
-            {optConfigsTotal > 0 && (
-              <span>+ Optional Configurations: {fmt(optConfigsTotal)}</span>
-            )}
-            {qty > 1 && <span>× Quantity: {qty}</span>}
-            <span className="mps-line-grand">Line Total: {fmt(baseTotal)}</span>
+            {priceResult.ok
+              ? <span>Base Price: {fmt(priceResult.price)}{qty > 1 ? ` × ${qty} = ${fmt(priceResult.price * qty)}` : ""}</span>
+              : <span style={{ color:"var(--ps-warn,#e67e22)" }}>⚠ Enter valid dimensions to price</span>}
+            {optConfigsTotal > 0 && <span>+ Optional Configurations: {fmt(optConfigsTotal)}</span>}
+            <span className="mps-line-grand">Line Total: {fmt(lineTotal)}</span>
           </div>
         </>
       )}
@@ -5900,6 +5947,7 @@ export default function ProductSummary() {
   const [mpsControls,          setMpsControls]          = useState(() => loadFromSession()?.mpsControls          || {});
   const [awningControls,       setAwningControls]       = useState(() => loadFromSession()?.awningControls       || {});
   const [clearviewData,        setClearviewData]        = useState(() => loadFromSession()?.clearviewData        || {});
+  const [screenData,           setScreenData]           = useState(() => loadFromSession()?.screenData           || {});
 
   // ✅ MOVED UP — must be declared before any useEffect / handler that references it
   const [measurementMode, setMeasurementMode] = useState(
@@ -5910,11 +5958,11 @@ export default function ProductSummary() {
     saveToSession({
       addonSelections, mpsData, fieldAddonValues, productNotes, signature,
       windSensorSelections, mraConfig, mpsControls, awningControls, clearviewData,
-      measurementMode,
+      screenData, measurementMode,
     });
   }, [addonSelections, mpsData, fieldAddonValues, productNotes, signature,
       windSensorSelections, mraConfig, mpsControls, awningControls, clearviewData,
-      measurementMode]);
+      screenData, measurementMode]);
 
   const handleProductNoteChange = (lineId, note) =>
     setProductNotes(prev => ({ ...prev, [lineId]: note }));
@@ -5946,6 +5994,7 @@ export default function ProductSummary() {
   const handleClearviewChange  = (lineId, openings)   => setClearviewData(prev => ({ ...prev, [lineId]: openings }));
   const handleWindSensorChange = (lineId, selections) => setWindSensorSelections(prev => ({ ...prev, [lineId]: selections }));
   const handleMRAConfigChange  = (lineId, cfg)        => setMraConfig(prev => ({ ...prev, [lineId]: cfg }));
+  const handleScreenChange     = (lineId, cfg)        => setScreenData(prev => ({ ...prev, [lineId]: cfg }));
 
   const handleGlobalReset = () => {
     if (window.confirm("Reset ALL areas, openings, add-ons, and notes for the entire quote? This cannot be undone.")) {
@@ -5959,6 +6008,7 @@ export default function ProductSummary() {
       setMpsControls({});
       setAwningControls({});
       setClearviewData({});
+      setScreenData({});
       setMeasurementMode('inches');
     }
   };
@@ -5995,10 +6045,11 @@ const toggleProductExpand = (lineId) => {
   setExpandedProducts(prev => ({ ...prev, [lineId]: !prev[lineId] }));
 };
 
-const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand, windSensorGrand, mraMatrixGrand, controlsGrand,clearviewGrand } = useMemo(() => {
-    if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0, mpsOpeningsProductGrand:0, windSensorGrand:0, mraMatrixGrand:0, controlsGrand:0 };
+const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand, windSensorGrand, mraMatrixGrand, controlsGrand, clearviewGrand, screenGrand } = useMemo(() => {
+    if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0, mpsOpeningsProductGrand:0, windSensorGrand:0, mraMatrixGrand:0, controlsGrand:0, clearviewGrand:0, screenGrand:0 };
     const configured = snapshot.productLines.filter(l => l.category && l.product);
     let clearviewGrand = 0;
+    let screenGrand = 0;
 
     let addonGrand=0, structuralGrand=0, openingsGrand=0, appBaseMPSGrand=0, windGrand=0, mraGrand=0, ctrlGrand=0;
 
@@ -6089,6 +6140,8 @@ const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeni
       heightIn: safeParseFloat(o.heightFt) * 12 + safeParseFloat(o.heightIn),
     }))
   );
+} else if (SCREEN_SYSTEM_PRODUCTS.includes(line.product)) {
+  screenGrand += calcScreenLineTotal(line.product, screenData[line.id] || {});
 } else {
         const qty    = parseInt(line.quantity, 10) || 1;
         const addons = getAddonsForProduct(line.product);
@@ -6103,7 +6156,8 @@ const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeni
     .filter(l => l.category && l.product && (
       MPS_PRODUCTS.includes(l.product) ||
       AWNING_PRODUCTS.includes(l.product) ||
-      CLEARVIEW_PRODUCTS.includes(l.product)   // ← add
+      CLEARVIEW_PRODUCTS.includes(l.product) ||
+      SCREEN_SYSTEM_PRODUCTS.includes(l.product)
     ))
     .reduce((s, l) => { const e = snapshot.productLines.find(l2 => l2.id === l.id); return s + (e?.pricing?.lineSubtotal || 0); }, 0);
 
@@ -6114,13 +6168,13 @@ const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeni
   windSensorGrand:         windGrand,
   mraMatrixGrand:          mraGrand,
   controlsGrand:           ctrlGrand,
-  clearviewGrand,                                                              // ← new
+  clearviewGrand,
+  screenGrand,
   subtotalWithAddons:
     nonMPSNonMRAOriginal + openingsGrand + appBaseMPSGrand + addonGrand +
-    structuralGrand + windGrand + mraGrand + ctrlGrand + clearviewGrand,       // ← include
+    structuralGrand + windGrand + mraGrand + ctrlGrand + clearviewGrand + screenGrand,
 };
-}, [snapshot, addonSelections, mpsData, fieldAddonValues, windSensorSelections, mraConfig, mpsControls, awningControls, clearviewData]);
-//                                                                                                                       ↑ add to deps
+}, [snapshot, addonSelections, mpsData, fieldAddonValues, windSensorSelections, mraConfig, mpsControls, awningControls, clearviewData, screenData]);
 
   const discountPercent = snapshot?.pricingSummary?.discountPercent || 0;
   const discountAmount  = subtotalWithAddons * (discountPercent / 100);
@@ -6238,6 +6292,8 @@ if (SCREEN_SYSTEM_PRODUCTS.includes(line.product)) {
       line={line}
       index={idx}
       snapshot={snapshot}
+      screenData={screenData}
+      onScreenChange={handleScreenChange}
       productNotes={productNotes[line.id]}
       onProductNoteChange={handleProductNoteChange}
       isExpanded={!!expandedProducts[line.id]}
@@ -6295,6 +6351,7 @@ if (SCREEN_SYSTEM_PRODUCTS.includes(line.product)) {
             <div className="ps-pricing-row"><span>Product Subtotal</span><span>{fmt(snapshot.pricingSummary?.subtotal)}</span></div>
             {mpsOpeningsProductGrand > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>MPS Opening-Based Pricing (replaces base)</span><span className="ps-addon-highlight">{fmt(mpsOpeningsProductGrand)}</span></div>}
             {mraMatrixGrand          > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Awning Matrix Pricing</span><span className="ps-addon-highlight">{fmt(mraMatrixGrand)}</span></div>}
+            {screenGrand             > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Screen System Pricing (VVP / Horizon)</span><span className="ps-addon-highlight">{fmt(screenGrand)}</span></div>}
             {summaryAddonGrandTotal  > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Selected Add-ons</span><span className="ps-addon-highlight">+{fmt(summaryAddonGrandTotal)}</span></div>}
             {windSensorGrand         > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Wind Sensor(s)</span><span className="ps-addon-highlight">+{fmt(windSensorGrand)}</span></div>}
             {mpsStructuralGrand      > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Structural Adjustments (L-Channel / Buildout / Storm Rail / Custom Color / Premium Fabric)</span><span className="ps-addon-highlight">+{fmt(mpsStructuralGrand)}</span></div>}
