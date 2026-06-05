@@ -103,7 +103,7 @@ const products = [
   // Standard line: three-component full bar, larger/fuller structure.
   // Max size: 252" W x 135" H. Round-up tier pricing.
   {
-    name: "Vista View Plus Retractable Screen System",
+    name: "Vista View Plus Single Housing Unit",
     productLine: "Vista View Plus",
     description: "Standard retractable screen system — three-component full bar, larger/fuller structure.",
     pricingModel: "matrix",
@@ -122,6 +122,22 @@ const products = [
       135: {72:3350,96:3450,108:3550,120:3650,132:3750,144:3850,156:3950,168:4050,180:5250,192:5350,204:5450,228:5550,240:5650,252:5750}
     }
   },
+
+  {
+  name: "Vista View Plus Double Housing Unit",
+  productLine: "Vista View Plus",
+  description: "Wide-opening standard retractable screen. Dynamically priced from Vista View Plus Single Housing Unit.",
+  pricingModel: "dynamic_double_horizon",
+  dimensionUnit: "in",
+  sourceProduct: "Vista View Plus Single Housing Unit",
+  formula: { multiplier: 2, deduction: 600 },
+  widthIncrement: 12,
+  maxWidth: 504,
+  maxHeight: 135,
+  heightTiers: VVP_HEIGHT_TIERS,
+  housingColors: SCREEN_HOUSING_COLORS,
+  optionalConfigurations: SCREEN_OPTIONAL_CONFIGS,
+},
   // ===== SINGLE HORIZON VIEW RETRACTABLE SCREENS =====
   // Premium line: one-component full bar, lower-profile threshold.
   // Max size: 252" W x 132" H. Round-up tier pricing.
@@ -236,13 +252,14 @@ const productCatalog = {
     "Motorized Louvered Roof Pergolas","Motorized Canvas Roof Pergolas","Slide on Wire Shades"
   ],
   "Retractable Screens/MPS": [
-    "Motorized Power Screen 5in Cassette","Motorized Power Screen 6in Cassette",
-    "Motorized Power Screen open roll",
-    "Vista View Plus Retractable Screen System",          // RENAMED from "Vista View Single Housing Unit"
-    "Single Horizon View Retractable Screens",
-    "Double Horizon View Retractable Screens",            // NEW (replaces "Vista View Double Housing Units")
-    "Clearview Retractable Screen Doors",
-  ],
+  "Motorized Power Screen 5in Cassette","Motorized Power Screen 6in Cassette",
+  "Motorized Power Screen open roll",
+  "Vista View Plus Single Housing Unit",       // RENAMED
+  "Vista View Plus Double Housing Unit",        // NEW
+  "Single Horizon View Retractable Screens",
+  "Double Horizon View Retractable Screens",
+  "Clearview Retractable Screen Doors",
+],
   "Retractable Awnings": [
     "Skyline Plus MRA",
     "Skyline Motorized Retractable Awning",
@@ -266,9 +283,10 @@ const MRA_CONFIGURED_PRODUCTS = [
 ];
 
 const SCREEN_SYSTEM_PRODUCTS = [
-  "Vista View Plus Retractable Screen System",
+  "Vista View Plus Single Housing Unit",
   "Single Horizon View Retractable Screens",
   "Double Horizon View Retractable Screens",
+  "Vista View Plus Double Housing Unit",
 ];
 
 // Combined: all products that skip width/height on intake form

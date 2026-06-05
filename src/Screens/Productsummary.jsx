@@ -29,11 +29,11 @@ const AWNING_PRODUCTS = [
 
 
 const SCREEN_SYSTEM_PRODUCTS = [
-  "Vista View Plus Retractable Screen System",
+  "Vista View Plus Single Housing Unit",
+  "Vista View Plus Double Housing Unit",
   "Single Horizon View Retractable Screens",
   "Double Horizon View Retractable Screens",
 ];
-
 // Mirrors the prices defined in App.js — used for display only.
 // The line total in the snapshot already accounts for these.
 const SCREEN_OPTIONAL_CONFIG_PRICES = {
@@ -69,6 +69,27 @@ function getMRAPriceWithNewProjections(productName, projection, widthFt) {
 // TASK 1: LED LIGHT DEDUCT
 // ─────────────────────────────────────────────────────────────
 const LED_DEDUCT_AMOUNT = 750;
+
+// ── Screen structural rates (Task 4) ──
+const SCREEN_LCHANNEL_RATE = 25;   // 1x1 L Profile, $25/LF
+const SCREEN_BUILDOUT_RATE = 35;   // 1x1 Square Tubing, $35/LF
+
+function createScreenLChannel() { return { id: uid(), lf: "", photo: null }; }
+function createScreenBuildout()  { return { id: uid(), lf: "", photo: null }; }
+function calcScreenLChannelCost(lc) { return safeParseFloat(lc.lf) * SCREEN_LCHANNEL_RATE; }
+function calcScreenBuildoutCost(bo) { return safeParseFloat(bo.lf) * SCREEN_BUILDOUT_RATE; }
+
+function createScreenOpening() {
+  return {
+    id: uid(),
+    labelMode: "preset",   // "preset" | "custom"  (Task 3)
+    label: "",
+    width: "", height: "", quantity: 1,
+    lChannels: [], buildouts: [],   // Task 4
+    openingPhoto: null,             // Task 5
+    notes: "",
+  };
+}
 
 // ─────────────────────────────────────────────────────────────
 // TASK 4: AWNING MOTOR LOGIC
@@ -114,9 +135,15 @@ const SINGLE_HORIZON_PRICES = {
 
 
 const SCREEN_PRODUCT_CONFIG = {
-  "Vista View Plus Retractable Screen System": {
+  "Vista View Plus Single Housing Unit": {
     pricingModel: "matrix", widthTiers: VVP_WIDTH_TIERS, heightTiers: VVP_HEIGHT_TIERS,
     maxWidth: 252, maxHeight: 135, prices: VVP_PRICES,
+  },
+  "Vista View Plus Double Housing Unit": {
+    pricingModel: "dynamic_double_horizon",
+    sourceProduct: "Vista View Plus Single Housing Unit",
+    formula: { multiplier: 2, deduction: 600 },
+    maxWidth: 504, maxHeight: 135,
   },
   "Single Horizon View Retractable Screens": {
     pricingModel: "matrix", widthTiers: SINGLE_HORIZON_WIDTH_TIERS, heightTiers: SINGLE_HORIZON_HEIGHT_TIERS,
@@ -160,16 +187,54 @@ function getScreenSystemPrice(productName, widthIn, heightIn) {
 }
 
 function calcScreenLineTotal(productName, cfg = {}) {
-  const base = getScreenSystemPrice(productName, cfg.width, cfg.height);
-  if (!base.ok) return 0;
-  const qty = parseInt(cfg.quantity,10) || 1;
-  let total = base.price * qty;
-  SCREEN_OPTIONAL_CONFIGS.forEach(opt => { if (cfg.optionalConfigs?.[opt.name]) total += opt.price * qty; });
+  let openings;
+  if (Array.isArray(cfg.openings)) openings = cfg.openings;
+  else if (cfg.width || cfg.height) openings = [{ width: cfg.width, height: cfg.height, quantity: cfg.quantity || 1, lChannels: [], buildouts: [] }];
+  else openings = [];
+
+  let total = 0, totalQty = 0;
+  openings.forEach(o => { total += calcScreenOpeningTotal(productName, o); totalQty += parseInt(o.quantity, 10) || 1; });
+  SCREEN_OPTIONAL_CONFIGS.forEach(opt => { if (cfg.optionalConfigs?.[opt.name]) total += opt.price * (totalQty || 1); });
   return total;
 }
 
 function createScreenConfig() {
-  return { width:"", height:"", quantity:1, housingColor:"", trackColor:"", optionalConfigs:{} };
+  return { housingColor: "", trackColor: "", optionalConfigs: {}, openings: [createScreenOpening()] };
+}
+
+function normalizeScreenConfig(raw) {
+  if (raw && Array.isArray(raw.openings)) {
+    return {
+      housingColor: raw.housingColor || "",
+      trackColor:   raw.trackColor || "",
+      optionalConfigs: raw.optionalConfigs || {},
+      openings: raw.openings.length ? raw.openings : [createScreenOpening()],
+    };
+  }
+  if (raw && (raw.width || raw.height || raw.housingColor)) {
+    return {
+      housingColor: raw.housingColor || "",
+      trackColor:   raw.trackColor || "",
+      optionalConfigs: raw.optionalConfigs || {},
+      openings: [{ ...createScreenOpening(), width: raw.width || "", height: raw.height || "", quantity: raw.quantity || 1 }],
+    };
+  }
+  return createScreenConfig();
+}
+
+function calcScreenOpeningBase(productName, opening) {
+  const res = getScreenSystemPrice(productName, opening.width, opening.height);
+  if (!res.ok) return 0;
+  return res.price * (parseInt(opening.quantity, 10) || 1);
+}
+function calcScreenOpeningStructural(opening) {
+  let total = 0;
+  (opening.lChannels || []).forEach(lc => total += calcScreenLChannelCost(lc));
+  (opening.buildouts  || []).forEach(bo => total += calcScreenBuildoutCost(bo));
+  return total;
+}
+function calcScreenOpeningTotal(productName, opening) {
+  return calcScreenOpeningBase(productName, opening) + calcScreenOpeningStructural(opening);
 }
 
 function roundUpToTier(value, tiers) {
@@ -418,6 +483,185 @@ function getAwningMotor(productName, widthFtKey) {
   return AWNING_MOTOR_535;
 }
 
+function ScreenLChannelItem({ lc, index, onChange, onRemove }) {
+  const set = (f, v) => onChange({ ...lc, [f]: v });
+  const cost = calcScreenLChannelCost(lc);
+  const lfDisplay = safeParseFloat(lc.lf);
+  return (
+    <div className="structural-item-card">
+      <div className="structural-item-header">
+        <span className="structural-item-label">L-Channel #{index + 1}</span>
+        <button type="button" className="structural-item-remove" onClick={onRemove}>✕ Remove</button>
+      </div>
+      <div className="structural-fields-grid">
+        <div className="mps-field">
+          <label className="mps-label">Profile <span className="lchannel-rate-badge">$25/LF</span></label>
+          <div className="mps-input mps-input--readonly">1x1 L Profile</div>
+        </div>
+        <Field label="Linear Feet" type="number" value={lc.lf} onChange={v => set("lf", v)}
+          placeholder="e.g. 8" min="0" step="0.5" allowFractions={false} />
+      </div>
+      {lc.lf && (
+        <div className="structural-calc">1x1 L Profile: {lfDisplay} LF × $25/LF = <strong>{fmt(cost)}</strong></div>
+      )}
+      <PhotoUpload label="L-Channel Photo (optional)" value={lc.photo} onChange={v => set("photo", v)} />
+    </div>
+  );
+}
+
+function ScreenBuildoutItem({ bo, index, onChange, onRemove }) {
+  const set = (f, v) => onChange({ ...bo, [f]: v });
+  const cost = calcScreenBuildoutCost(bo);
+  const lfDisplay = safeParseFloat(bo.lf);
+  return (
+    <div className="structural-item-card">
+      <div className="structural-item-header">
+        <span>Buildout #{index + 1}</span>
+        <button type="button" className="structural-item-remove" onClick={onRemove}>✕</button>
+      </div>
+      <div className="structural-fields-grid">
+        <div className="mps-field">
+          <label className="mps-label">Type <span className="lchannel-rate-badge">$35/LF</span></label>
+          <div className="mps-input mps-input--readonly">1x1 Square Tubing</div>
+        </div>
+        <Field label="Linear Feet" type="number" value={bo.lf} onChange={v => set("lf", v)}
+          placeholder="e.g. 12" min="0" step="0.5" allowFractions={false} />
+      </div>
+      {bo.lf && (
+        <div className="structural-calc">1x1 Square Tubing: {lfDisplay} LF × $35/LF = <strong>{fmt(cost)}</strong></div>
+      )}
+      <PhotoUpload label="Buildout Photo (optional)" value={bo.photo} onChange={v => set("photo", v)} />
+    </div>
+  );
+}
+
+function ScreenOpeningEditor({ productName, opening, index, onChange, onRemove, showRemove }) {
+  const set = (f, v) => onChange({ ...opening, [f]: v });
+  const qty = parseInt(opening.quantity, 10) || 1;
+  const priceResult = getScreenSystemPrice(productName, opening.width, opening.height);
+  const baseTotal = priceResult.ok ? priceResult.price * qty : 0;
+
+  const lChannels = opening.lChannels || [];
+  const buildouts = opening.buildouts || [];
+  const lChannelTotal = lChannels.reduce((s, lc) => s + calcScreenLChannelCost(lc), 0);
+  const buildoutTotal = buildouts.reduce((s, bo) => s + calcScreenBuildoutCost(bo), 0);
+  const structural   = lChannelTotal + buildoutTotal;
+  const openingTotal = baseTotal + structural;
+
+  // Label dropdown + custom (Task 3)
+  const handleLabelSelect = (val) => {
+    if (val === "Other / Custom") onChange({ ...opening, labelMode: "custom", label: "" });
+    else onChange({ ...opening, labelMode: "preset", label: val });
+  };
+  const labelDropdownValue = opening.labelMode === "custom"
+    ? "Other / Custom"
+    : (CV_OPENING_LABELS.includes(opening.label) ? opening.label : "");
+
+  const addLChannel    = () => set("lChannels", [...lChannels, createScreenLChannel()]);
+  const updateLChannel = (id, u) => set("lChannels", lChannels.map(lc => lc.id === id ? u : lc));
+  const removeLChannel = (id) => set("lChannels", lChannels.filter(lc => lc.id !== id));
+  const addBuildout    = () => set("buildouts", [...buildouts, createScreenBuildout()]);
+  const updateBuildout = (id, u) => set("buildouts", buildouts.map(bo => bo.id === id ? u : bo));
+  const removeBuildout = (id) => set("buildouts", buildouts.filter(bo => bo.id !== id));
+
+  return (
+    <div className="opening-card">
+      <div className="opening-header">
+        <div className="opening-num">Opening {index + 1}</div>
+        <div className="opening-label-wrap">
+          <div style={{ display: "flex", gap: 8, flex: 1, flexWrap: "wrap", alignItems: "center" }}>
+            <select className="mps-select" value={labelDropdownValue}
+              onChange={e => handleLabelSelect(e.target.value)} style={{ flex: "0 1 240px", minWidth: 200 }}>
+              <option value="">— Select Opening Label —</option>
+              {CV_OPENING_LABELS.map(l => <option key={l} value={l}>{l}</option>)}
+            </select>
+            {opening.labelMode === "custom" && (
+              <input className="opening-label-input" placeholder="Enter custom opening label"
+                value={opening.label} onChange={e => set("label", e.target.value)}
+                style={{ flex: 1, minWidth: 180 }} />
+            )}
+          </div>
+        </div>
+        {openingTotal > 0 && <div className="opening-structural-badge">{fmt(openingTotal)}</div>}
+        {showRemove && (
+          <button type="button" className="opening-remove ctrl-btn-danger" onClick={onRemove}>🗑 Delete Opening</button>
+        )}
+      </div>
+
+      <div className="opening-grid-3">
+        <Field label="Width (inches)" type="number" value={opening.width}
+          onChange={v => set("width", typeof v === "object" ? v.display : v)}
+          placeholder="e.g. 120" allowFractions={false} min="0" required />
+        <Field label="Height (inches)" type="number" value={opening.height}
+          onChange={v => set("height", typeof v === "object" ? v.display : v)}
+          placeholder="e.g. 96" allowFractions={false} min="0" required />
+        <Field label="Quantity" type="number" value={String(opening.quantity ?? 1)}
+          onChange={v => set("quantity", parseInt(v, 10) || 1)} min="1" allowFractions={false} />
+      </div>
+
+      {(opening.width || opening.height) && (
+        <div className={`opening-price-badge ${priceResult.ok ? "opening-price-badge--ok" : "opening-price-badge--error"}`}>
+          {priceResult.ok
+            ? <><span className="opening-price-badge__label">Unit price:</span>
+                <span className="opening-price-badge__value">{fmt(priceResult.price)}</span>
+                {qty > 1 && <span className="opening-price-badge__hint"> × {qty} = <strong>{fmt(baseTotal)}</strong></span>}
+                <span className="opening-price-badge__hint"> ({priceResult.message})</span></>
+            : <span>⚠ {priceResult.message}</span>}
+        </div>
+      )}
+
+      {/* L-Channels (Task 4) */}
+      <div className="structural-section">
+        <div className="structural-section-header">
+          <span className="mps-label">L-Channels</span>
+          {lChannelTotal > 0 && <span className="structural-section-total">{fmt(lChannelTotal)} total</span>}
+          <div className="structural-section-actions">
+            <button type="button" className="structural-add-btn" onClick={addLChannel}>+ Add L-Channel</button>
+          </div>
+        </div>
+        {lChannels.length === 0 && <div className="structural-empty">No l-channels added. Click "Add L-Channel" if required.</div>}
+        {lChannels.map((lc, idx) => (
+          <ScreenLChannelItem key={lc.id} lc={lc} index={idx}
+            onChange={u => updateLChannel(lc.id, u)} onRemove={() => removeLChannel(lc.id)} />
+        ))}
+      </div>
+
+      {/* Buildouts (Task 4) */}
+      <div className="structural-section">
+        <div className="structural-section-header">
+          <span className="mps-label">Buildouts</span>
+          {buildoutTotal > 0 && <span className="structural-section-total">{fmt(buildoutTotal)} total</span>}
+          <div className="structural-section-actions">
+            <button type="button" className="structural-add-btn" onClick={addBuildout}>+ Add Buildout</button>
+          </div>
+        </div>
+        {buildouts.length === 0 && <div className="structural-empty">No buildouts added. Click "Add Buildout" if required.</div>}
+        {buildouts.map((bo, idx) => (
+          <ScreenBuildoutItem key={bo.id} bo={bo} index={idx}
+            onChange={u => updateBuildout(bo.id, u)} onRemove={() => removeBuildout(bo.id)} />
+        ))}
+      </div>
+
+      <div className="form-group">
+        <label>Opening Notes</label>
+        <textarea rows="2" value={opening.notes || ""} onChange={e => set("notes", e.target.value)}
+          placeholder="Special instructions for this opening…" />
+      </div>
+
+      {/* Opening Photo (Task 5) */}
+      <PhotoUpload label="Opening Photo" value={opening.openingPhoto} onChange={v => set("openingPhoto", v)} />
+
+      {openingTotal > 0 && (
+        <div className="opening-total">
+          Opening Total: <strong>{fmt(openingTotal)}</strong>
+          {structural > 0 && <> ({fmt(baseTotal)} base + {fmt(structural)} structural)</>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 function ScreenSystemCard({
   line, index, snapshot,
   screenData, onScreenChange,
@@ -425,25 +669,36 @@ function ScreenSystemCard({
   isExpanded, onToggleExpand,
 }) {
   const meta = snapshot.productLines.find(l => l.id === line.id)?.productMeta || {};
-  const cfg  = screenData[line.id] || createScreenConfig();
+  const raw  = screenData[line.id];
+  const cfg  = normalizeScreenConfig(raw);
   const setCfg = (updates) => onScreenChange(line.id, { ...cfg, ...updates });
 
-  const productCfg  = SCREEN_PRODUCT_CONFIG[line.product] || {};
-  const qty         = parseInt(cfg.quantity, 10) || 1;
-  const priceResult = getScreenSystemPrice(line.product, cfg.width, cfg.height);
-  const lineTotal   = calcScreenLineTotal(line.product, cfg);
+  const productCfg = SCREEN_PRODUCT_CONFIG[line.product] || {};
+  const lineTotal  = calcScreenLineTotal(line.product, cfg);
 
+  const openings = cfg.openings || [];
+  const totalQty = openings.reduce((s, o) => s + (parseInt(o.quantity, 10) || 1), 0);
   const optConfigsTotal = SCREEN_OPTIONAL_CONFIGS.reduce(
-    (s, opt) => cfg.optionalConfigs?.[opt.name] ? s + opt.price * qty : s, 0);
+    (s, opt) => cfg.optionalConfigs?.[opt.name] ? s + opt.price * (totalQty || 1) : s, 0);
 
   const updateHousingColor   = (color) => setCfg({ housingColor: color, trackColor: color });
   const toggleOptionalConfig = (name)  =>
     setCfg({ optionalConfigs: { ...(cfg.optionalConfigs || {}), [name]: !(cfg.optionalConfigs?.[name]) } });
 
+  const updateOpening = (id, u) => setCfg({ openings: openings.map(o => o.id === id ? u : o) });
+  const removeOpening = (id)    => setCfg({ openings: openings.filter(o => o.id !== id) });
+  const addOpening    = ()      => setCfg({ openings: [...openings, createScreenOpening()] });
+
+  // Migrate legacy / missing data into openings shape once on mount
+  useEffect(() => {
+    if (!raw || !Array.isArray(raw.openings) || raw.openings.length === 0) onScreenChange(line.id, cfg);
+    // eslint-disable-next-line
+  }, []);
+
   return (
     <div className="ps-product-card mps-product-card">
       <div className="ps-product-header ps-product-header--clickable"
-        onClick={onToggleExpand} style={{ cursor:"pointer", userSelect:"none" }}>
+        onClick={onToggleExpand} style={{ cursor: "pointer", userSelect: "none" }}>
         <div className="ps-product-number">#{index + 1}</div>
         <div className="ps-product-name">
           {line.product}
@@ -451,7 +706,7 @@ function ScreenSystemCard({
         </div>
         <div className="ps-product-price">{fmt(lineTotal)}</div>
         <span className="ps-product-expand-icon" style={{
-          marginLeft:"12px", fontSize:"1.2em", transition:"transform 0.2s",
+          marginLeft: "12px", fontSize: "1.2em", transition: "transform 0.2s",
           transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}>▼</span>
       </div>
 
@@ -464,40 +719,48 @@ function ScreenSystemCard({
               <div className="ps-detail-item"><span className="ps-detail-label">Max Size</span>
                 <span className="ps-detail-value">{productCfg.maxWidth}" W × {productCfg.maxHeight}" H</span></div>
             )}
+            <div className="ps-detail-item"><span className="ps-detail-label">Openings</span><span className="ps-detail-value">{openings.length}</span></div>
           </div>
 
           <div className="skylight-config-section">
-            <div className="skylight-config-title">📐 Dimensions &amp; Configuration</div>
+            <div className="skylight-config-title">🎨 Housing Color</div>
             <div className="opening-grid-3">
-              <Field label="Width (inches)"  type="number" value={cfg.width}
-                onChange={v => setCfg({ width: typeof v === "object" ? v.display : v })}
-                placeholder="e.g. 120" allowFractions={false} min="0" required />
-              <Field label="Height (inches)" type="number" value={cfg.height}
-                onChange={v => setCfg({ height: typeof v === "object" ? v.display : v })}
-                placeholder="e.g. 96" allowFractions={false} min="0" required />
-              <Field label="Quantity" type="number" value={String(cfg.quantity ?? 1)}
-                onChange={v => setCfg({ quantity: parseInt(v, 10) || 1 })} min="1" allowFractions={false} />
-            </div>
-
-            {(cfg.width || cfg.height) && (
-              <div className={`opening-price-badge ${priceResult.ok ? "opening-price-badge--ok" : "opening-price-badge--error"}`}>
-                {priceResult.ok
-                  ? <><span className="opening-price-badge__label">Unit price:</span>
-                      <span className="opening-price-badge__value">{fmt(priceResult.price)}</span>
-                      <span className="opening-price-badge__hint">({priceResult.message})</span></>
-                  : <span>⚠ {priceResult.message}</span>}
-              </div>
-            )}
-
-            <div className="opening-grid-3" style={{ marginTop: 12 }}>
               <Sel label="Housing Color" value={cfg.housingColor}
                 options={SCREEN_HOUSING_COLORS} onChange={updateHousingColor} />
             </div>
             {cfg.housingColor && (
-              <div className="storm-rail-badge" style={{ borderLeftColor:"var(--ps-info,#3498db)" }}>
+              <div className="storm-rail-badge" style={{ borderLeftColor: "var(--ps-info,#3498db)" }}>
                 🎨 Top track auto-set to: <strong>{cfg.trackColor || cfg.housingColor}</strong>
               </div>
             )}
+          </div>
+
+          <div className="product-note-section">
+            <label className="mps-label">📝 Product Notes</label>
+            <textarea className="product-note-textarea" rows={3}
+              placeholder="Add any important notes about this product…"
+              value={productNotes || ""} onChange={e => onProductNoteChange(line.id, e.target.value)} />
+          </div>
+
+          <div className="mps-builder">
+            <div className="mps-builder-header">
+              <div className="mps-builder-title">
+                <span className="mps-builder-icon">🗂</span> Openings Configuration
+                <span className="mps-builder-hint">— Enter width &amp; height per opening to auto-price from matrix</span>
+              </div>
+            </div>
+            {openings.map((opening, idx) => (
+              <ScreenOpeningEditor
+                key={opening.id}
+                productName={line.product}
+                opening={opening}
+                index={idx}
+                onChange={u => updateOpening(opening.id, u)}
+                onRemove={() => removeOpening(opening.id)}
+                showRemove={openings.length > 1}
+              />
+            ))}
+            <button type="button" className="add-opening-btn" onClick={addOpening}>+ Add Opening</button>
           </div>
 
           <div className="ps-addons-section">
@@ -515,7 +778,7 @@ function ScreenSystemCard({
                     <div className="ps-addon-content">
                       <span className="ps-addon-name">{opt.name}</span>
                       <span className="ps-addon-price">+{fmt(opt.price)} {opt.unit}
-                        {qty > 1 && <span className="ps-addon-per-unit"> × {qty} = {fmt(opt.price * qty)}</span>}</span>
+                        {totalQty > 1 && <span className="ps-addon-per-unit"> × {totalQty} = {fmt(opt.price * totalQty)}</span>}</span>
                     </div>
                     {checked && <span className="ps-addon-check-mark">✓</span>}
                   </label>
@@ -524,18 +787,7 @@ function ScreenSystemCard({
             </div>
           </div>
 
-          <div className="product-note-section">
-            <label className="mps-label">📝 Product Notes</label>
-            <textarea className="product-note-textarea" rows={3}
-              placeholder="Add any important notes about this product…"
-              value={productNotes || ""} onChange={e => onProductNoteChange(line.id, e.target.value)} />
-          </div>
-
           <div className="mps-line-total">
-            {priceResult.ok
-              ? <span>Base Price: {fmt(priceResult.price)}{qty > 1 ? ` × ${qty} = ${fmt(priceResult.price * qty)}` : ""}</span>
-              : <span style={{ color:"var(--ps-warn,#e67e22)" }}>⚠ Enter valid dimensions to price</span>}
-            {optConfigsTotal > 0 && <span>+ Optional Configurations: {fmt(optConfigsTotal)}</span>}
             <span className="mps-line-grand">Line Total: {fmt(lineTotal)}</span>
           </div>
         </>
@@ -543,6 +795,7 @@ function ScreenSystemCard({
     </div>
   );
 }
+
 
 // ─────────────────────────────────────────────────────────────
 // TASK 1: MANUFACTURER-BASED REMOTE GROUPING
