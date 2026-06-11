@@ -244,13 +244,16 @@ const products = [
     name: "Skyline Plus MRA",
     pricingModel: "mra_configured",
   },
+  {
+  name: "QIP Motorized Pergola",
+  pricingModel: "pergola_configured",
+},
 ];
 
 const productCatalog = {
   "Retractable Roof Pergolas/DURALUM": [
-    "Hydra Retractable Patio Cover","Duralum Solid Patio Cover",
-    "Motorized Louvered Roof Pergolas","Motorized Canvas Roof Pergolas","Slide on Wire Shades"
-  ],
+  "QIP Motorized Pergola",
+],
   "Retractable Screens/MPS": [
   "Motorized Power Screen 5in Cassette","Motorized Power Screen 6in Cassette",
   "Motorized Power Screen open roll",
@@ -290,10 +293,13 @@ const SCREEN_SYSTEM_PRODUCTS = [
 ];
 
 // Combined: all products that skip width/height on intake form
+const PERGOLA_CONFIGURED_PRODUCTS = ["QIP Motorized Pergola"];
+
 const SUMMARY_CONFIGURED_PRODUCTS = [
   ...MPS_PRODUCTS,
   ...MRA_CONFIGURED_PRODUCTS,
   ...SCREEN_SYSTEM_PRODUCTS,
+  ...PERGOLA_CONFIGURED_PRODUCTS,
 ];
 
 const mountTypes = ['Inside Mount','Outside Mount','Ceiling Mount','Wall Mount'];
@@ -384,9 +390,9 @@ function getBasePriceUnified(line) {
   if (!p) return {ok:false, price:0, message:"Select a product."};
 
   // MRA configured products are priced in ProductSummary — not here
-  if (p.pricingModel === "mra_configured") {
-    return {ok:true, price:0, message:"Configured in Product Summary screen."};
-  }
+ if (p.pricingModel === "mra_configured" || p.pricingModel === "pergola_configured") {
+  return {ok:true, price:0, message:"Configured in Product Summary screen."};
+}
 
   // ─── DYNAMIC DOUBLE HORIZON PRICING ───
   // Pulls Single Horizon price using (width ÷ 2 rounded up to tier) × (height rounded up).
@@ -611,20 +617,24 @@ function ProductLine({ line, lineNumber, onUpdate, onRemove, showRemove }) {
 
       {/* "Configured on next screen" notice for MPS/MRA */}
       {isSummaryConfigure && (
-        <div className="alert alert-info mps-intake-notice">
-          <span>ℹ️</span>
-          <div>
-            <strong>
-              {MPS_PRODUCTS.includes(line.product)
-                ? "Dimensions & pricing are configured per opening"
-                : "Dimensions, projection & pricing are configured on the next screen"}
-            </strong><br />
-            {MPS_PRODUCTS.includes(line.product)
-              ? "Width, height, quantity, and notes for this product are entered on the next screen where you can add multiple areas and openings."
-              : "Width, projection, fabric, and all configuration details for this product are entered on the next screen."}
-          </div>
-        </div>
-      )}
+  <div className="alert alert-info mps-intake-notice">
+    <span>ℹ️</span>
+    <div>
+      <strong>
+        {MPS_PRODUCTS.includes(line.product)
+          ? "Dimensions & pricing are configured per opening"
+          : PERGOLA_CONFIGURED_PRODUCTS.includes(line.product)
+          ? "Structure, dimensions & pricing are configured per module"
+          : "Dimensions, projection & pricing are configured on the next screen"}
+      </strong><br />
+      {MPS_PRODUCTS.includes(line.product)
+        ? "Width, height, quantity, and notes for this product are entered on the next screen where you can add multiple areas and openings."
+        : PERGOLA_CONFIGURED_PRODUCTS.includes(line.product)
+        ? "Structure type, roof, color, width, projection, accessories, and notes are entered on the next screen, where you can add multiple pergola modules."
+        : "Width, projection, fabric, and all configuration details for this product are entered on the next screen."}
+    </div>
+  </div>
+)}
 
       {!isSummaryConfigure && (
         <>

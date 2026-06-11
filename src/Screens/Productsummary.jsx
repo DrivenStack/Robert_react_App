@@ -157,6 +157,174 @@ const SCREEN_PRODUCT_CONFIG = {
   },
 };
 
+// ─────────────────────────────────────────────────────────────
+// QIP MOTORIZED PERGOLA — matrices, config & helpers
+// (Manufacturer names never surface to the customer — QIP branding only)
+// ─────────────────────────────────────────────────────────────
+const PERGOLA_PRODUCTS = ["QIP Motorized Pergola"];
+
+const PERGOLA_WIDTH_COLS = ["6'6\"","7'4\"","8'2\"","9'0\"","9'10\"","10'7\"","11'5\"","12'3\"","13'1\""];
+
+const PERGOLA_STRUCTURES = [
+  { id: "drop_in",          label: "Drop-In — No Posts or Columns",  support: "Attached / House Supported" },
+  { id: "2col_attached",    label: "2 Columns — Attached to House",   support: "Attached" },
+  { id: "3col_attached",    label: "3 Columns — Attached to House",   support: "Attached" },
+  { id: "4col_freestanding",label: "4 Columns — Free Standing",       support: "Free Standing" },
+  { id: "6col_freestanding",label: "6 Columns — Free Standing",       support: "Free Standing" },
+];
+
+const PERGOLA_ROOF_TYPES = ["Louvered Roof", "Canvas Sliding Roof"];   // mfg only — no price impact
+const PERGOLA_COLORS     = ["White", "Charcoal"];                       // mfg only — no price impact
+const PERGOLA_FAN_COLORS = ["White", "Black"];
+
+// rows = projection (ft), cols = width label. Matrix-only pricing.
+const PERGOLA_MATRICES = {
+  drop_in: {
+    7:{"6'6\"":14203,"7'4\"":15202,"8'2\"":16290,"9'0\"":17246,"9'10\"":17952,"10'7\"":19165,"11'5\"":19921,"12'3\"":21270,"13'1\"":22069},
+    8:{"6'6\"":14651,"7'4\"":15968,"8'2\"":17285,"9'0\"":18288,"9'10\"":19011,"10'7\"":20432,"11'5\"":21077,"12'3\"":22404,"13'1\"":22996},
+    9:{"6'6\"":15791,"7'4\"":16966,"8'2\"":18524,"9'0\"":19471,"9'10\"":20123,"10'7\"":21718,"11'5\"":22563,"12'3\"":23305,"13'1\"":24115},
+    10:{"6'6\"":16678,"7'4\"":17884,"8'2\"":19548,"9'0\"":20443,"9'10\"":21244,"10'7\"":23015,"11'5\"":23841,"12'3\"":24435,"13'1\"":25279},
+    11:{"6'6\"":17630,"7'4\"":18806,"8'2\"":20646,"9'0\"":21517,"9'10\"":22400,"10'7\"":24424,"11'5\"":24902,"12'3\"":25700,"13'1\"":26235},
+    12:{"6'6\"":18679,"7'4\"":19716,"8'2\"":21576,"9'0\"":22568,"9'10\"":23427,"10'7\"":24704,"11'5\"":25831,"12'3\"":26847,"13'1\"":27312},
+    13:{"6'6\"":19953,"7'4\"":21206,"8'2\"":22995,"9'0\"":23593,"9'10\"":24484,"10'7\"":25878,"11'5\"":27138,"12'3\"":27963,"13'1\"":28575},
+    14:{"6'6\"":20870,"7'4\"":23874,"8'2\"":24268,"9'0\"":24902,"9'10\"":25804,"10'7\"":27475,"11'5\"":28441,"12'3\"":28940,"13'1\"":29869},
+    15:{"6'6\"":22563,"7'4\"":23844,"8'2\"":25575,"9'0\"":26179,"9'10\"":27059,"10'7\"":28748,"11'5\"":29377,"12'3\"":30187,"13'1\"":31173},
+    16:{"6'6\"":23757,"7'4\"":25154,"8'2\"":26863,"9'0\"":27756,"9'10\"":28428,"10'7\"":29706,"11'5\"":30808,"12'3\"":31447,"13'1\"":32338},
+    17:{"6'6\"":24866,"7'4\"":26403,"8'2\"":28096,"9'0\"":29163,"9'10\"":30041,"10'7\"":30969,"11'5\"":31749,"12'3\"":32705,"13'1\"":33527},
+    18:{"6'6\"":26806,"7'4\"":27714,"8'2\"":29370,"9'0\"":30408,"9'10\"":31595,"10'7\"":32896,"11'5\"":33224,"12'3\"":34066,"13'1\"":34927},
+    19:{"6'6\"":27842,"7'4\"":29035,"8'2\"":30698,"9'0\"":31723,"9'10\"":33224,"10'7\"":34498,"11'5\"":35903,"12'3\"":36530,"13'1\"":37373},
+    20:{"6'6\"":29060,"7'4\"":30312,"8'2\"":32041,"9'0\"":33070,"9'10\"":34508,"10'7\"":35758,"11'5\"":37052,"12'3\"":38173,"13'1\"":39295},
+    21:{"6'6\"":30335,"7'4\"":31628,"8'2\"":33346,"9'0\"":34725,"9'10\"":36119,"10'7\"":37383,"11'5\"":38666,"12'3\"":39792,"13'1\"":40561},
+    22:{"6'6\"":31746,"7'4\"":33228,"8'2\"":34894,"9'0\"":36243,"9'10\"":37732,"10'7\"":38980,"11'5\"":40243,"12'3\"":41293,"13'1\"":41843},
+    23:{"6'6\"":33060,"7'4\"":34834,"8'2\"":36489,"9'0\"":37926,"9'10\"":39343,"10'7\"":40660,"11'5\"":41376,"12'3\"":42673,"13'1\"":43995},
+    24:{"6'6\"":33846,"7'4\"":35734,"8'2\"":36838,"9'0\"":38810,"9'10\"":39927,"10'7\"":41202,"11'5\"":42194,"12'3\"":43286,"13'1\"":44572},
+    25:{"6'6\"":34994,"7'4\"":36303,"8'2\"":37536,"9'0\"":39773,"9'10\"":41034,"10'7\"":42309,"11'5\"":43493,"12'3\"":44704,"13'1\"":46166},
+    26:{"6'6\"":35935,"7'4\"":37213,"8'2\"":38353,"9'0\"":40715,"9'10\"":41993,"10'7\"":43291,"11'5\"":44574,"12'3\"":46166,"13'1\"":47579},
+    27:{"6'6\"":36721,"7'4\"":37933,"8'2\"":39118,"9'0\"":41685,"9'10\"":42962,"10'7\"":44254,"11'5\"":45318,"12'3\"":47148,"13'1\"":48873},
+  },
+  "2col_attached": {
+    7:{"6'6\"":17949,"7'4\"":19407,"8'2\"":20123,"9'0\"":20792,"9'10\"":21560,"10'7\"":22677,"11'5\"":23465,"12'3\"":24599,"13'1\"":25873},
+    8:{"6'6\"":19131,"7'4\"":20286,"8'2\"":21206,"9'0\"":21744,"9'10\"":22666,"10'7\"":23504,"11'5\"":24743,"12'3\"":25710,"13'1\"":26831},
+    9:{"6'6\"":20123,"7'4\"":21240,"8'2\"":22303,"9'0\"":22854,"9'10\"":23325,"10'7\"":24435,"11'5\"":25874,"12'3\"":26524,"13'1\"":27474},
+    10:{"6'6\"":20844,"7'4\"":21908,"8'2\"":23173,"9'0\"":23859,"9'10\"":24273,"10'7\"":25030,"11'5\"":26954,"12'3\"":27622,"13'1\"":28748},
+    11:{"6'6\"":21740,"7'4\"":22998,"8'2\"":24435,"9'0\"":24608,"9'10\"":25033,"10'7\"":25883,"11'5\"":27519,"12'3\"":28729,"13'1\"":29702},
+    12:{"6'6\"":22653,"7'4\"":23900,"8'2\"":25338,"9'0\"":25874,"9'10\"":26836,"10'7\"":27123,"11'5\"":28585,"12'3\"":29706,"13'1\"":30497},
+    13:{"6'6\"":23482,"7'4\"":24771,"8'2\"":26055,"9'0\"":27145,"9'10\"":27480,"10'7\"":27766,"11'5\"":29212,"12'3\"":30547,"13'1\"":31625},
+    14:{"6'6\"":24435,"7'4\"":25712,"8'2\"":27149,"9'0\"":28020,"9'10\"":27632,"10'7\"":28735,"11'5\"":30172,"12'3\"":31611,"13'1\"":32754},
+    15:{"6'6\"":25390,"7'4\"":26659,"8'2\"":27474,"9'0\"":28618,"9'10\"":28930,"10'7\"":29679,"11'5\"":31229,"12'3\"":32321,"13'1\"":33665},
+    16:{"6'6\"":26041,"7'4\"":27406,"8'2\"":29084,"9'0\"":29865,"9'10\"":30440,"10'7\"":30547,"11'5\"":31625,"12'3\"":33047,"13'1\"":34335},
+    17:{"6'6\"":27109,"7'4\"":28355,"8'2\"":30174,"9'0\"":30808,"9'10\"":31349,"10'7\"":31625,"11'5\"":32704,"12'3\"":33963,"13'1\"":35008},
+    18:{"6'6\"":27835,"7'4\"":29384,"8'2\"":30855,"9'0\"":31610,"9'10\"":32222,"10'7\"":33228,"11'5\"":34304,"12'3\"":34825,"13'1\"":36103},
+    19:{"6'6\"":28749,"7'4\"":30148,"8'2\"":31637,"9'0\"":32771,"9'10\"":33672,"10'7\"":34811,"11'5\"":35485,"12'3\"":35952,"13'1\"":37459},
+    20:{"6'6\"":29793,"7'4\"":30928,"8'2\"":32731,"9'0\"":33660,"9'10\"":34522,"10'7\"":36197,"11'5\"":37373,"12'3\"":38494,"13'1\"":38623},
+  },
+  "3col_attached": {
+    20:{"6'6\"":34167,"7'4\"":35495,"8'2\"":36421,"9'0\"":37547,"9'10\"":38810,"10'7\"":39989,"11'5\"":41395,"12'3\"":42581,"13'1\"":43981},
+    21:{"6'6\"":34969,"7'4\"":35965,"8'2\"":37393,"9'0\"":38813,"9'10\"":39989,"10'7\"":41350,"11'5\"":42602,"12'3\"":43895,"13'1\"":45187},
+    22:{"6'6\"":35935,"7'4\"":37114,"8'2\"":38609,"9'0\"":40046,"9'10\"":41350,"10'7\"":42602,"11'5\"":43923,"12'3\"":45198,"13'1\"":46465},
+    23:{"6'6\"":36993,"7'4\"":38376,"8'2\"":39924,"9'0\"":41346,"9'10\"":42688,"10'7\"":43870,"11'5\"":45165,"12'3\"":46456,"13'1\"":47863},
+    24:{"6'6\"":38254,"7'4\"":39594,"8'2\"":41158,"9'0\"":42572,"9'10\"":43906,"10'7\"":45174,"11'5\"":46479,"12'3\"":47843,"13'1\"":49146},
+    25:{"6'6\"":39589,"7'4\"":40814,"8'2\"":42481,"9'0\"":43880,"9'10\"":45114,"10'7\"":46328,"11'5\"":47743,"12'3\"":49149,"13'1\"":50455},
+    26:{"6'6\"":40722,"7'4\"":42065,"8'2\"":43767,"9'0\"":45135,"9'10\"":46305,"10'7\"":47596,"11'5\"":49134,"12'3\"":50399,"13'1\"":51916},
+    27:{"6'6\"":42108,"7'4\"":43291,"8'2\"":45027,"9'0\"":46377,"9'10\"":47553,"10'7\"":48947,"11'5\"":50416,"12'3\"":51909,"13'1\"":53550},
+  },
+  "4col_freestanding": {
+    7:{"6'6\"":21198,"7'4\"":22632,"8'2\"":23337,"9'0\"":23996,"9'10\"":24751,"10'7\"":25850,"11'5\"":26626,"12'3\"":27742,"13'1\"":28995},
+    8:{"6'6\"":22361,"7'4\"":23498,"8'2\"":24403,"9'0\"":24932,"9'10\"":25839,"10'7\"":26664,"11'5\"":27883,"12'3\"":28835,"13'1\"":29938},
+    9:{"6'6\"":23337,"7'4\"":24436,"8'2\"":25483,"9'0\"":26024,"9'10\"":26488,"10'7\"":27580,"11'5\"":28996,"12'3\"":29636,"13'1\"":30571},
+    10:{"6'6\"":24047,"7'4\"":25094,"8'2\"":26338,"9'0\"":27013,"9'10\"":27421,"10'7\"":28166,"11'5\"":30059,"12'3\"":30716,"13'1\"":31824},
+    11:{"6'6\"":24928,"7'4\"":26166,"8'2\"":27580,"9'0\"":27750,"9'10\"":28169,"10'7\"":29005,"11'5\"":30615,"12'3\"":31806,"13'1\"":32763},
+    12:{"6'6\"":25826,"7'4\"":27054,"8'2\"":28469,"9'0\"":28996,"9'10\"":29943,"10'7\"":30226,"11'5\"":31664,"12'3\"":32767,"13'1\"":33545},
+    13:{"6'6\"":26643,"7'4\"":27911,"8'2\"":29175,"9'0\"":30247,"9'10\"":30576,"10'7\"":30858,"11'5\"":32281,"12'3\"":33595,"13'1\"":34656},
+    14:{"6'6\"":27580,"7'4\"":28836,"8'2\"":30251,"9'0\"":31108,"9'10\"":30726,"10'7\"":31811,"11'5\"":33226,"12'3\"":34642,"13'1\"":35766},
+    15:{"6'6\"":28520,"7'4\"":29769,"8'2\"":30571,"9'0\"":31697,"9'10\"":32004,"10'7\"":32741,"11'5\"":33414,"12'3\"":35340,"13'1\"":36663},
+    16:{"6'6\"":29160,"7'4\"":30504,"8'2\"":32155,"9'0\"":32923,"9'10\"":33489,"10'7\"":33595,"11'5\"":34656,"12'3\"":36055,"13'1\"":37322},
+    17:{"6'6\"":30211,"7'4\"":31438,"8'2\"":33227,"9'0\"":33851,"9'10\"":34384,"10'7\"":34656,"11'5\"":35717,"12'3\"":36956,"13'1\"":37984},
+    18:{"6'6\"":30926,"7'4\"":32451,"8'2\"":33898,"9'0\"":34640,"9'10\"":35243,"10'7\"":36233,"11'5\"":37291,"12'3\"":37804,"13'1\"":39062},
+    19:{"6'6\"":31825,"7'4\"":33202,"8'2\"":34667,"9'0\"":35783,"9'10\"":36670,"10'7\"":37790,"11'5\"":38454,"12'3\"":38913,"13'1\"":40396},
+    20:{"6'6\"":32852,"7'4\"":33970,"8'2\"":35744,"9'0\"":36657,"9'10\"":37506,"10'7\"":39154,"11'5\"":40311,"12'3\"":41433,"13'1\"":41542},
+  },
+  "6col_freestanding": {
+    20:{"6'6\"":39678,"7'4\"":41264,"8'2\"":43140,"9'0\"":44728,"9'10\"":45638,"10'7\"":46772,"11'5\"":48355,"12'3\"":49938,"13'1\"":52067},
+    21:{"6'6\"":40851,"7'4\"":42586,"8'2\"":44853,"9'0\"":46305,"9'10\"":47891,"10'7\"":48983,"11'5\"":49616,"12'3\"":51650,"13'1\"":53470},
+    22:{"6'6\"":41796,"7'4\"":43744,"8'2\"":46069,"9'0\"":47938,"9'10\"":49151,"10'7\"":50339,"11'5\"":50809,"12'3\"":52843,"13'1\"":55255},
+    23:{"6'6\"":42838,"7'4\"":44369,"8'2\"":47244,"9'0\"":49396,"9'10\"":50751,"10'7\"":51932,"11'5\"":52085,"12'3\"":54431,"13'1\"":56966},
+    24:{"6'6\"":44068,"7'4\"":46101,"8'2\"":49038,"9'0\"":50997,"9'10\"":52377,"10'7\"":53452,"11'5\"":53718,"12'3\"":56063,"13'1\"":58576},
+    25:{"6'6\"":45313,"7'4\"":47507,"8'2\"":50651,"9'0\"":52624,"9'10\"":54009,"10'7\"":55107,"11'5\"":55117,"12'3\"":57745,"13'1\"":60375},
+    26:{"6'6\"":46482,"7'4\"":48674,"8'2\"":52343,"9'0\"":54263,"9'10\"":55006,"10'7\"":56708,"11'5\"":57534,"12'3\"":59513,"13'1\"":62099},
+    27:{"6'6\"":47644,"7'4\"":50255,"8'2\"":54101,"9'0\"":55829,"9'10\"":57138,"10'7\"":57733,"11'5\"":59753,"12'3\"":61281,"13'1\"":63876},
+  },
+};
+
+// Accessories (priced separately from the matrix)
+const PERGOLA_LED_RATE = 60; // per LF
+const PERGOLA_HEATERS = [
+  { key: "heater36", size: '36"', price: 2500 },
+  { key: "heater48", size: '48"', price: 3000 },
+  { key: "heater60", size: '60"', price: 4000 },
+];
+const PERGOLA_CEILING_FAN_PRICE = 1000;
+const PERGOLA_UTILITY_BEAMS = [
+  { key: "beamSmall", label: 'Utility Beam — up to 13\'1" span',        price: 1000 },
+  { key: "beamMed",   label: 'Utility Beam — over 13\'1" up to 20\' span', price: 1500 },
+  { key: "beamLarge", label: 'Utility Beam — over 20\' up to 27\' span',   price: 2000 },
+];
+
+function getPergolaProjections(structureId) {
+  const m = PERGOLA_MATRICES[structureId];
+  return m ? Object.keys(m).map(Number).sort((a, b) => a - b) : [];
+}
+
+function getPergolaMatrixPrice(structureId, projection, widthKey) {
+  const matrix = PERGOLA_MATRICES[structureId];
+  if (!matrix)    return { ok: false, price: 0, message: "Select a structure type." };
+  if (!widthKey)  return { ok: false, price: 0, message: "Select a width." };
+  const proj = parseInt(projection, 10);
+  if (!proj)      return { ok: false, price: 0, message: "Select a projection." };
+  const row = matrix[proj];
+  if (!row)       return { ok: false, price: 0, message: `Projection ${proj}' not available for this structure.` };
+  const price = row[widthKey];
+  if (price == null) return { ok: false, price: 0, message: `${widthKey} × ${proj}' not in matrix — Requires Custom Engineering Review.` };
+  return { ok: true, price: Number(price), message: `Matrix price: ${fmt(price)} (${widthKey} W × ${proj}' Proj)` };
+}
+
+function calcPergolaAccessories(acc) {
+  if (!acc) return 0;
+  let t = 0;
+  if (acc.led?.enabled)        t += PERGOLA_LED_RATE * (parseFloat(acc.led.lf) || 0);
+  PERGOLA_HEATERS.forEach(h => { if (acc[h.key]?.enabled) t += h.price * (parseInt(acc[h.key].qty, 10) || 0); });
+  if (acc.ceilingFan?.enabled) t += PERGOLA_CEILING_FAN_PRICE * (parseInt(acc.ceilingFan.qty, 10) || 0);
+  PERGOLA_UTILITY_BEAMS.forEach(b => { if (acc[b.key]?.enabled) t += b.price * (parseInt(acc[b.key].qty, 10) || 0); });
+  return t;
+}
+
+function calcPergolaModuleTotal(mod) {
+  const res = getPergolaMatrixPrice(mod.structureType, mod.projection, mod.width);
+  const qty = parseInt(mod.quantity, 10) || 1;
+  const base = res.ok ? res.price * qty : 0;
+  return base + calcPergolaAccessories(mod.accessories);
+}
+
+function calcPergolaLineTotal(modules = []) {
+  return (modules || []).reduce((s, m) => s + calcPergolaModuleTotal(m), 0);
+}
+
+function createPergolaModule() {
+  return {
+    id: uid(),
+    label: "",
+    structureType: "",
+    roofType: "Louvered Roof",
+    color: "White",
+    width: "",
+    projection: "",
+    quantity: 1,
+    accessories: {},   // { led:{enabled,lf}, heater36:{enabled,qty}, ceilingFan:{enabled,qty,color}, beamSmall:{...}, ... }
+    notes: "",
+    modulePhoto: null,
+  };
+}
+
 function getScreenSystemPrice(productName, widthIn, heightIn) {
   const cfg = SCREEN_PRODUCT_CONFIG[productName];
   if (!cfg) return { ok:false, price:0, message:"Unknown screen product." };
@@ -6096,6 +6264,257 @@ function SkylightMRACard({
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────
+// QIP MOTORIZED PERGOLA — MODULE EDITOR
+// ─────────────────────────────────────────────────────────────
+function PergolaModuleEditor({ mod, index, onChange, onRemove, showRemove }) {
+  const set = (field, val) => onChange({ ...mod, [field]: val });
+  const acc = mod.accessories || {};
+  const setAcc = (key, val) =>
+    onChange({ ...mod, accessories: { ...acc, [key]: { ...(acc[key] || {}), ...val } } });
+
+  const qty = parseInt(mod.quantity, 10) || 1;
+  const projections = getPergolaProjections(mod.structureType);
+  const priceResult = getPergolaMatrixPrice(mod.structureType, mod.projection, mod.width);
+  const baseTotal   = priceResult.ok ? priceResult.price * qty : 0;
+  const accTotal    = calcPergolaAccessories(acc);
+  const moduleTotal = baseTotal + accTotal;
+
+  // structure change resets projection (ranges differ between configs); width is shared so it stays
+  const handleStructureChange = (val) => onChange({ ...mod, structureType: val, projection: "" });
+
+  return (
+    <div className="opening-card">
+      <div className="opening-header">
+        <div className="opening-num">Module {index + 1}</div>
+        <div className="opening-label-wrap">
+          <input className="opening-label-input" placeholder="Module label (e.g. Patio North)"
+            value={mod.label} onChange={e => set("label", e.target.value)} />
+        </div>
+        {moduleTotal > 0 && <div className="opening-structural-badge">{fmt(moduleTotal)}</div>}
+        {showRemove && (
+          <button type="button" className="opening-remove ctrl-btn-danger" onClick={onRemove}>🗑 Delete Module</button>
+        )}
+      </div>
+
+      <div className="opening-grid-3">
+        <div className="mps-field" style={{ gridColumn: "1 / -1" }}>
+          <label className="mps-label">Structure Type <span className="mps-req">*</span></label>
+          <select className="mps-select" value={mod.structureType}
+            onChange={e => handleStructureChange(e.target.value)}>
+            <option value="">— Select Structure —</option>
+            {PERGOLA_STRUCTURES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div className="opening-grid-3">
+        <Sel label="Roof Type" value={mod.roofType} options={PERGOLA_ROOF_TYPES} onChange={v => set("roofType", v)} required />
+        <Sel label="Color"     value={mod.color}    options={PERGOLA_COLORS}     onChange={v => set("color", v)} required />
+        <Field label="Quantity" type="number" value={String(qty)}
+          onChange={v => set("quantity", parseInt(v, 10) || 1)} min="1" allowFractions={false} />
+      </div>
+
+      <div className="opening-grid-3">
+        <div className="mps-field">
+          <label className="mps-label">Width <span className="mps-req">*</span></label>
+          <select className="mps-select" value={mod.width} disabled={!mod.structureType}
+            onChange={e => set("width", e.target.value)}>
+            <option value="">{mod.structureType ? "— Select Width —" : "— Select structure first —"}</option>
+            {PERGOLA_WIDTH_COLS.map(w => <option key={w} value={w}>{w}</option>)}
+          </select>
+        </div>
+        <div className="mps-field">
+          <label className="mps-label">Projection <span className="mps-req">*</span></label>
+          <select className="mps-select" value={mod.projection} disabled={!mod.structureType}
+            onChange={e => set("projection", e.target.value)}>
+            <option value="">{mod.structureType ? "— Select Projection —" : "— Select structure first —"}</option>
+            {projections.map(p => <option key={p} value={p}>{p}'</option>)}
+          </select>
+        </div>
+      </div>
+
+      {(mod.width || mod.projection) && (
+        <div className={`opening-price-badge ${priceResult.ok ? "opening-price-badge--ok" : "opening-price-badge--error"}`}>
+          {priceResult.ok
+            ? <><span className="opening-price-badge__label">Unit price:</span>
+                <span className="opening-price-badge__value">{fmt(priceResult.price)}</span>
+                {qty > 1 && <span className="opening-price-badge__hint"> × {qty} = <strong>{fmt(baseTotal)}</strong></span>}
+                <span className="opening-price-badge__hint"> ({priceResult.message})</span></>
+            : <span>⚠ {priceResult.message}</span>}
+        </div>
+      )}
+
+      {/* ── ACCESSORIES (priced separately from matrix) ── */}
+      <div className="ps-addons-section">
+        <div className="ps-addons-title">
+          <span className="ps-addons-icon">✦</span> Accessories
+          {accTotal > 0 && <span className="ps-addons-running-total">+{fmt(accTotal)}</span>}
+        </div>
+
+        {/* LED strip */}
+        <div className="structural-item-card">
+          <Toggle label="Built-In LED Dimmable Light Strip ($60/LF)"
+            checked={!!acc.led?.enabled} onChange={v => setAcc("led", { enabled: v })} />
+          {acc.led?.enabled && (
+            <div className="structural-fields-grid">
+              <Field label="Linear Feet" type="number" value={acc.led?.lf || ""}
+                onChange={v => setAcc("led", { lf: v })} placeholder="e.g. 20" min="0" allowFractions={false} />
+              {parseFloat(acc.led?.lf) > 0 && (
+                <div className="structural-calc">{parseFloat(acc.led.lf)} LF × $60 = <strong>{fmt(parseFloat(acc.led.lf) * PERGOLA_LED_RATE)}</strong></div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Infrared heaters */}
+        {PERGOLA_HEATERS.map(h => (
+          <div className="structural-item-card" key={h.key}>
+            <Toggle label={`Infrared Heater ${h.size} (${fmt(h.price)} ea — 220V)`}
+              checked={!!acc[h.key]?.enabled} onChange={v => setAcc(h.key, { enabled: v })} />
+            {acc[h.key]?.enabled && (
+              <div className="structural-fields-grid">
+                <Field label="Quantity" type="number" value={acc[h.key]?.qty || ""}
+                  onChange={v => setAcc(h.key, { qty: v })} placeholder="1" min="0" allowFractions={false} />
+                {parseInt(acc[h.key]?.qty, 10) > 0 && (
+                  <div className="structural-calc">{parseInt(acc[h.key].qty, 10)} × {fmt(h.price)} = <strong>{fmt(parseInt(acc[h.key].qty, 10) * h.price)}</strong></div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* Ceiling fan */}
+        <div className="structural-item-card">
+          <Toggle label={'Ceiling Fan 36" ($1,000 ea)'}
+            checked={!!acc.ceilingFan?.enabled} onChange={v => setAcc("ceilingFan", { enabled: v })} />
+          {acc.ceilingFan?.enabled && (
+            <div className="structural-fields-grid">
+              <Field label="Quantity" type="number" value={acc.ceilingFan?.qty || ""}
+                onChange={v => setAcc("ceilingFan", { qty: v })} placeholder="1" min="0" allowFractions={false} />
+              <Sel label="Fan Color" value={acc.ceilingFan?.color || "White"}
+                options={PERGOLA_FAN_COLORS} onChange={v => setAcc("ceilingFan", { color: v })} />
+              {parseInt(acc.ceilingFan?.qty, 10) > 0 && (
+                <div className="structural-calc">{parseInt(acc.ceilingFan.qty, 10)} × $1,000 = <strong>{fmt(parseInt(acc.ceilingFan.qty, 10) * PERGOLA_CEILING_FAN_PRICE)}</strong></div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Utility beams — manual selection per spec */}
+        {PERGOLA_UTILITY_BEAMS.map(b => (
+          <div className="structural-item-card" key={b.key}>
+            <Toggle label={`${b.label} (${fmt(b.price)} ea)`}
+              checked={!!acc[b.key]?.enabled} onChange={v => setAcc(b.key, { enabled: v })} />
+            {acc[b.key]?.enabled && (
+              <div className="structural-fields-grid">
+                <Field label="Quantity" type="number" value={acc[b.key]?.qty || ""}
+                  onChange={v => setAcc(b.key, { qty: v })} placeholder="1" min="0" allowFractions={false} />
+                {parseInt(acc[b.key]?.qty, 10) > 0 && (
+                  <div className="structural-calc">{parseInt(acc[b.key].qty, 10)} × {fmt(b.price)} = <strong>{fmt(parseInt(acc[b.key].qty, 10) * b.price)}</strong></div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="form-group">
+        <label>Module Notes</label>
+        <textarea rows="2" value={mod.notes || ""} onChange={e => set("notes", e.target.value)}
+          placeholder="Special instructions for this module…" />
+      </div>
+
+      <PhotoUpload label="Module Photo" value={mod.modulePhoto} onChange={v => set("modulePhoto", v)} />
+
+      {moduleTotal > 0 && (
+        <div className="opening-total">
+          Module Total: <strong>{fmt(moduleTotal)}</strong>
+          {accTotal > 0 && <> ({fmt(baseTotal)} base + {fmt(accTotal)} accessories)</>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// QIP MOTORIZED PERGOLA — PRODUCT CARD (multi-module, like MPS)
+// ─────────────────────────────────────────────────────────────
+function PergolaProductCard({
+  line, index, snapshot,
+  pergolaData, onPergolaChange,
+  productNotes, onProductNoteChange,
+  isExpanded, onToggleExpand,
+}) {
+  const modules = pergolaData[line.id] || [createPergolaModule()];
+  const setModules   = (next) => onPergolaChange(line.id, next);
+  const updateModule = (id, u) => setModules(modules.map(m => m.id === id ? u : m));
+  const removeModule = (id)    => setModules(modules.filter(m => m.id !== id));
+  const addModule    = ()      => setModules([...modules, createPergolaModule()]);
+
+  const lineTotal = calcPergolaLineTotal(modules);
+
+  useEffect(() => {
+    if (!pergolaData[line.id]) onPergolaChange(line.id, [createPergolaModule()]);
+    // eslint-disable-next-line
+  }, []);
+
+  return (
+    <div className="ps-product-card mps-product-card">
+      <div className="ps-product-header ps-product-header--clickable"
+        onClick={onToggleExpand} style={{ cursor: "pointer", userSelect: "none" }}>
+        <div className="ps-product-number">#{index + 1}</div>
+        <div className="ps-product-name">{line.product}</div>
+        <div className="ps-product-price">{fmt(lineTotal)}</div>
+        <span className="ps-product-expand-icon" style={{
+          marginLeft: "12px", fontSize: "1.2em", transition: "transform 0.2s",
+          transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}>▼</span>
+      </div>
+
+      {isExpanded && (
+        <>
+          <div className="ps-detail-grid">
+            <div className="ps-detail-item"><span className="ps-detail-label">Product</span><span className="ps-detail-value">{line.product}</span></div>
+            <div className="ps-detail-item"><span className="ps-detail-label">Category</span><span className="ps-detail-value">{line.category}</span></div>
+            <div className="ps-detail-item"><span className="ps-detail-label">Modules</span><span className="ps-detail-value">{modules.length}</span></div>
+          </div>
+
+          <div className="product-note-section">
+            <label className="mps-label">📝 Product Notes</label>
+            <textarea className="product-note-textarea" rows={3}
+              placeholder="Add any important notes about this pergola project…"
+              value={productNotes || ""} onChange={e => onProductNoteChange(line.id, e.target.value)} />
+          </div>
+
+          <div className="mps-builder">
+            <div className="mps-builder-header">
+              <div className="mps-builder-title">
+                <span className="mps-builder-icon">🗂</span> Pergola Modules
+                <span className="mps-builder-hint">— Each module prices independently from its own matrix</span>
+              </div>
+            </div>
+            {modules.map((mod, idx) => (
+              <PergolaModuleEditor
+                key={mod.id}
+                mod={mod}
+                index={idx}
+                onChange={u => updateModule(mod.id, u)}
+                onRemove={() => removeModule(mod.id)}
+                showRemove={modules.length > 1}
+              />
+            ))}
+            <button type="button" className="add-opening-btn" onClick={addModule}>+ Add Pergola Module</button>
+          </div>
+
+          <div className="mps-line-total">
+            <span className="mps-line-grand">Line Total: {fmt(lineTotal)}</span>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 // ─────────────────────────────────────────────────────────────
 // STANDARD PRODUCT CARD
 // ─────────────────────────────────────────────────────────────
@@ -6201,6 +6620,7 @@ export default function ProductSummary() {
   const [awningControls,       setAwningControls]       = useState(() => loadFromSession()?.awningControls       || {});
   const [clearviewData,        setClearviewData]        = useState(() => loadFromSession()?.clearviewData        || {});
   const [screenData,           setScreenData]           = useState(() => loadFromSession()?.screenData           || {});
+  const [pergolaData, setPergolaData] = useState(() => loadFromSession()?.pergolaData || {});
 
   // ✅ MOVED UP — must be declared before any useEffect / handler that references it
   const [measurementMode, setMeasurementMode] = useState(
@@ -6208,14 +6628,14 @@ export default function ProductSummary() {
   );
 
   useEffect(() => {
-    saveToSession({
-      addonSelections, mpsData, fieldAddonValues, productNotes, signature,
-      windSensorSelections, mraConfig, mpsControls, awningControls, clearviewData,
-      screenData, measurementMode,
-    });
-  }, [addonSelections, mpsData, fieldAddonValues, productNotes, signature,
-      windSensorSelections, mraConfig, mpsControls, awningControls, clearviewData,
-      screenData, measurementMode]);
+  saveToSession({
+    addonSelections, mpsData, fieldAddonValues, productNotes, signature,
+    windSensorSelections, mraConfig, mpsControls, awningControls, clearviewData,
+    screenData, measurementMode, pergolaData,
+  });
+}, [addonSelections, mpsData, fieldAddonValues, productNotes, signature,
+    windSensorSelections, mraConfig, mpsControls, awningControls, clearviewData,
+    screenData, measurementMode, pergolaData]);
 
   const handleProductNoteChange = (lineId, note) =>
     setProductNotes(prev => ({ ...prev, [lineId]: note }));
@@ -6228,6 +6648,9 @@ export default function ProductSummary() {
 
   const handleAwningControlsChange = (lineId, updated) =>
     setAwningControls(prev => ({ ...prev, [lineId]: updated }));
+
+  const handlePergolaChange = (lineId, modules) =>
+  setPergolaData(prev => ({ ...prev, [lineId]: modules }));
 
   const handleMeasurementModeChange = (newMode) => {
     if (newMode === measurementMode) return;
@@ -6263,6 +6686,7 @@ export default function ProductSummary() {
       setClearviewData({});
       setScreenData({});
       setMeasurementMode('inches');
+      setPergolaData({});
     }
   };
   if (!snapshot) {
@@ -6298,11 +6722,13 @@ const toggleProductExpand = (lineId) => {
   setExpandedProducts(prev => ({ ...prev, [lineId]: !prev[lineId] }));
 };
 
-const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand, windSensorGrand, mraMatrixGrand, controlsGrand, clearviewGrand, screenGrand } = useMemo(() => {
-    if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0, mpsOpeningsProductGrand:0, windSensorGrand:0, mraMatrixGrand:0, controlsGrand:0, clearviewGrand:0, screenGrand:0 };
+const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeningsProductGrand,
+        windSensorGrand, mraMatrixGrand, controlsGrand, clearviewGrand, screenGrand, pergolaGrand } = useMemo(() => {
+    if (!snapshot) return { subtotalWithAddons:0, summaryAddonGrandTotal:0, mpsStructuralGrand:0, mpsOpeningsProductGrand:0, windSensorGrand:0, mraMatrixGrand:0, controlsGrand:0, clearviewGrand:0, screenGrand:0, pergolaGrand:0 };
     const configured = snapshot.productLines.filter(l => l.category && l.product);
     let clearviewGrand = 0;
     let screenGrand = 0;
+    let pergolaGrand = 0;
 
     let addonGrand=0, structuralGrand=0, openingsGrand=0, appBaseMPSGrand=0, windGrand=0, mraGrand=0, ctrlGrand=0;
 
@@ -6395,6 +6821,10 @@ const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeni
   );
 } else if (SCREEN_SYSTEM_PRODUCTS.includes(line.product)) {
   screenGrand += calcScreenLineTotal(line.product, screenData[line.id] || {});
+
+  } else if (PERGOLA_PRODUCTS.includes(line.product)) {
+  pergolaGrand += calcPergolaLineTotal(pergolaData[line.id] || []);
+
 } else {
         const qty    = parseInt(line.quantity, 10) || 1;
         const addons = getAddonsForProduct(line.product);
@@ -6423,11 +6853,12 @@ const { subtotalWithAddons, summaryAddonGrandTotal, mpsStructuralGrand, mpsOpeni
   controlsGrand:           ctrlGrand,
   clearviewGrand,
   screenGrand,
+  pergolaGrand,
   subtotalWithAddons:
     nonMPSNonMRAOriginal + openingsGrand + appBaseMPSGrand + addonGrand +
-    structuralGrand + windGrand + mraGrand + ctrlGrand + clearviewGrand + screenGrand,
+    structuralGrand + windGrand + mraGrand + ctrlGrand + clearviewGrand + screenGrand + pergolaGrand,
 };
-}, [snapshot, addonSelections, mpsData, fieldAddonValues, windSensorSelections, mraConfig, mpsControls, awningControls, clearviewData, screenData]);
+}, [snapshot, addonSelections, mpsData, fieldAddonValues, windSensorSelections, mraConfig, mpsControls, awningControls, clearviewData, screenData, pergolaData]);
 
   const discountPercent = snapshot?.pricingSummary?.discountPercent || 0;
   const discountAmount  = subtotalWithAddons * (discountPercent / 100);
@@ -6555,6 +6986,23 @@ if (SCREEN_SYSTEM_PRODUCTS.includes(line.product)) {
   );
 }
 
+if (PERGOLA_PRODUCTS.includes(line.product)) {
+  return (
+    <PergolaProductCard
+      key={line.id}
+      line={line}
+      index={idx}
+      snapshot={snapshot}
+      pergolaData={pergolaData}
+      onPergolaChange={handlePergolaChange}
+      productNotes={productNotes[line.id]}
+      onProductNoteChange={handleProductNoteChange}
+      isExpanded={!!expandedProducts[line.id]}
+      onToggleExpand={() => toggleProductExpand(line.id)}
+    />
+  );
+}
+
  if (MPS_PRODUCTS.includes(line.product)) {
   return (
     <MPSProductCard
@@ -6610,6 +7058,7 @@ if (SCREEN_SYSTEM_PRODUCTS.includes(line.product)) {
             {mpsStructuralGrand      > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>Structural Adjustments (L-Channel / Buildout / Storm Rail / Custom Color / Premium Fabric)</span><span className="ps-addon-highlight">+{fmt(mpsStructuralGrand)}</span></div>}
             {controlsGrand           > 0 && ( <div className="ps-pricing-row ps-addon-total-row"><span>Controls</span> <span className="ps-addon-highlight">+{fmt(controlsGrand)}</span></div>)}
             {clearviewGrand > 0 && ( <div className="ps-pricing-row ps-addon-total-row"><span>ClearView Doors (per-opening pricing)</span><span className="ps-addon-highlight">{fmt(clearviewGrand)}</span></div>)}
+            {pergolaGrand > 0 && <div className="ps-pricing-row ps-addon-total-row"><span>QIP Motorized Pergola (matrix + accessories)</span><span className="ps-addon-highlight">{fmt(pergolaGrand)}</span></div>}
             <div className="ps-pricing-row ps-subtotal-addons-row"><span>Subtotal (incl. all adjustments)</span><span>{fmt(subtotalWithAddons)}</span></div>
             <div className="ps-pricing-row"><span>Discount ({discountPercent}%)</span><span className="ps-discount-value">−{fmt(discountAmount)}</span></div>
             {discount?.percent > 20 && <div className="ps-pricing-row ps-manager-row"><span>Manager Approval</span><span>{discount.managerName||"—"}</span></div>}
